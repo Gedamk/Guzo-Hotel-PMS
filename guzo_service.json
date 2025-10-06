@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "hotel-tourism-platform",
+  "private_key_id": "217c882f7855de1c4056610fedbfbd66d3fbb39f",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDFG+/S1yJD2xKq\neXuy67SCUAVBTaGY6dP74xRH2uPW4db2fmY7PGGvHL4qPDjPrx19V88bu9IyGhsA\nfihdpVi403+KlJqiUGkU/Wh6Tylb9Z2srhaIttdDJYW1bqwrKnYaBxyAJv7F6urS\nBx2s4wMHjjUqIGzA5EP+grGSkR58HQSAomloZhkmLYxhgfqUy5QUiHeXrCiDADQ5\n596hqAv9iTpv719fplLhF1t0LGMVstxyphd5d8DojVSFEpJkxIbUkjjQ6V03BLsd\niEsFm1hpT8euAgWDzJl9SzPPZlGppdEsY8CtiLpJw4kNrfZ4cFLyo8Azux1QzlQt\naV1CXdvzAgMBAAECggEAS+u9zS02MoLARs9yGPF23rapv4SCWN6/2waVOjQSjCMC\n5IC9KdXRHlzo1mXJ0Bz4M95NlLYceVXazq7JJ4DXkqFMP/mLMjfcscwFoQ66tIP/\njpKjdVdPxLpALSkKwbmiMdZJYQckHOGmPu2kvYHXGeLpkWdZ3FZP5kk60mR5JH5u\nZNjFDN+GXYpWm5zT2Jj5syZl0YMm2NT/NcXq2uVBp+nbsutGLLGLrBavWKH2nr13\nmotHheTHeMsenGouF6P5bFnaYBAVQV9Osv/s8UeYl2j3j9eCYl5kJbzKUlh+KYYL\npyZ6R4ftd/jXs6s1LH1cfnP717riH410Hz5HSIdlsQKBgQD+l42mXIh9MgvG7Dw9\niY9TJbDuwgCtkMk3PcYgODEjw0Aro79RdszIv0tvNdUO+87BTHsv9EvcjkoLFNd6\nsW9w2/7SyCZXt4K4mQugJjlrs3k0k2JFgMz2ZsVqK5QvKZ1BeDKmMXwkTwwjGvZY\n1xg+Pn6xraPh4cx5j5FFOMMDqQKBgQDGMwATDkDSAbwNI2BA7ca971Z+zkG7Yor1\nc7+mSZQmQDuyAX3G+xOlb7rUgmWn4ejUFofcKPkCPmNhYHu6mAqGgdEfP3hbaV+h\nMoHr21SkBDnJ2W8pAdMPbXIFe6w9wpbqLG1enVTK9Y0fN3TtZUf3YGbz5TMnKqiI\nFrc4Xs5kOwKBgDLpt+gXBSyUP4quX3Wm9sSX+wQkQ+Jx2+tyLRbwZdNTDpgrjO0L\npvRWXQ2GZG80qCo70z7Jygn3YpNIvbbJmRGmzRT19cUA6+FiqdKDEmSZZZnAB50C\nnvp/nucWg/HSjqIzGV3m836HWFQE5lLp4O1BrjB2Gxnm/+8naNPBAC7RAoGBAIt4\nvCasswSVX+XG7ScDrAVgdPeK4Uqhz7NmHok/4dcBAIEE96Ocb3jNpSWCFVMMcDE/\nIZ/V3VSs3nZZ1Pe7ojyBAc4BdgqtnjPrPO3iTC+XIatfLRAoToPeuowNOWnEkzp6\nxQP9pvujzAkZl1ivGvODjS84LMT1Cd+qTIiIfqidAoGBANKgLpa4pUQhpFvUu8yp\nBS6Tj3tJQsxUpeBVT+OLybJxr0bz1HYdc0Ru4qno9l5vj+jQ6BT2/XhwlN5ydibW\nlFLi3p599SUjgPwbY2Rw0Y0ku4vSJ+wtlubzHpmUKluW3rNpqX7+Ys5JO7542TAB\nGwMNFFzSUNyEXIrQy5LSisPd\n-----END PRIVATE KEY-----\n",
+  "client_email": "gw983652@hotel-tourism-platform.iam.gserviceaccount.com",
+  "client_id": "113666177634676428615",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/gw983652%40hotel-tourism-platform.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}

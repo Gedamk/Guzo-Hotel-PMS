@@ -1,25 +1,41 @@
 # Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
 venv/
 .env
-.env.* 
+.env.*    # any variant like .env.local, .env.dev, etc.
+.pytest_cache/
+.mypy_cache/
 
 # Node
 node_modules/
-dist/
-build/
 
-# Logs and temp
-*.log
-logs/
-storage/
-
-# Credentials
-guzo_service.json
-guzo_booking_bot/creds/
-creds/
-
-# Local artifacts
+# OS/IDE
 .DS_Store
 Thumbs.db
+.vscode/
+.idea/
+
+# Logs & temp
+logs/
+*.log
+*.tmp
+*.swp
+
+# Local storage & caches
+storage/
+*.sqlite
+*.sqlite3
+
+# Project-specific secrets/creds
+guzo_booking_bot/creds/*
+creds/*
+*service_account*.json
+
+# Build / dist
+dist/
+build/
