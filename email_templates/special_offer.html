@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Special Offer - Guzo Guest Assist</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f6f6f6; color:#333; }
+    .container { max-width:650px; margin:auto; background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 3px 8px rgba(0,0,0,0.15); }
+    .header { background:#1a73e8; color:#fff; padding:20px; text-align:center; }
+    .content { padding:20px; line-height:1.6; }
+    .highlight { font-weight:bold; color:#1a73e8; }
+    .offer-box { background:#f1f9ff; border:1px dashed #1a73e8; padding:15px; margin:15px 0; border-radius:8px; }
+    .footer { background:#f1f1f1; text-align:center; padding:15px; font-size:12px; color:#777; }
+    .btn { display:inline-block; margin-top:15px; padding:12px 20px; background:#34a853; color:#fff; text-decoration:none; border-radius:6px; font-size:15px; font-weight:bold; }
+    .btn:hover { background:#2c8e46; }
+    hr { border:none; border-top:1px dashed #ccc; margin:20px 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <h2>🌟 Exclusive Special Offer Just for You!</h2>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <p>Hello <span class="highlight">{{ guest_name }}</span>,</p>
+      <p>We’re excited to share a seasonal <strong>special promotion</strong> at <strong>{{ hotel_name }}</strong>!</p>
+
+      <div class="offer-box">
+        <p><strong>Offer:</strong> {{ offer_title }} <br>
+        <strong>Discount:</strong> <span class="highlight">{{ offer_discount }}%</span> OFF <br>
+        <strong>Valid Until:</strong> {{ offer_valid_until }} <br>
+        <strong>🌍 International Season:</strong> {{ intl_season }} <br>
+        <strong>🇪🇹 Ethiopian Season:</strong> {{ eth_season }}</p>
+      </div>
+
+      <p>Plan your next unforgettable stay with us and enjoy Ethiopian warmth combined with international standards of hospitality.</p>
+
+      <a href="https://guzoassist.com/special-offers" class="btn">🎉 Book This Offer Now</a>
+
+      <!-- Multilingual + Seasonal Block -->
+      <hr>
+      <p><strong>🌍 International Guests (English):</strong><br>
+        Dear {{ guest_name }}, don’t miss our <span class="highlight">{{ offer_discount }}% discount</span> for your next stay at {{ hotel_name }}.  
+        This <em>{{ intl_season }}</em> seasonal offer is valid until {{ offer_valid_until }}.</p>
+
+      <hr>
+      <p><strong>🇪🇹 አማርኛ (Amharic):</strong><br>
+        ውድ {{ guest_name }}, በ{{ hotel_name }} ላይ የሚገኘውን <span class="highlight">{{ offer_discount }}%</span> የልዩ ቅናሽ አትንሱ።  
+        ይህ ልዩ እቅድ በ<em>{{ eth_season }}</em> ወቅት ነው፣ እስከ {{ offer_valid_until }} ድረስ ይፈጅበታል።</p>
+
+      <hr>
+      <p><strong>🌿 Afaan Oromoo:</strong><br>
+        Kabajamoo {{ guest_name }}, carraa <span class="highlight">{{ offer_discount }}%</span> off kana hin dhiisin!  
+        Offerri kun yeroo <em>{{ eth_season }}</em> keessa qophaa’e, hanga {{ offer_valid_until }} qofa.</p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      © 2025 Guzo Guest Assist | <em>Seasonal Hospitality Beyond Borders</em>
+    </div>
+  </div>
+</body>
+</html>

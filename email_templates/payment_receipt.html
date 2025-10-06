@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Payment Receipt - Guzo Guest Assist</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      background: #f6f6f6;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    }
+    .header {
+      background: #34a853; /* Green for success / payment */
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+    }
+    .content {
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .highlight {
+      font-weight: bold;
+      color: #34a853;
+    }
+    .footer {
+      background: #f1f1f1;
+      text-align: center;
+      padding: 15px;
+      font-size: 12px;
+      color: #777;
+    }
+    hr {
+      border: none;
+      border-top: 1px dashed #ccc;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <h2>Payment Receipt</h2>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <p>Hello <span class="highlight">{{ guest_name }}</span>,</p>
+      <p>We are pleased to confirm that your payment for <strong>{{ hotel_name }}</strong> has been received successfully.</p>
+
+      <p>
+        <strong>Receipt #:</strong> {{ receipt_number }} <br>
+        <strong>Amount:</strong> {{ payment_amount }} <br>
+        <strong>Method:</strong> {{ payment_method }} <br>
+        <strong>Date:</strong> {{ payment_date }}
+      </p>
+
+      <!-- Multilingual Block -->
+      <hr>
+      <p><strong>🌍 International Guests (English):</strong><br>
+        Hello {{ guest_name }}, we have received your payment of <strong>{{ payment_amount }}</strong> for <strong>{{ hotel_name }}</strong>. Thank you for choosing us!</p>
+
+      <hr>
+      <p><strong>🇪🇹 አማርኛ (Amharic):</strong><br>
+        ሰላም {{ guest_name }}, ከ<strong>{{ hotel_name }}</strong> ጋር የሚመለከተውን ክፍያ <strong>{{ payment_amount }}</strong> ተቀብለናል። እናመሰግናለን።</p>
+
+      <hr>
+      <p><strong>🌿 Afaan Oromoo:</strong><br>
+        Nagaa {{ guest_name }}, kaffaltii <strong>{{ payment_amount }}</strong> kan <strong>{{ hotel_name }}</strong>f ta’e nu bira gaheera. Galatoomi!</p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      © 2025 Guzo Guest Assist | <em>Trusted, Transparent & Multilingual Hospitality</em>
+    </div>
+  </div>
+</body>
+</html>
