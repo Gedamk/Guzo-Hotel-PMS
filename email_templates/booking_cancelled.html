@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Booking Cancellation - Guzo Guest Assist</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      background: #f6f6f6;
+      color: #333;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    }
+    .header {
+      background: #d93025; /* Red for cancellation */
+      color: #fff;
+      padding: 20px;
+      text-align: center;
+    }
+    .content {
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .highlight {
+      font-weight: bold;
+      color: #d93025;
+    }
+    .footer {
+      background: #f1f1f1;
+      text-align: center;
+      padding: 15px;
+      font-size: 12px;
+      color: #777;
+    }
+    hr {
+      border: none;
+      border-top: 1px dashed #ccc;
+      margin: 20px 0;
+    }
+    .btn {
+      display: inline-block;
+      margin-top: 15px;
+      padding: 10px 18px;
+      background: #1a73e8;
+      color: #fff;
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .btn:hover {
+      background: #0c5fd6;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Header -->
+    <div class="header">
+      <h2>Booking Cancellation Notice</h2>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <p>Hello <span class="highlight">{{ guest_name }}</span>,</p>
+      <p>We regret to inform you that your booking at <strong>{{ hotel_name }}</strong> has been <span class="highlight">{{ booking_status }}</span>.</p>
+
+      <p>
+        <strong>Check-in:</strong> {{ check_in }} <br>
+        <strong>Check-out:</strong> {{ check_out }} <br>
+        <strong>Room Type:</strong> {{ room_type }} <br>
+        <strong>Guests:</strong> {{ guest_count }}
+      </p>
+
+      <p>We sincerely apologize for any inconvenience caused. Please consider re-booking with us or exploring alternative dates.</p>
+
+      <a href="https://guzoassist.com/manage" class="btn">📅 Rebook Your Stay</a>
+
+      <!-- Multilingual Block -->
+      <hr>
+      <p><strong>🌍 International Guests (English):</strong><br>
+        Dear {{ guest_name }}, unfortunately your booking at {{ hotel_name }} was {{ booking_status }}. 
+        We apologize and invite you to rebook with alternative dates.</p>
+
+      <hr>
+      <p><strong>🇪🇹 አማርኛ (Amharic):</strong><br>
+        እንባዛለን {{ guest_name }}, በ{{ hotel_name }} ያስያዙት ቦታ {{ booking_status }} ነው። 
+        ይቅርታ እንልሃለን፣ እንደገና ለሌሎች ቀናት ለመያዝ እንጋብዝዎታለን።</p>
+
+      <hr>
+      <p><strong>🌿 Afaan Oromoo:</strong><br>
+        Nagaan {{ guest_name }}, booking kee {{ hotel_name }} keessatti {{ booking_status }} ta’eera. 
+        Dhiifama kadhanna, gara biraa guyyaa filachuun akka deebitu si affeerra.</p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      © 2025 Guzo Guest Assist | <em>Compassionate, Transparent & Multilingual Hospitality</em>
+    </div>
+  </div>
+</body>
+</html>

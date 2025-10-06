@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Booking Confirmation - Guzo Guest Assist</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      background-color: #f6f6f6;
+      color: #333333;
+    }
+    .container {
+      width: 100%;
+      max-width: 600px;
+      margin: auto;
+      background: #ffffff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    }
+    .header {
+      background: #1a73e8;
+      color: #ffffff;
+      padding: 20px;
+      text-align: center;
+    }
+    .content {
+      padding: 20px;
+      line-height: 1.6;
+    }
+    .highlight {
+      font-weight: bold;
+      color: #1a73e8;
+    }
+    .footer {
+      background: #f1f1f1;
+      text-align: center;
+      padding: 15px;
+      font-size: 12px;
+      color: #777;
+    }
+    hr {
+      border: none;
+      border-top: 1px dashed #ccc;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h2>Booking Confirmation</h2>
+    </div>
+
+    <!-- Content -->
+    <div class="content">
+      <p>Hello <span class="highlight">{{ guest_name }}</span>,</p>
+      <p>Your booking at <strong>{{ hotel_name }}</strong> has been 
+      <strong class="highlight">{{ booking_status }}</strong>.</p>
+
+      <p>
+        <strong>Check-in:</strong> {{ check_in }} <br>
+        <strong>Check-out:</strong> {{ check_out }} <br>
+        <strong>Room Type:</strong> {{ room_type }} <br>
+        <strong>Guests:</strong> {{ guest_count }} <br>
+        <strong>Source:</strong> {{ booking_source }}
+      </p>
+
+      <!-- Multilingual Blocks -->
+      <hr>
+      <p><strong>🌍 International Guests (English):</strong><br>
+        Dear {{ guest_name }}, your booking at {{ hotel_name }} is 
+        {{ booking_status }}. We are delighted to welcome you from 
+        {{ check_in }} to {{ check_out }}.</p>
+
+      <hr>
+      <p><strong>🇪🇹 አማርኛ (Amharic):</strong><br>
+        ሰላም {{ guest_name }}, በ<strong>{{ hotel_name }}</strong> ያስያዙት ቦታ 
+        <strong>{{ booking_status }}</strong> ነው። እንኳን በደህና መጡ፣ ከ{{ check_in }} 
+        እስከ {{ check_out }} ለመርካት ተዘጋጅተናል።</p>
+
+      <hr>
+      <p><strong>🌿 Afaan Oromoo:</strong><br>
+        Nagaa {{ guest_name }}, booking kee 
+        <strong>{{ hotel_name }}</strong> keessatti 
+        <strong>{{ booking_status }}</strong> dha. 
+        Gara {{ check_in }} hanga {{ check_out }} si simachuuf qophoofneerra.</p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      © 2025 Guzo Guest Assist | <em>Hospitality with Ethiopian Warmth & Global Standards</em>
+    </div>
+  </div>
+</body>
+</html>
