@@ -4,6 +4,8 @@ Payment Service Module
 Handles guest payments via Stripe, Telebirr, and PayPal.
 Automatically generates and sends multilingual receipts.
 """
+# Add a comment at the top
+# Payment Service Module - Updated with secure receipts
 
 import os
 import stripe
