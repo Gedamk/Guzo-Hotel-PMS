@@ -18,4 +18,4 @@ async def handle_message(update):
 
     # Reply to user
     if hasattr(message, "reply_text"):
-        message.reply_text("Booking triggered ✅")
+        message.reply_text("Booking triggered ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ")

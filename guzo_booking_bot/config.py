@@ -1,81 +1,97 @@
-# guzo_booking_bot/config.py 
+# -*- coding: utf-8 -*-
+"""
+🌍 Guzo Guest Assist — Configuration (v3)
+-------------------------------------------------
+Central configuration file for environment management,
+API keys, and integrations (Telegram, Email, Google Sheets, Twilio, etc.)
+
+✅ Simple, secure, and scalable.
+✅ Works seamlessly with .env and project structure.
+"""
 
 import os
 from dotenv import load_dotenv
 
-# ---- Base paths ----
+# ----------------------------------------
+# Base Paths & Environment Setup
+# ----------------------------------------
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 ENV_PATH = os.path.join(BASE_DIR, ".env")
 
-# Force .env to override any existing env vars (important on Windows)
-load_dotenv(dotenv_path=ENV_PATH, override=True, verbose=False)
+# Load environment variables from .env file
+load_dotenv(dotenv_path=ENV_PATH, override=True)
 
-# ---- Google Sheets / Credentials ----
-GOOGLE_CREDS_FILE = os.path.join(BASE_DIR, "guzo_service.json")
+# ----------------------------------------
+# Telegram Configuration
+# ----------------------------------------
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN", "").strip()
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID", "").strip()
 
+# ----------------------------------------
+# Email Configuration
+# ----------------------------------------
+EMAIL_PROVIDER = os.getenv("EMAIL_PROVIDER", "sendgrid").strip().lower()
+
+# --- SendGrid ---
+SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY", "")
+SENDGRID_SENDER_EMAIL = os.getenv("SENDGRID_SENDER_EMAIL", "")
+SENDGRID_SENDER_NAME = os.getenv("SENDGRID_SENDER_NAME", "Guzo Guest Assist")
+
+# --- Gmail (App Password required) ---
+GMAIL_EMAIL = os.getenv("GMAIL_EMAIL", "")
+GMAIL_PASSWORD = os.getenv("GMAIL_PASSWORD", "")
+
+# ----------------------------------------
+# Google Sheets / Drive
+# ----------------------------------------
 SERVICE_ACCOUNT_FILE = os.getenv(
     "SERVICE_ACCOUNT_FILE",
-    os.path.join("guzo_booking_bot", "creds", "guzo_service_account.json")
+    os.path.join(BASE_DIR, "guzo_booking_bot", "creds", "guzo_service_account.json")
 )
 
-GOOGLE_CREDS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", GOOGLE_CREDS_FILE)
+GOOGLE_CREDS = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", SERVICE_ACCOUNT_FILE)
+GOOGLE_CREDS_FILE = GOOGLE_CREDS  # backward compatibility
 
-# Spreadsheet IDs (all from .env)
-SPREADSHEET_GUEST_ASSIST_ID      = os.getenv("SPREADSHEET_GUEST_ASSIST_ID", "")
-SPREADSHEET_HOTEL_CONTACTS_ID    = os.getenv("SPREADSHEET_HOTEL_CONTACTS_ID", "")
-SPREADSHEET_NOTIFICATIONSLOG_ID  = os.getenv("SPREADSHEET_NOTIFICATIONSLOG_ID", "")
+SPREADSHEET_GUEST_ASSIST_ID = os.getenv("SPREADSHEET_GUEST_ASSIST_ID", "")
+SPREADSHEET_HOTEL_CONTACTS_ID = os.getenv("SPREADSHEET_HOTEL_CONTACTS_ID", "")
+SPREADSHEET_NOTIFICATIONSLOG_ID = os.getenv("SPREADSHEET_NOTIFICATIONSLOG_ID", "")
 
-SCOPE = [
+GOOGLE_SCOPE = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/spreadsheets",
     "https://www.googleapis.com/auth/drive.file",
     "https://www.googleapis.com/auth/drive",
 ]
 
-# ---- Email ----
-EMAIL_PROVIDER        = os.getenv("EMAIL_PROVIDER", "sendgrid").strip().lower()  # sendgrid | gmail
+# ----------------------------------------
+# Twilio (SMS / WhatsApp)
+# ----------------------------------------
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID", "")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "")
+TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER", "")
+TWILIO_WHATSAPP_FROM = os.getenv("TWILIO_WHATSAPP_FROM", "whatsapp:+14155238886")
 
-SENDGRID_API_KEY      = os.getenv("SENDGRID_API_KEY", "")
-SENDGRID_SENDER_EMAIL = os.getenv("SENDGRID_SENDER_EMAIL", "")
-SENDGRID_SENDER_NAME  = os.getenv("SENDGRID_SENDER_NAME", "Guzo Guest Assist")
+# ----------------------------------------
+# Environment
+# ----------------------------------------
+ENV = os.getenv("ENV", "development").lower()
 
-GMAIL_EMAIL           = os.getenv("GMAIL_EMAIL", "")
-GMAIL_PASSWORD        = os.getenv("GMAIL_PASSWORD", "")  # must be 16-char Gmail App Password
-
-# Optional Yahoo (leave blank if not using)
-YAHOO_EMAIL           = os.getenv("YAHOO_EMAIL", "")
-YAHOO_PASSWORD        = os.getenv("YAHOO_PASSWORD", "")
-
-# ---- Telegram ----
-TELEGRAM_TOKEN        = os.getenv("TELEGRAM_TOKEN", "")
-TELEGRAM_CHAT_ID      = os.getenv("TELEGRAM_CHAT_ID", "")
-
-# ---- Twilio ----
-TWILIO_ACCOUNT_SID    = os.getenv("TWILIO_ACCOUNT_SID", "")
-TWILIO_AUTH_TOKEN     = os.getenv("TWILIO_AUTH_TOKEN", "")
-TWILIO_PHONE_NUMBER   = os.getenv("TWILIO_PHONE_NUMBER", "")
-TWILIO_WHATSAPP_FROM  = os.getenv("TWILIO_WHATSAPP_FROM", "whatsapp:+14155238886")
-
-# ---- Viber (placeholder) ----
-VIBER_API_KEY         = os.getenv("VIBER_API_KEY", "")
-VIBER_SENDER_NAME     = os.getenv("VIBER_SENDER_NAME", "Guzo Guest Assist")
-
-# ---- Payments ----
-STRIPE_API_KEY        = os.getenv("STRIPE_API_KEY", "")
-TELEBIRR_API_KEY      = os.getenv("TELEBIRR_API_KEY", "")
-
-# ---- Misc ----
-ENV                   = os.getenv("ENV", "development")
-
-# Debug helper to confirm what file was loaded
+# ----------------------------------------
+# Debug Helper
+# ----------------------------------------
 def _debug_dump():
+    """Print a safe configuration summary."""
+    print("\n🧩 Guzo Config Debug Summary")
+    print("-----------------------------")
     print("ENV_PATH:", ENV_PATH)
+    print("TELEGRAM_TOKEN:", "✅ Loaded" if TELEGRAM_TOKEN else "❌ Missing")
     print("EMAIL_PROVIDER:", EMAIL_PROVIDER)
-    print("GMAIL_EMAIL:", GMAIL_EMAIL)
-    print("GMAIL_PASSWORD length:", len(GMAIL_PASSWORD))
-    print("SENDGRID key present:", bool(SENDGRID_API_KEY))
-    print("GOOGLE_CREDS_FILE:", GOOGLE_CREDS_FILE)
-    print("SERVICE_ACCOUNT_FILE:", SERVICE_ACCOUNT_FILE)
-    print("SPREADSHEET_GUEST_ASSIST_ID:", SPREADSHEET_GUEST_ASSIST_ID)
-    print("SPREADSHEET_HOTEL_CONTACTS_ID:", SPREADSHEET_HOTEL_CONTACTS_ID)
-    print("SPREADSHEET_NOTIFICATIONSLOG_ID:", SPREADSHEET_NOTIFICATIONSLOG_ID)
+    print("SENDGRID Key:", "✅ Present" if SENDGRID_API_KEY else "❌ Missing")
+    print("GMAIL Email:", GMAIL_EMAIL or "❌ Not set")
+    print("Google Service File:", os.path.basename(GOOGLE_CREDS))
+    print("Sheets IDs:",
+          bool(SPREADSHEET_GUEST_ASSIST_ID),
+          bool(SPREADSHEET_HOTEL_CONTACTS_ID),
+          bool(SPREADSHEET_NOTIFICATIONSLOG_ID))
+    print("Twilio Config:", "✅ Present" if TWILIO_ACCOUNT_SID else "❌ Not set")
+    print("-----------------------------\n")

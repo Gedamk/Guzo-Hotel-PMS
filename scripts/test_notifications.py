@@ -49,6 +49,6 @@ def run_test_notifications():
 
 
 if __name__ == "__main__":
-    logging.info("🚀 Starting Notification Tests...")
+    logging.info("Ã°ÂÂÂ Starting Notification Tests...")
     run_test_notifications()
-    logging.info("✅ Notification tests completed.")
+    logging.info("Ã¢ÂÂ Notification tests completed.")

@@ -17,7 +17,7 @@ def web_booking():
             source="Website",
             contact=data.get("contact", "")
         )
-        return jsonify({"status": "success", "message": "Booking received ✅"})
+        return jsonify({"status": "success", "message": "Booking received ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 400
 

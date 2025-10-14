@@ -1,41 +1,18 @@
-# Python
+# Python cache
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-*.egg-info/
-.venv/
+
+# Virtual environment
 venv/
+
+# Environment and credentials
 .env
-.env.*    # any variant like .env.local, .env.dev, etc.
-.pytest_cache/
-.mypy_cache/
+credentials_prod.json
 
-# Node
-node_modules/
+# Logs and reports
+logs/
+reports/
 
-# OS/IDE
+# OS files
 .DS_Store
 Thumbs.db
-.vscode/
-.idea/
-
-# Logs & temp
-logs/
-*.log
-*.tmp
-*.swp
-
-# Local storage & caches
-storage/
-*.sqlite
-*.sqlite3
-
-# Project-specific secrets/creds
-guzo_booking_bot/creds/*
-creds/*
-*service_account*.json
-
-# Build / dist
-dist/
-build/

@@ -16,7 +16,7 @@ def load_template(template_name, placeholders=None):
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
     except FileNotFoundError:
-        return f"❌ Template {template_name} not found."
+        return f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Template {template_name} not found."
 
     if placeholders:
         for key, value in placeholders.items():

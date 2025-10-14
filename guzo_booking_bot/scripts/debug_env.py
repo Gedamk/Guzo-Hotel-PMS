@@ -4,7 +4,7 @@ from guzo_booking_bot import config as cfg
 
 
 
-print("— DEBUG ENV —")
+print("ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ DEBUG ENV ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ")
 
 print("Loaded from:", cfg.__file__)
 

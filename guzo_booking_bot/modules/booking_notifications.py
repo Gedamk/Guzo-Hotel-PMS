@@ -32,4 +32,4 @@ def log_notification(booking_id, guest, channel, contact, message, status):
     ws = get_notification_sheet()
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     ws.append_row([booking_id, guest, channel, contact, message, status, timestamp])
-    print(f"📋 Notification logged: {booking_id} | {channel} | {status}")
+    print(f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Notification logged: {booking_id} | {channel} | {status}")

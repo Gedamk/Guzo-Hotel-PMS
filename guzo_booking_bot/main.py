@@ -1,47 +1,57 @@
-# main.py
+# -*- coding: utf-8 -*-
+"""
+Guzo Guest Assist – Multi-Channel Bot
+Main Telegram entrypoint
+"""
+
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 import logging
-import pytz
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
-from config import TELEGRAM_TOKEN
+from guzo_booking_bot.message_router import process_message
+from dotenv import load_dotenv
 
-# ----------------------------
-# Logging
-# ----------------------------
+# Load environment variables from .env
+load_dotenv()
+
+# Configure logging for console + file output
 logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
+    format="%(asctime)s - GuzoBot - %(levelname)s - %(message)s",
+    level=logging.INFO,
+    handlers=[
+        logging.FileHandler("bot.log", encoding="utf-8"),
+        logging.StreamHandler()
+    ]
 )
-logger = logging.getLogger(__name__)
 
-# ----------------------------
-# Bot Handlers
-# ----------------------------
+# --- Telegram Bot Handlers ---
+
 async def start(update, context):
-    await update.message.reply_text("Welcome! Guzo Booking Bot is now online.")
+    """Welcome message when user starts the bot."""
+    await update.message.reply_text("Welcome to Guzo Guest Assist! How can we help you today?")
 
-async def echo(update, context):
-    await update.message.reply_text(f"You said: {update.message.text}")
+async def handle_text(update, context):
+    """Handle any guest message and send reply."""
+    user = update.effective_user
+    message_text = update.message.text
+    reply_text = process_message("telegram", user.id, message_text)
+    await update.message.reply_text(reply_text)
 
-# ----------------------------
-# Main Function
-# ----------------------------
 def main():
-    # Set timezone to a pytz-supported zone to avoid APScheduler error
-    tz = pytz.timezone("Africa/Addis_Ababa")  # adjust your timezone
+    """Run Telegram bot."""
+    telegram_token = os.getenv("TELEGRAM_TOKEN")
+    if not telegram_token:
+        print("❌ TELEGRAM_TOKEN missing in .env file.")
+        return
 
-    # Build Telegram Application
-    app = ApplicationBuilder().token(TELEGRAM_TOKEN).build()
-
-    # Handlers
+    app = ApplicationBuilder().token(telegram_token).build()
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & (~filters.COMMAND), echo))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
-    # Run the bot
-    print("Bot started...")
+    print("Guzo Guest Assist Telegram bot is running...")
     app.run_polling()
 
-# ----------------------------
-# Entry Point
-# ----------------------------
 if __name__ == "__main__":
     main()

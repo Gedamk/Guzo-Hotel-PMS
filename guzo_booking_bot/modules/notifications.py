@@ -54,7 +54,7 @@ def send_email(to_email: str, subject: str, body: str, guest_name: str = "Unknow
             raise Exception("No email provider configured")
 
     except Exception as e:
-        logger.error(f"❌ Email failed: {e}")
+        logger.error(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Email failed: {e}")
         log_notification(guest_name, to_email, "Email", "FAILED", str(e))
         return False
 
@@ -75,7 +75,7 @@ def send_sms(to_phone: str, message: str, guest_name: str = "Unknown"):
         log_notification(guest_name, to_phone, "SMS", "SUCCESS")
         return True
     except Exception as e:
-        logger.error(f"❌ SMS failed: {e}")
+        logger.error(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ SMS failed: {e}")
         log_notification(guest_name, to_phone, "SMS", "FAILED", str(e))
         return False
 
@@ -96,7 +96,7 @@ def send_whatsapp(to_phone: str, message: str, guest_name: str = "Unknown"):
         log_notification(guest_name, to_phone, "WhatsApp", "SUCCESS")
         return True
     except Exception as e:
-        logger.error(f"❌ WhatsApp failed: {e}")
+        logger.error(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ WhatsApp failed: {e}")
         log_notification(guest_name, to_phone, "WhatsApp", "FAILED", str(e))
         return False
 
@@ -116,7 +116,7 @@ def send_telegram(chat_id: str, message: str, guest_name: str = "Unknown"):
         else:
             raise Exception(resp.text)
     except Exception as e:
-        logger.error(f"❌ Telegram failed: {e}")
+        logger.error(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Telegram failed: {e}")
         log_notification(guest_name, chat_id, "Telegram", "FAILED", str(e))
         return False
 
@@ -132,10 +132,10 @@ def send_viber(to_phone: str, message: str, guest_name: str = "Unknown"):
             raise Exception("No Viber API key configured")
 
         # Example placeholder API call
-        logger.info(f"📤 Sending Viber message to {to_phone}: {message}")
+        logger.info(f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¤ Sending Viber message to {to_phone}: {message}")
         log_notification(guest_name, to_phone, "Viber", "SUCCESS")
         return True
     except Exception as e:
-        logger.error(f"❌ Viber failed: {e}")
+        logger.error(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Viber failed: {e}")
         log_notification(guest_name, to_phone, "Viber", "FAILED", str(e))
         return False

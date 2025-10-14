@@ -39,7 +39,7 @@ def format_phone(contact: str) -> str:
     if contact.startswith("+"):
         return contact
     if contact.startswith("0") and len(contact) >= 9:
-        return "+251" + contact[1:]  # e.g. 0911xxxxxx → +251911xxxxxx
+        return "+251" + contact[1:]  # e.g. 0911xxxxxx ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ +251911xxxxxx
     return contact
 
 
@@ -65,7 +65,7 @@ def handle_booking(data: dict):
     guest_name = data.get("Guest Name", "Unknown")
     contact = str(data.get("Contact", "")).strip()
 
-    # 1️⃣ Log booking to Google Sheets
+    # 1ÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ Log booking to Google Sheets
     log_booking(
         hotel_name=data.get("Hotel Name"),
         guest_name=guest_name,
@@ -77,35 +77,35 @@ def handle_booking(data: dict):
         status=data.get("Status", "Pending"),
         timestamp=data.get("Timestamp")
     )
-    logger.info(f"✅ Booking synced: {data}")
+    logger.info(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Booking synced: {data}")
 
-    # 2️⃣ Prepare notification message
+    # 2ÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ Prepare notification message
     message = (
-        f"📢 New Booking Alert!\n\n"
-        f"🏨 Hotel: {data.get('Hotel Name')}\n"
-        f"👤 Guest: {guest_name}\n"
-        f"📅 Check-in: {data.get('Check-in')}\n"
-        f"📅 Check-out: {data.get('Check-out')}\n"
-        f"🛏️ Room: {data.get('Room')}\n"
-        f"🔗 Source: {data.get('Source')}\n"
-        f"📌 Status: {data.get('Status', 'Pending')}"
+        f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ New Booking Alert!\n\n"
+        f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¨ Hotel: {data.get('Hotel Name')}\n"
+        f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¤ Guest: {guest_name}\n"
+        f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Check-in: {data.get('Check-in')}\n"
+        f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Check-out: {data.get('Check-out')}\n"
+        f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂ Room: {data.get('Room')}\n"
+        f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Source: {data.get('Source')}\n"
+        f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Status: {data.get('Status', 'Pending')}"
     )
 
-    # 3️⃣ Send Email if contact is email
+    # 3ÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ Send Email if contact is email
     if is_email(contact):
         notify.send_email(to_email=contact, subject="Booking Confirmation", body=message, guest_name=guest_name)
 
-    # 4️⃣ Send SMS / WhatsApp if contact is phone
+    # 4ÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ Send SMS / WhatsApp if contact is phone
     phone = format_phone(contact)
     if is_phone(phone):
         notify.send_sms(to_phone=phone, message=message, guest_name=guest_name)
         notify.send_whatsapp(to_phone=phone, message=message, guest_name=guest_name)
 
-    # 5️⃣ Send Telegram notification (requires chat_id)
+    # 5ÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ Send Telegram notification (requires chat_id)
     if cfg.TELEGRAM_TOKEN and data.get("TelegramChatID"):
         notify.send_telegram(chat_id=data.get("TelegramChatID"), message=message, guest_name=guest_name)
 
-    # 6️⃣ Send Viber notification (if enabled & phone contact)
+    # 6ÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ Send Viber notification (if enabled & phone contact)
     if cfg.VIBER_API_KEY and is_phone(phone):
         notify.send_viber(to_phone=phone, message=message, guest_name=guest_name)
 

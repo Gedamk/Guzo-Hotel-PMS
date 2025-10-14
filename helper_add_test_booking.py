@@ -39,5 +39,5 @@ def generate_random_booking():
 
 if __name__ == "__main__":
     booking = generate_random_booking()
-    print(f"📝 Adding test booking: {booking}")
+    print(f"Ã°ÂÂÂ Adding test booking: {booking}")
     add_guest_booking(booking)

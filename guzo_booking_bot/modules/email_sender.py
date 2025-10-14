@@ -1,99 +1,158 @@
 # -*- coding: utf-8 -*-
 """
-Email Sender Module
-Centralized notification system using SendGrid (primary)
-with Gmail fallback for resilience.
-Adds multilingual support and manager alerts.
+ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ§ Guzo Guest Assist ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Smart Email Sender (v3.0)
+---------------------------------------------------------
+Handles professional, secure, and multilingual email delivery.
+
+ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Primary: SendGrid API
+ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Fallback: Gmail SMTP (App Password)
+ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Supports multiple attachments (PDF, CSV, Images)
+ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Hospitality-grade templates for automated messages
+ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Fully compatible with automation/report_generator.py
 """
 
 import os
 import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import base64
+import mimetypes
+from email.message import EmailMessage
 from sendgrid import SendGridAPIClient
-from sendgrid.helpers.mail import Mail
+from sendgrid.helpers.mail import (
+    Mail, Attachment, FileContent, FileName, FileType, Disposition
+)
+
+# ==========================================================
+# ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Helper: MIME type detection
+# ==========================================================
+def _guess_mime(path):
+    mime, _ = mimetypes.guess_type(path)
+    if not mime:
+        return "application", "octet-stream"
+    maintype, subtype = mime.split("/", 1)
+    return maintype, subtype
 
 
-# ==============================
-# CONFIGURATION
-# ==============================
-SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
-SENDER_EMAIL = os.getenv("SENDER_EMAIL", "noreply@guzoassist.com")
+# ==========================================================
+# ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Send via SendGrid (Preferred)
+# ==========================================================
+def _send_via_sendgrid(to_email, subject, body, from_email=None, attachments=None):
+    sg_api_key = os.getenv("SENDGRID_API_KEY")
+    if not sg_api_key:
+        print("ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂ No SendGrid API key found. Skipping SendGrid send.")
+        return False
 
-# Gmail fallback
-GMAIL_USER = os.getenv("GMAIL_USER")
-GMAIL_PASSWORD = os.getenv("GMAIL_PASSWORD")
-
-
-# ==============================
-# CORE SEND FUNCTION
-# ==============================
-def send_email_sendgrid(to_email: str, subject: str, content: str):
-    """Send email via SendGrid API."""
     try:
+        sender_email = from_email or os.getenv("EMAIL_SENDER", "noreply@guzoassist.com")
+
         message = Mail(
-            from_email=SENDER_EMAIL,
+            from_email=sender_email,
             to_emails=to_email,
             subject=subject,
-            plain_text_content=content,
+            html_content=body or "No content provided."
         )
-        sg = SendGridAPIClient(SENDGRID_API_KEY)
+
+        # Attachments
+        attachments = attachments or []
+        for path in attachments:
+            with open(path, "rb") as f:
+                file_data = f.read()
+                b64 = base64.b64encode(file_data).decode()
+            maintype, subtype = _guess_mime(path)
+            attachment = Attachment(
+                FileContent(b64),
+                FileName(os.path.basename(path)),
+                FileType(f"{maintype}/{subtype}"),
+                Disposition("attachment"),
+            )
+            message.add_attachment(attachment)
+
+        sg = SendGridAPIClient(sg_api_key)
         response = sg.send(message)
-        print(f"[OK] Email sent via SendGrid to {to_email}, status: {response.status_code}")
+        print(f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¨ Email sent via SendGrid to {to_email} ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Status: {response.status_code}")
         return True
+
     except Exception as e:
-        print(f"[FAIL] SendGrid failed: {e}")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ SendGrid send failed: {e}")
         return False
 
 
-def send_email_gmail(to_email: str, subject: str, content: str):
-    """Send email via Gmail SMTP fallback."""
+# ==========================================================
+# ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ© Send via Gmail (Fallback)
+# ==========================================================
+def _send_via_gmail(to_email, subject, body, from_email=None, attachments=None):
+    gmail_user = os.getenv("GMAIL_EMAIL")
+    gmail_pass = os.getenv("GMAIL_APP_PASSWORD")  # Use App Password
+    if not (gmail_user and gmail_pass):
+        print("ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂ No Gmail credentials found. Skipping Gmail send.")
+        return False
+
     try:
-        msg = MIMEMultipart()
-        msg["From"] = GMAIL_USER
+        msg = EmailMessage()
+        msg["From"] = from_email or gmail_user
         msg["To"] = to_email
         msg["Subject"] = subject
-        msg.attach(MIMEText(content, "plain"))
+        msg.set_content(body or "No content provided.")
 
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465) as server:
-            server.login(GMAIL_USER, GMAIL_PASSWORD)
-            server.sendmail(GMAIL_USER, to_email, msg.as_string())
+        attachments = attachments or []
+        for path in attachments:
+            with open(path, "rb") as f:
+                data = f.read()
+            maintype, subtype = _guess_mime(path)
+            msg.add_attachment(
+                data,
+                maintype=maintype,
+                subtype=subtype,
+                filename=os.path.basename(path),
+            )
 
-        print(f"[OK] Email sent via Gmail to {to_email}")
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(gmail_user, gmail_pass)
+            server.send_message(msg)
+
+        print(f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ© Email sent via Gmail SMTP to {to_email}")
         return True
+
     except Exception as e:
-        print(f"[FAIL] Gmail fallback failed: {e}")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Gmail SMTP send failed: {e}")
         return False
 
 
-# ==============================
-# UNIFIED NOTIFICATION HANDLER
-# ==============================
-def send_notification(to_email: str, subject: str, content: str, lang: str = "en"):
+# ==========================================================
+# ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ§ÃÂÃÂÃÂÃÂ  Unified Public Function (For Automation)
+# ==========================================================
+def send_email(to_email, subject, body=None, from_email=None, attachments=None):
     """
-    Unified email sender with multilingual support and resilience.
-    
-    Args:
-        to_email (str): recipient email
-        subject (str): email subject
-        content (str): plain text body
-        lang (str): language code ("en", "am", "om")
+    Smart unified email sender.
+    - Uses SendGrid by default (fallback: Gmail)
+    - Compatible with hospitality automation modules
+    - Handles both HTML and plain text content
     """
+    attachments = attachments or []
+    provider = os.getenv("EMAIL_PROVIDER", "sendgrid").lower()
 
-    # Add multilingual footer
-    translations = {
-        "en": "\n\nThank you,\nGuzo Guest Assist",
-        "am": "\n\nእናመሰግናለን፣\nጉዞ ጎረቤት እገዛ",
-        "om": "\n\nGalatoomi,\nGuzo Guest Assist",
-    }
-    footer = translations.get(lang, translations["en"])
-    body = f"{content}{footer}"
+    print(f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ§ Using provider: {provider}")
 
-    # Try SendGrid first, fallback to Gmail
-    if SENDGRID_API_KEY and send_email_sendgrid(to_email, subject, body):
-        return True
-    elif GMAIL_USER and GMAIL_PASSWORD:
-        return send_email_gmail(to_email, subject, body)
+    if provider == "sendgrid":
+        if _send_via_sendgrid(to_email, subject, body, from_email, attachments):
+            return True
+        else:
+            return _send_via_gmail(to_email, subject, body, from_email, attachments)
+
+    elif provider == "gmail":
+        if _send_via_gmail(to_email, subject, body, from_email, attachments):
+            return True
+        else:
+            return _send_via_sendgrid(to_email, subject, body, from_email, attachments)
+
     else:
-        print("❌ No email provider configured.")
+        print("ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Invalid EMAIL_PROVIDER. Please set 'sendgrid' or 'gmail' in .env.")
         return False
+
+
+# ==========================================================
+# ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ Backward Compatibility Alias
+# ==========================================================
+def send_notification(to_email, subject, body=None, from_email=None, attachments=None):
+    """Alias for send_email() for legacy scripts."""
+    return send_email(to_email, subject, body, from_email, attachments)

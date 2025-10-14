@@ -34,7 +34,7 @@ def reset_sheet():
     ws = get_sheet()
     ws.clear()
     ws.append_row(HEADER)
-    print("✅ Booking sheet reset complete.")
+    print("ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Booking sheet reset complete.")
 
 def log_booking(hotel_name, guest_name, check_in, check_out,
                 room, source, contact="", status="Pending", timestamp=None):
@@ -45,7 +45,7 @@ def log_booking(hotel_name, guest_name, check_in, check_out,
     row = [hotel_name, guest_name, check_in, check_out,
            room, source, contact, status, timestamp]
     ws.append_row(row)
-    print(f"✅ Booking logged: {guest_name} at {hotel_name}")
+    print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Booking logged: {guest_name} at {hotel_name}")
 
 def sync_bookings(bookings_list):
     """Bulk sync multiple bookings"""
@@ -53,4 +53,4 @@ def sync_bookings(bookings_list):
     for booking in bookings_list:
         row = [booking.get(h, "") for h in HEADER]
         ws.append_row(row)
-    print(f"✅ {len(bookings_list)} bookings synced")
+    print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ {len(bookings_list)} bookings synced")

@@ -8,15 +8,15 @@ def main():
         ids = telegram_service.get_chat_ids_from_updates()
         if ids:
             chat_id = ids[0]
-            print(f"✅ Using fetched chat_id: {chat_id}")
+            print(f"Ã¢ÂÂ Using fetched chat_id: {chat_id}")
         else:
-            print("❌ No chat_id found. Send /start to your bot and retry.")
+            print("Ã¢ÂÂ No chat_id found. Send /start to your bot and retry.")
             return
 
     try:
         resp = telegram_service.send_message(
             chat_id=chat_id,
-            text="✅ Test from Guzo Guest Assist — Telegram notifications working!"
+            text="Ã¢ÂÂ Test from Guzo Guest Assist Ã¢ÂÂ Telegram notifications working!"
         )
         print("ok:", True)
         print("resp:", resp)

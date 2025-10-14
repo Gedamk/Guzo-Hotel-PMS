@@ -16,4 +16,4 @@ class TestTelegramBot(unittest.IsolatedAsyncioTestCase):
         await telegram_bot.handle_message(update)
 
         mock_log_booking.assert_called_once()
-        message.reply_text.assert_called_once_with("Booking triggered ✅")
+        message.reply_text.assert_called_once_with("Booking triggered ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ")
