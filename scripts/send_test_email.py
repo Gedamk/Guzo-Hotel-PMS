@@ -14,10 +14,10 @@ if __name__ == "__main__":
 
     subject = "Guzo Booking Bot - Test Notification"
     message = (
-        "Hello! 👋\n\n"
+        "Hello! Ã°ÂÂÂ\n\n"
         "This is a multi-channel test from your Guzo Booking Bot.\n"
         "If one channel fails, the system will automatically try the next.\n"
-        "✅ Powered by Guzo Guest Assist."
+        "Ã¢ÂÂ Powered by Guzo Guest Assist."
     )
 
     results = notifications.send_notification_multi(
@@ -29,4 +29,4 @@ if __name__ == "__main__":
 
     print("\n--- Notification Results ---")
     for channel, success in results.items():
-        print(f"{channel.upper():10}: {'✅ SUCCESS' if success else '❌ FAILED'}")
+        print(f"{channel.upper():10}: {'Ã¢ÂÂ SUCCESS' if success else 'Ã¢ÂÂ FAILED'}")

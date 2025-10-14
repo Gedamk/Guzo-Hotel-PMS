@@ -64,28 +64,28 @@ def save_local_log(entry):
         ))
         conn.commit()
         conn.close()
-        safe_print(f"📝 Local backup stored for {entry.get('Guest Name')} ({entry.get('Channel')})")
+        safe_print(f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Local backup stored for {entry.get('Guest Name')} ({entry.get('Channel')})")
     except Exception as e:
-        safe_print(f"❌ Failed to save local log: {e}")
+        safe_print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Failed to save local log: {e}")
 
 # ==============================
 # Retry Logic
 # ==============================
 def retry_failed_notifications():
     """Retry failed notifications with exponential backoff and dual logging."""
-    safe_print("🔄 Starting retry process for failed notifications...")
+    safe_print("ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Starting retry process for failed notifications...")
     init_local_db()
 
     try:
         logs = google_sheets.get_guest_assist()
     except Exception as e:
-        safe_print(f"⚠️ Could not fetch Guest Assist logs: {e}")
+        safe_print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂ Could not fetch Guest Assist logs: {e}")
         logs = []
 
     failed_logs = [log for log in logs if str(log.get("Status", "")).lower() == "failed"]
 
     if not failed_logs:
-        safe_print("✅ No failed notifications to retry.")
+        safe_print("ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ No failed notifications to retry.")
         return
 
     for log in failed_logs:
@@ -116,15 +116,15 @@ def retry_failed_notifications():
                 try:
                     google_sheets.add_notification_log(entry)
                 except Exception as e:
-                    safe_print(f"⚠️ Failed to write to Google Sheets: {e}")
+                    safe_print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂ Failed to write to Google Sheets: {e}")
                 finally:
                     save_local_log(entry)
 
-                safe_print(f"✅ Retry successful for {guest_name} on {channel}")
+                safe_print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Retry successful for {guest_name} on {channel}")
                 break
 
             except Exception as e:
-                safe_print(f"⚠️ Retry {attempt} failed for {guest_name} on {channel}: {e}")
+                safe_print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂ Retry {attempt} failed for {guest_name} on {channel}: {e}")
                 if attempt < MAX_RETRIES:
                     time.sleep(BACKOFF_FACTOR ** attempt)
                 else:
@@ -139,10 +139,10 @@ def retry_failed_notifications():
                     try:
                         google_sheets.add_notification_log(entry)
                     except Exception as gs_e:
-                        safe_print(f"⚠️ Failed to log to Google Sheets: {gs_e}")
+                        safe_print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂ Failed to log to Google Sheets: {gs_e}")
                     finally:
                         save_local_log(entry)
 
-                    safe_print(f"❌ Permanent failure for {guest_name} on {channel}")
+                    safe_print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Permanent failure for {guest_name} on {channel}")
 
-    safe_print("✅ Retry process complete.")
+    safe_print("ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Retry process complete.")

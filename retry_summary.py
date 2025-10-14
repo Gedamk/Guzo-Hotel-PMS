@@ -29,17 +29,17 @@ def fetch_summary():
     conn.close()
 
     if not rows:
-        return "📊 Daily Retry Summary:\n\nNo retries needed today."
+        return "Ã°ÂÂÂ Daily Retry Summary:\n\nNo retries needed today."
 
     table = tabulate(rows, headers=["Channel", "Status", "Count"], tablefmt="grid")
-    return f"📊 Daily Retry Summary ({today}):\n\n{table}"
+    return f"Ã°ÂÂÂ Daily Retry Summary ({today}):\n\n{table}"
 
 
 def send_summary():
     """Send summary report via email + telegram."""
     report = fetch_summary()
 
-    # ✅ Centralized email sending
+    # Ã¢ÂÂ Centralized email sending
     email_sender.send_notification(
         "manager@guzoassist.com",
         "Daily Retry Summary",
@@ -48,7 +48,7 @@ def send_summary():
 
     # Telegram alert
     telegram_sender.send_message(report)
-    print("✅ Retry summary sent via Email & Telegram")
+    print("Ã¢ÂÂ Retry summary sent via Email & Telegram")
 
 
 if __name__ == "__main__":

@@ -1,5 +1,9 @@
-# guzo_booking_bot/modules/__init__.py
+# -*- coding: utf-8 -*-
 """
-Modules for guzo_booking_bot
-Do NOT import submodules here to avoid circular imports.
+Modules subpackage for Guzo Booking Bot.
 """
+
+# Expose important utilities here if needed
+from . import email_sender
+
+__all__ = ["email_sender"]

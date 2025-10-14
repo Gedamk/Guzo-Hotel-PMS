@@ -1,0 +1,10 @@
+✅ dashboard\dashboard_app.py | encoding=MacRoman | cleaned | hash=2766e578
+✅ dashboard\components\ai_analyzer.py | encoding=utf-8 | cleaned | hash=144028e6
+✅ dashboard\components\bookings.py | encoding=utf-8 | cleaned | hash=e3b0c442
+✅ dashboard\components\guests.py | encoding=utf-8 | cleaned | hash=e3b0c442
+✅ dashboard\components\insights.py | encoding=utf-8 | cleaned | hash=2f08f142
+✅ dashboard\components\overview.py | encoding=utf-8 | cleaned | hash=409a2906
+✅ dashboard\components\system_health.py | encoding=utf-8 | cleaned | hash=2c438752
+✅ dashboard\node_modules\flatted\python\flatted.py | encoding=ascii | cleaned | hash=2e7119b0
+✅ dashboard\node_modules\shell-quote\print.py | encoding=ascii | cleaned | hash=8871c03c
+✅ dashboard\pages\manager_center.py | encoding=MacRoman | cleaned | hash=a16ecf0d

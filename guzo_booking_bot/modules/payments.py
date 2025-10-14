@@ -55,7 +55,7 @@ def create_payment_intent(booking, amount: int, currency: str = "usd", descripti
             description=description,
             automatic_payment_methods={"enabled": True},
         )
-        print(f"✅ Stripe PaymentIntent created: {intent['id']} for {amount/100:.2f} {currency.upper()}")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Stripe PaymentIntent created: {intent['id']} for {amount/100:.2f} {currency.upper()}")
 
         receipt = payment_receipts.generate_receipt(
             booking=booking,
@@ -68,7 +68,7 @@ def create_payment_intent(booking, amount: int, currency: str = "usd", descripti
         payment_receipts.send_receipt(receipt, manager_alert=True)
         return {"status": "success", "intent": intent}
     except Exception as e:
-        print(f"❌ Failed to create Stripe PaymentIntent: {e}")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Failed to create Stripe PaymentIntent: {e}")
         return {"status": "failed", "error": str(e)}
 
 
@@ -78,7 +78,7 @@ def confirm_payment(booking, payment_intent_id: str):
     """
     try:
         intent = stripe.PaymentIntent.confirm(payment_intent_id)
-        print(f"✅ Payment {intent['id']} confirmed, status: {intent['status']}")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Payment {intent['id']} confirmed, status: {intent['status']}")
 
         receipt = payment_receipts.generate_receipt(
             booking=booking,
@@ -91,7 +91,7 @@ def confirm_payment(booking, payment_intent_id: str):
         payment_receipts.send_receipt(receipt, manager_alert=True)
         return {"status": "success", "intent": intent}
     except Exception as e:
-        print(f"❌ Failed to confirm payment {payment_intent_id}: {e}")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Failed to confirm payment {payment_intent_id}: {e}")
         return {"status": "failed", "error": str(e)}
 
 
@@ -132,7 +132,7 @@ def process_telebirr_payment(booking, amount: float, phone_number: str):
 
         return {"status": status, "reference": reference, "raw": data}
     except Exception as e:
-        print(f"❌ Telebirr error: {e}")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Telebirr error: {e}")
         return {"status": "failed", "error": str(e)}
 
 
@@ -176,5 +176,5 @@ def process_paypal_payment(booking, amount: float, currency: str = "usd"):
         else:
             return {"status": "failed", "error": payment.error}
     except Exception as e:
-        print(f"❌ PayPal error: {e}")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ PayPal error: {e}")
         return {"status": "failed", "error": str(e)}

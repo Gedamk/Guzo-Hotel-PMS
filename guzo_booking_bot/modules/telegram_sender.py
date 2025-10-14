@@ -22,7 +22,7 @@ def send_message(message, chat_id=None, parse_mode="Markdown"):
     chat_id = chat_id or config.TELEGRAM_CHAT_ID
 
     if not token or not chat_id:
-        print("⚠️ Telegram not configured: Missing TELEGRAM_TOKEN or TELEGRAM_CHAT_ID")
+        print("ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂ Telegram not configured: Missing TELEGRAM_TOKEN or TELEGRAM_CHAT_ID")
         return None
 
     url = f"https://api.telegram.org/bot{token}/sendMessage"
@@ -35,13 +35,13 @@ def send_message(message, chat_id=None, parse_mode="Markdown"):
     try:
         resp = requests.post(url, data=payload, timeout=10)
         if resp.status_code == 200:
-            print(f"✅ Telegram sent to {chat_id}")
+            print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Telegram sent to {chat_id}")
             return resp.json()
         else:
-            print(f"❌ Telegram API error {resp.status_code}: {resp.text}")
+            print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Telegram API error {resp.status_code}: {resp.text}")
             return None
     except Exception as e:
-        print(f"❌ Telegram send_message failed: {e}")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Telegram send_message failed: {e}")
         return None
 
 
@@ -51,11 +51,11 @@ def send_alert(title, body, lang="en"):
     Useful for manager notifications.
     """
     msg = (
-        f"📢 *{title}*\n\n"
+        f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ *{title}*\n\n"
         f"{body}\n\n"
-        "🇬🇧 English: Alert sent.\n"
-        "🇪🇹 አማርኛ: ማስታወቂያ ተልኳል።\n"
-        "🌿 Afaan Oromoo: Beeksisa ergameera."
+        "ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¬ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ§ English: Alert sent.\n"
+        "ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂªÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¹ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ­ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ: ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂµÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ³ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ« ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ³ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢\n"
+        "ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¿ Afaan Oromoo: Beeksisa ergameera."
     )
     return send_message(msg, parse_mode="Markdown")
 

@@ -111,7 +111,7 @@ def main():
         # =======================
         sent = False
 
-        # VIP guests → try ALL channels
+        # VIP guests Ã¢ÂÂ try ALL channels
         if guest_type == "vip":
             if is_valid_email(contact):
                 try:
@@ -133,7 +133,7 @@ def main():
                     log_notification(guest_name, contact, "WhatsApp", "Failed", str(e), guest_type, language)
             continue
 
-        # International guests → Email preferred, WhatsApp fallback
+        # International guests Ã¢ÂÂ Email preferred, WhatsApp fallback
         if guest_type == "international":
             if is_valid_email(contact):
                 try:
@@ -150,7 +150,7 @@ def main():
                 except Exception as e:
                     log_notification(guest_name, contact, "WhatsApp", "Failed", str(e), guest_type, language)
 
-        # Local guests → WhatsApp preferred, SMS fallback, Email last
+        # Local guests Ã¢ÂÂ WhatsApp preferred, SMS fallback, Email last
         else:
             if is_phone_number(contact):
                 try:
@@ -200,7 +200,7 @@ def main():
                 })
                 email_sender.send_email(contact, SUBJECTS["special_offer"], offer_html)
                 log_notification(guest_name, contact, "Email", "Success (Special Offer)", guest_type, language)
-                print(f"[OK] Special offer sent to {guest_name} ({contact}) → {special_offer['offer_discount']}% OFF")
+                print(f"[OK] Special offer sent to {guest_name} ({contact}) Ã¢ÂÂ {special_offer['offer_discount']}% OFF")
 
                 # Telegram alert for manager
                 manager_msg = (

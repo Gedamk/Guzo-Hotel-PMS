@@ -30,7 +30,7 @@ def stripe_webhook():
             # Unsafe fallback: parse without verification (only for local testing)
             event = json.loads(payload)
     except Exception as e:
-        print("❌ Webhook verification failed:", e)
+        print("ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Webhook verification failed:", e)
         return jsonify({"error": "webhook verification failed"}), 400
 
     # Handle the event
@@ -40,7 +40,7 @@ def stripe_webhook():
         guest_name = intent.get("metadata", {}).get("guest_name")
         if guest_name:
             google_sheets.update_booking_status(guest_name, status="Paid")
-            print(f"✅ Marked booking for {guest_name} as Paid")
+            print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Marked booking for {guest_name} as Paid")
     # return 200
     return jsonify({"received": True})
 

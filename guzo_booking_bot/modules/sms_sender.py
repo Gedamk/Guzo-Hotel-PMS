@@ -30,9 +30,9 @@ def send_sms(to_number, message):
             from_=FROM_NUMBER,
             to=to_number
         )
-        print(f"✅ SMS sent to {to_number}, SID: {msg.sid}")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ SMS sent to {to_number}, SID: {msg.sid}")
         return msg.sid
 
     except Exception as e:
-        print(f"❌ Failed to send SMS to {to_number}: {e}")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Failed to send SMS to {to_number}: {e}")
         raise

@@ -29,11 +29,11 @@ def get_international_season():
 def get_ethiopian_season():
     """Return current Ethiopian season (traditional calendar mapping)."""
     month = datetime.now().month
-    if month in [6, 7, 8, 9]:       # June–September
+    if month in [6, 7, 8, 9]:       # JuneÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂSeptember
         return "Kiremt (Rainy Season)"
-    elif month in [10, 11, 12, 1]:  # October–January
+    elif month in [10, 11, 12, 1]:  # OctoberÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂJanuary
         return "Bega (Dry & Festive Season)"
-    else:                           # February–May
+    else:                           # FebruaryÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂMay
         return "Belg (Short Rains)"
 
 
@@ -88,7 +88,7 @@ def generate_offer(hotel_name, occupancy_rate):
             discount = int(override_discount)
             source = "override"
         except ValueError:
-            print(f"⚠️ Invalid FORCE_DISCOUNT value: {override_discount}")
+            print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂ Invalid FORCE_DISCOUNT value: {override_discount}")
     if override_valid:
         valid_until = override_valid
         source = "override"

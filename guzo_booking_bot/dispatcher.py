@@ -1,7 +1,7 @@
 # guzo_booking_bot/dispatcher.py
 """
 Dispatcher Module
-Handles sending notifications via Email → SMS → WhatsApp → Telegram,
+Handles sending notifications via Email ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ SMS ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ WhatsApp ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Telegram,
 with fallbacks and logging into Google Sheets.
 """
 
@@ -74,10 +74,10 @@ def dispatch_notification(guest_name, contact, subject, html_body,
         except Exception as e:
             errors.append(f"WhatsApp failed: {e}")
 
-    # 4. Escalate → Telegram Manager Alert
+    # 4. Escalate ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Telegram Manager Alert
     try:
         telegram_sender.send_message(
-            f"🚨 Escalation Needed\nGuest: {guest_name}\nContact: {contact}\nErrors: {'; '.join(errors)}"
+            f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¨ Escalation Needed\nGuest: {guest_name}\nContact: {contact}\nErrors: {'; '.join(errors)}"
         )
     except Exception as e:
         errors.append(f"Telegram failed: {e}")

@@ -15,7 +15,7 @@ from guzo_booking_bot.modules import email_sender, whatsapp_sender, telegram_sen
 TEMPLATES = {
     "en": (
         "Dear {guest_name},\n\n"
-        "✅ Your payment has been processed.\n\n"
+        "ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Your payment has been processed.\n\n"
         "Provider: {provider}\n"
         "Amount: {amount}\n"
         "Status: {status}\n"
@@ -24,18 +24,18 @@ TEMPLATES = {
         "Thank you for booking with Guzo Guest Assist!"
     ),
     "am": (
-        "ውድ {guest_name},\n\n"
-        "✅ ክፍያዎ ተሳክቷል።\n\n"
-        "አገልጋይ: {provider}\n"
-        "መጠን: {amount}\n"
-        "ሁኔታ: {status}\n"
-        "ማጣቀሻ: {reference}\n"
-        "ቀን: {timestamp}\n\n"
-        "ከGuzo Guest Assist ጋር እንደተገዛችሁ እናመሰግናለን!"
+        "ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂµ {guest_name},\n\n"
+        "ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ­ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ«ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ³ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ­ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ·ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢\n\n"
+        "ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ­: {provider}\n"
+        "ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ: {amount}\n"
+        "ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ³: {status}\n"
+        "ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ»: {reference}\n"
+        "ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ: {timestamp}\n\n"
+        "ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¨Guzo Guest Assist ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ­ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¥ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ½ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¥ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ!"
     ),
     "om": (
         "Kabajamoo {guest_name},\n\n"
-        "✅ Kaffaltiin kee milkaa'ee raawwatameera.\n\n"
+        "ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Kaffaltiin kee milkaa'ee raawwatameera.\n\n"
         "Ogeessa Tajaajilaa: {provider}\n"
         "Hanga: {amount}\n"
         "Haala: {status}\n"
@@ -87,9 +87,9 @@ def send_receipt(receipt, manager_alert=False):
     if receipt.get("contact_email"):
         try:
             email_sender.send_email(receipt["contact_email"], subject, body)
-            print(f"📧 Receipt sent via Email ({lang}) to {receipt['contact_email']}")
+            print(f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ§ Receipt sent via Email ({lang}) to {receipt['contact_email']}")
         except Exception as e:
-            print(f"❌ Email receipt failed: {e}")
+            print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Email receipt failed: {e}")
 
     # --- WhatsApp ---
     if receipt.get("contact_phone"):
@@ -98,15 +98,15 @@ def send_receipt(receipt, manager_alert=False):
                 "guest_name": receipt["guest_name"],
                 "message": f"Payment confirmed: {receipt['amount']} via {receipt['provider']} (Ref: {receipt['reference']})"
             })
-            print(f"📱 Receipt sent via WhatsApp to {receipt['contact_phone']}")
+            print(f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ± Receipt sent via WhatsApp to {receipt['contact_phone']}")
         except Exception as e:
-            print(f"❌ WhatsApp receipt failed: {e}")
+            print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ WhatsApp receipt failed: {e}")
 
     # --- Telegram (Manager Alert) ---
     if manager_alert:
         try:
             manager_msg = (
-                f"📊 *Payment Alert*\n\n"
+                f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ *Payment Alert*\n\n"
                 f"Guest: {receipt['guest_name']}\n"
                 f"Provider: {receipt['provider']}\n"
                 f"Amount: {receipt['amount']}\n"
@@ -116,6 +116,6 @@ def send_receipt(receipt, manager_alert=False):
                 f"Language: {receipt['language'].upper()}"
             )
             telegram_sender.send_telegram_message("5582570428", manager_msg)
-            print("📨 Manager notified via Telegram")
+            print("ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¨ Manager notified via Telegram")
         except Exception as e:
-            print(f"❌ Telegram manager alert failed: {e}")
+            print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Telegram manager alert failed: {e}")

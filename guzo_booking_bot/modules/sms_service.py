@@ -24,12 +24,12 @@ def send_sms(to: str, message: str):
             from_=TWILIO_PHONE_NUMBER,
             to=to
         )
-        print(f"✅ SMS sent to {to}, SID: {sms.sid}")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ SMS sent to {to}, SID: {sms.sid}")
         return True
     except Exception as e:
-        print(f"❌ SMS failed for {to}: {e}")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ SMS failed for {to}: {e}")
         return False
 
 if __name__ == "__main__":
     # Test SMS
-    send_sms("+11234567890", "Hello from Guzo Guest Assist 🚀")
+    send_sms("+11234567890", "Hello from Guzo Guest Assist ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ")

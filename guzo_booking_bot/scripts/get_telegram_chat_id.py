@@ -7,7 +7,7 @@ def get_chat_ids_from_updates():
     resp = requests.get(url).json()
 
     if not resp.get("ok"):
-        print("❌ Error fetching updates:", resp)
+        print("ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Error fetching updates:", resp)
         return []
 
     ids = []
@@ -21,6 +21,6 @@ def get_chat_ids_from_updates():
 if __name__ == "__main__":
     ids = get_chat_ids_from_updates()
     if ids:
-        print("✅ Found chat IDs:", ids)
+        print("ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Found chat IDs:", ids)
     else:
-        print("❌ No chat IDs found. Send /start to your bot in Telegram and re-run.")
+        print("ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ No chat IDs found. Send /start to your bot in Telegram and re-run.")

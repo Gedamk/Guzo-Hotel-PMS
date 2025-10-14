@@ -19,7 +19,7 @@ SCOPE = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-CREDS_FILE = config.GOOGLE_CREDS_FILE
+CREDS_FILE = CREDS_FILE = config.GOOGLE_CREDS
 SPREADSHEET_GUEST_ASSIST_ID = config.SPREADSHEET_GUEST_ASSIST_ID
 SPREADSHEET_HOTEL_CONTACTS_ID = config.SPREADSHEET_HOTEL_CONTACTS_ID
 SPREADSHEET_NOTIFICATIONSLOG_ID = config.SPREADSHEET_NOTIFICATIONSLOG_ID
@@ -72,7 +72,7 @@ def save_to_local(entry):
     ))
     conn.commit()
     conn.close()
-    print(f"💾 Saved log locally for retry: {entry.get('Guest Name')} ({entry.get('Channel')})")
+    print(f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¾ Saved log locally for retry: {entry.get('Guest Name')} ({entry.get('Channel')})")
 
 
 def init_client():
@@ -83,19 +83,19 @@ def init_client():
     try:
         creds = ServiceAccountCredentials.from_json_keyfile_name(CREDS_FILE, SCOPE)
         client = gspread.authorize(creds)
-        print("✅ Successfully authenticated with Google Sheets.")
+        print("ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Successfully authenticated with Google Sheets.")
     except FileNotFoundError:
-        print(f"❌ Credentials file not found at {CREDS_FILE}.")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Credentials file not found at {CREDS_FILE}.")
         client = None
     except Exception as e:
-        print(f"❌ Failed to authenticate with Google Sheets: {e}")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Failed to authenticate with Google Sheets: {e}")
         client = None
     return client
 
 # === Helper: open sheet safely ===
 def _open_sheet(sheet_id, sheet_name="Unknown"):
     if not sheet_id:
-        print(f"❌ No spreadsheet ID provided for {sheet_name}. Check your .env file.")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ No spreadsheet ID provided for {sheet_name}. Check your .env file.")
         return None
     c = init_client()
     if not c:
@@ -103,9 +103,9 @@ def _open_sheet(sheet_id, sheet_name="Unknown"):
     try:
         return c.open_by_key(sheet_id).sheet1
     except gspread.SpreadsheetNotFound:
-        print(f"❌ Spreadsheet {sheet_name} not found or not shared with service account. ID={sheet_id}")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Spreadsheet {sheet_name} not found or not shared with service account. ID={sheet_id}")
     except Exception as e:
-        print(f"❌ Error opening {sheet_name} sheet (ID={sheet_id}): {e}")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Error opening {sheet_name} sheet (ID={sheet_id}): {e}")
     return None
 
 # === Guest Bookings ===
@@ -117,7 +117,7 @@ def get_guest_assist():
     try:
         return sheet.get_all_records()
     except Exception as e:
-        print(f"❌ Error fetching Guest Assist sheet: {e}")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Error fetching Guest Assist sheet: {e}")
         return []
 
 # === Hotel Contacts ===
@@ -137,7 +137,7 @@ def get_hotel_contacts():
             for row in records if row.get("Hotel name")
         ]
     except Exception as e:
-        print(f"❌ Error fetching hotel contacts: {e}")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Error fetching hotel contacts: {e}")
         return []
 
 # === Notifications Log (with Fallback) ===
@@ -163,7 +163,7 @@ def add_notification_log(entry):
             entry.get("ErrorMessage", ""),
         ]
         sheet.append_row(row)
-        print(f"📝 Logged {entry.get('Channel')} notification for {entry.get('Guest Name')} ({entry.get('Language')}).")
+        print(f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Logged {entry.get('Channel')} notification for {entry.get('Guest Name')} ({entry.get('Language')}).")
     except Exception as e:
-        print(f"⚠️ Sheets logging failed → saving locally. Error: {e}")
+        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂ Sheets logging failed ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ saving locally. Error: {e}")
         save_to_local(entry)

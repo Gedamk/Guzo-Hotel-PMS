@@ -17,11 +17,11 @@ logger = logging.getLogger(__name__)
 
 def main():
     try:
-        logger.info("🧹 Resetting booking sheet...")
+        logger.info("Ã°ÂÂ§Â¹ Resetting booking sheet...")
         reset_sheet()
-        logger.info("✅ Booking sheet reset complete.")
+        logger.info("Ã¢ÂÂ Booking sheet reset complete.")
     except Exception as e:
-        logger.error(f"❌ Reset failed: {e}")
+        logger.error(f"Ã¢ÂÂ Reset failed: {e}")
 
 if __name__ == "__main__":
     main()

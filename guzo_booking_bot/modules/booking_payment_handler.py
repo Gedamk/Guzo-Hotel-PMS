@@ -22,12 +22,12 @@ def process_booking_payment(guest_name: str, amount: float, currency: str = "usd
     """
     Process booking payment with fallback strategy:
     1. Try Stripe
-    2. If Stripe fails → try Telebirr (ETB only, requires phone number)
-    3. If Telebirr fails → try PayPal
+    2. If Stripe fails ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ try Telebirr (ETB only, requires phone number)
+    3. If Telebirr fails ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ try PayPal
     """
     safe_print(f"[INFO] Checking for pending payments for {guest_name}...")
 
-    # 1️⃣ Stripe Payment
+    # 1ÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ Stripe Payment
     try:
         intent = payments.create_payment_intent(int(amount * 100), currency)
         if intent:
@@ -37,7 +37,7 @@ def process_booking_payment(guest_name: str, amount: float, currency: str = "usd
     except Exception as e:
         safe_print(f"[WARN] Stripe payment failed for {guest_name}: {e}")
 
-    # 2️⃣ Telebirr Payment (fallback)
+    # 2ÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ Telebirr Payment (fallback)
     if currency.lower() == "etb" and phone:
         try:
             telebirr_tx = payments.process_telebirr_payment(amount, phone)
@@ -47,7 +47,7 @@ def process_booking_payment(guest_name: str, amount: float, currency: str = "usd
         except Exception as e:
             safe_print(f"[WARN] Telebirr payment failed for {guest_name}: {e}")
 
-    # 3️⃣ PayPal Payment (last fallback)
+    # 3ÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ PayPal Payment (last fallback)
     try:
         paypal_tx = payments.process_paypal_payment(amount, currency)
         if paypal_tx.get("status") == "pending":
@@ -56,7 +56,7 @@ def process_booking_payment(guest_name: str, amount: float, currency: str = "usd
     except Exception as e:
         safe_print(f"[WARN] PayPal payment failed for {guest_name}: {e}")
 
-    # ❌ All failed
+    # ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ All failed
     safe_print(f"[FAIL] Payment for {guest_name} failed.")
     return {"status": "failed", "provider": None}
 

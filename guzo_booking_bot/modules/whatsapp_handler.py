@@ -8,6 +8,6 @@ def handle_whatsapp_message(sender_number, text):
     try:
         hotel, guest, check_in, check_out, room = [x.strip() for x in text.split(",")]
         handle_booking(hotel, guest, check_in, check_out, room, source="WhatsApp", contact=sender_number)
-        return "Booking received ✅"
+        return "Booking received ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ"
     except Exception as e:
         return f"Error: {e}"

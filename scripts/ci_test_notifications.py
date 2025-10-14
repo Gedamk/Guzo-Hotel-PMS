@@ -44,48 +44,48 @@ message = (
 def test_email():
     try:
         notify.send_email(to_email=TEST_EMAIL, subject="CI/CD Test Email", body=message)
-        logger.info("✅ Email test sent successfully")
+        logger.info("Ã¢ÂÂ Email test sent successfully")
     except Exception as e:
-        logger.error(f"❌ Email test failed: {e}")
+        logger.error(f"Ã¢ÂÂ Email test failed: {e}")
 
 def test_sms():
     try:
         notify.send_sms(to_phone=TEST_PHONE, message=message)
-        logger.info("✅ SMS test sent successfully")
+        logger.info("Ã¢ÂÂ SMS test sent successfully")
     except Exception as e:
-        logger.error(f"❌ SMS test failed: {e}")
+        logger.error(f"Ã¢ÂÂ SMS test failed: {e}")
 
 def test_whatsapp():
     try:
         notify.send_whatsapp(to_phone=TEST_PHONE, message=message)
-        logger.info("✅ WhatsApp test sent successfully")
+        logger.info("Ã¢ÂÂ WhatsApp test sent successfully")
     except Exception as e:
-        logger.error(f"❌ WhatsApp test failed: {e}")
+        logger.error(f"Ã¢ÂÂ WhatsApp test failed: {e}")
 
 def test_telegram():
     if cfg.TELEGRAM_TOKEN:
         try:
             notify.send_telegram(chat_id=TEST_TELEGRAM_ID, message=message)
-            logger.info("✅ Telegram test sent successfully")
+            logger.info("Ã¢ÂÂ Telegram test sent successfully")
         except Exception as e:
-            logger.error(f"❌ Telegram test failed: {e}")
+            logger.error(f"Ã¢ÂÂ Telegram test failed: {e}")
 
 def test_viber():
     if cfg.VIBER_API_KEY:
         try:
             notify.send_viber(to_phone=TEST_PHONE, message=message)
-            logger.info("✅ Viber test sent successfully")
+            logger.info("Ã¢ÂÂ Viber test sent successfully")
         except Exception as e:
-            logger.error(f"❌ Viber test failed: {e}")
+            logger.error(f"Ã¢ÂÂ Viber test failed: {e}")
 
 def run_all_tests():
-    logger.info("🔹 Running all notification tests...")
+    logger.info("Ã°ÂÂÂ¹ Running all notification tests...")
     test_email()
     test_sms()
     test_whatsapp()
     test_telegram()
     test_viber()
-    logger.info("🔹 All notification tests completed")
+    logger.info("Ã°ÂÂÂ¹ All notification tests completed")
 
 if __name__ == "__main__":
     run_all_tests()

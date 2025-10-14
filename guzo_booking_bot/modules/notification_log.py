@@ -39,7 +39,7 @@ def get_notification_sheet():
             ws.append_row(NOTIFICATION_HEADER)
         return ws
     except Exception as e:
-        logger.error(f"❌ Failed to authenticate Notification Sheet: {e}")
+        logger.error(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Failed to authenticate Notification Sheet: {e}")
         raise
 
 
@@ -61,6 +61,6 @@ def log_notification(guest_name: str, contact: str, channel: str, status: str, m
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         row = [guest_name, contact, channel, status, message, timestamp]
         ws.append_row(row)
-        logger.info(f"📋 Notification logged: {guest_name} | {contact} | {channel} | {status}")
+        logger.info(f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Notification logged: {guest_name} | {contact} | {channel} | {status}")
     except Exception as e:
-        logger.error(f"❌ Failed to log notification: {e}")
+        logger.error(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Failed to log notification: {e}")

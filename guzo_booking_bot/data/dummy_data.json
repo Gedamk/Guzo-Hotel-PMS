@@ -1,0 +1,37 @@
+{
+  "property_name": "Guzo Addis Hotel",
+  "total_bookings": 128,
+  "occupancy_rate": 72,
+  "revenue_total": 410000,
+  "cancellations": 7,
+  "repeat_guests": 14,
+  "top_channel": "Booking.com",
+
+  "mtd_bookings": 320,
+  "mtd_revenue": 960000,
+  "mtd_occupancy": 68,
+
+  "yoy_bookings_pct": 12,
+  "yoy_revenue_pct": 15,
+  "yoy_occupancy_pct": 9,
+
+  "adr": 3200,
+  "revpar": 2176,
+
+  "occupancy_series": [
+    ["Mon", 68],
+    ["Tue", 70],
+    ["Wed", 74],
+    ["Thu", 72],
+    ["Fri", 76],
+    ["Sat", 80],
+    ["Sun", 65]
+  ],
+
+  "revenue_by_channel": {
+    "Booking.com": 230000,
+    "Expedia": 80000,
+    "Direct": 70000,
+    "Agoda": 30000
+  }
+}
