@@ -1,0 +1,29 @@
+{
+  "HOTELS": [
+    {
+      "name": "Sofi Hotel",
+      "sheet_id": "1YltAe8EAo5LGDt5r5PnrbU9RmE8TS8no8ryd5-3vxb8",
+      "email": "sofi@guzoassist.com"
+    },
+    {
+      "name": "Sky Light Hotel",
+      "sheet_id": "1VAnieaVMqh_y-17hifwYIUFpxUj5_oD2QS0i-kyD8XQ",
+      "email": "skylight@guzoassist.com"
+    },
+    {
+      "name": "Haile Resort",
+      "sheet_id": "1ny6-MShhSGb4_lXf7PfB25pMTL9chfSgBqobcPngcGQ",
+      "email": "haile@guzoassist.com"
+    },
+    {
+      "name": "Lewi Resort & Spa",
+      "sheet_id": "1lKsz6XHzdSfegltfeFW7CyK5dYwTRLLqUvPqXMQlwy4",
+      "email": "lewi@guzoassist.com"
+    },
+    {
+      "name": "Hilton Addis Hotel",
+      "sheet_id": "18VU53Q1vXGYo4FKXbc6QJF1e2rUjhMdBDsxzIprS5Ok",
+      "email": "hilton@guzoassist.com"
+    }
+  ]
+}

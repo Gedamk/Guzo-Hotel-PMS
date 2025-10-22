@@ -9,6 +9,9 @@ import re
 from datetime import datetime
 from guzo_booking_bot.utils.hotel_directory import fetch_hotel_data
 
+def process_message(update, context):
+    # ...handle incoming Telegram message...
+    pass
 
 def detect_language(text: str) -> str:
     """Detect basic language: Amharic vs English."""

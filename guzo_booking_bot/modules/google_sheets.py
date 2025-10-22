@@ -1,32 +1,34 @@
+# -*- coding: utf-8 -*-
 """
 Google Sheets Module
+--------------------
 Handles interactions with Google Sheets for bookings, hotel contacts, and notifications.
 Now includes local SQLite fallback for failed logs.
 """
 
-import gspread
-from oauth2client.service_account import ServiceAccountCredentials
-from datetime import datetime
-import sqlite3
 import os
+import gspread
+import sqlite3
+from datetime import datetime
+from oauth2client.service_account import ServiceAccountCredentials
 
 # Centralized config (.env is loaded in config.py)
 from guzo_booking_bot import config
 
-# === Google Sheets Authentication ===
+# === GOOGLE SHEETS CONFIGURATION ===
 SCOPE = [
     "https://spreadsheets.google.com/feeds",
     "https://www.googleapis.com/auth/drive"
 ]
 
-CREDS_FILE = CREDS_FILE = config.GOOGLE_CREDS
+CREDS_FILE = config.GOOGLE_CREDS
 SPREADSHEET_GUEST_ASSIST_ID = config.SPREADSHEET_GUEST_ASSIST_ID
 SPREADSHEET_HOTEL_CONTACTS_ID = config.SPREADSHEET_HOTEL_CONTACTS_ID
 SPREADSHEET_NOTIFICATIONSLOG_ID = config.SPREADSHEET_NOTIFICATIONSLOG_ID
 
 client = None
 
-# === SQLite Local Fallback ===
+# === LOCAL SQLITE FALLBACK ===
 LOCAL_DB = os.path.join("storage", "logs.db")
 
 def init_local_db():
@@ -72,9 +74,9 @@ def save_to_local(entry):
     ))
     conn.commit()
     conn.close()
-    print(f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¾ Saved log locally for retry: {entry.get('Guest Name')} ({entry.get('Channel')})")
+    print(f"💾 Saved log locally for retry: {entry.get('Guest Name')} ({entry.get('Channel')})")
 
-
+# === GOOGLE SHEETS CLIENT INITIALIZATION ===
 def init_client():
     """Initialize the Google Sheets client safely."""
     global client
@@ -83,19 +85,19 @@ def init_client():
     try:
         creds = ServiceAccountCredentials.from_json_keyfile_name(CREDS_FILE, SCOPE)
         client = gspread.authorize(creds)
-        print("ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Successfully authenticated with Google Sheets.")
+        print("✅ Successfully authenticated with Google Sheets.")
     except FileNotFoundError:
-        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Credentials file not found at {CREDS_FILE}.")
+        print(f"❌ Credentials file not found at {CREDS_FILE}.")
         client = None
     except Exception as e:
-        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Failed to authenticate with Google Sheets: {e}")
+        print(f"❌ Failed to authenticate with Google Sheets: {e}")
         client = None
     return client
 
-# === Helper: open sheet safely ===
+# === OPEN SHEET SAFELY ===
 def _open_sheet(sheet_id, sheet_name="Unknown"):
     if not sheet_id:
-        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ No spreadsheet ID provided for {sheet_name}. Check your .env file.")
+        print(f"⚠️ No spreadsheet ID provided for {sheet_name}. Check your config or .env file.")
         return None
     c = init_client()
     if not c:
@@ -103,24 +105,48 @@ def _open_sheet(sheet_id, sheet_name="Unknown"):
     try:
         return c.open_by_key(sheet_id).sheet1
     except gspread.SpreadsheetNotFound:
-        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Spreadsheet {sheet_name} not found or not shared with service account. ID={sheet_id}")
+        print(f"⚠️ Spreadsheet '{sheet_name}' not found or not shared with service account. ID={sheet_id}")
     except Exception as e:
-        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Error opening {sheet_name} sheet (ID={sheet_id}): {e}")
+        print(f"⚠️ Error opening {sheet_name} sheet (ID={sheet_id}): {e}")
     return None
 
-# === Guest Bookings ===
-def get_guest_assist():
-    """Fetch all guest bookings from Guest Assist sheet."""
+# === GUEST BOOKINGS ===
+def get_new_guest_bookings():
+    """Fetch all NEW guest bookings (Status != 'Processed')"""
     sheet = _open_sheet(SPREADSHEET_GUEST_ASSIST_ID, "Guest Assist")
     if not sheet:
         return []
     try:
-        return sheet.get_all_records()
+        data = sheet.get_all_records()
+        new_bookings = [row for row in data if row.get("Status", "").lower() != "processed"]
+        return new_bookings
     except Exception as e:
-        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Error fetching Guest Assist sheet: {e}")
+        print(f"⚠️ Error fetching Guest Assist sheet: {e}")
         return []
 
-# === Hotel Contacts ===
+def update_booking_status(guest_name, status="Processed"):
+    """Update booking status for a specific guest."""
+    sheet = _open_sheet(SPREADSHEET_GUEST_ASSIST_ID, "Guest Assist")
+    if not sheet:
+        return "❌ Sheet not available."
+
+    try:
+        data = sheet.get_all_records()
+        headers = sheet.row_values(1)
+        status_col = headers.index("Status") + 1
+        name_col = headers.index("Guest Name")
+
+        for i, row in enumerate(data, start=2):
+            if row.get("Guest Name") == guest_name:
+                sheet.update_cell(i, status_col, status)
+                print(f"✅ Updated booking for {guest_name} → {status}")
+                return f"✅ Updated booking for {guest_name} → {status}"
+        return f"⚠️ Guest '{guest_name}' not found."
+    except Exception as e:
+        print(f"⚠️ Error updating booking for {guest_name}: {e}")
+        return f"❌ Error updating booking: {e}"
+
+# === HOTEL CONTACTS ===
 def get_hotel_contacts():
     """Return all hotel contacts as a list of dicts."""
     sheet = _open_sheet(SPREADSHEET_HOTEL_CONTACTS_ID, "Hotel Contacts")
@@ -137,10 +163,10 @@ def get_hotel_contacts():
             for row in records if row.get("Hotel name")
         ]
     except Exception as e:
-        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Error fetching hotel contacts: {e}")
+        print(f"⚠️ Error fetching hotel contacts: {e}")
         return []
 
-# === Notifications Log (with Fallback) ===
+# === NOTIFICATION LOG ===
 def add_notification_log(entry):
     """
     Add a log entry to NotificationsLog sheet.
@@ -163,7 +189,8 @@ def add_notification_log(entry):
             entry.get("ErrorMessage", ""),
         ]
         sheet.append_row(row)
-        print(f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Logged {entry.get('Channel')} notification for {entry.get('Guest Name')} ({entry.get('Language')}).")
+        print(f"📝 Logged {entry.get('Channel')} notification for {entry.get('Guest Name')} ({entry.get('Language')}).")
     except Exception as e:
-        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¯ÃÂÃÂÃÂÃÂ¸ÃÂÃÂÃÂÃÂ Sheets logging failed ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ saving locally. Error: {e}")
+        print(f"⚠️ Sheets logging failed, saving locally instead. Error: {e}")
         save_to_local(entry)
+

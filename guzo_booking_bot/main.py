@@ -1,57 +1,85 @@
 # -*- coding: utf-8 -*-
 """
 Guzo Guest Assist – Multi-Channel Bot
-Main Telegram entrypoint
+-------------------------------------
+Main Telegram entry point for Guzo Guest Assist.
+Handles guest and hotel messages, registration, and routing.
 """
 
 import sys
 import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-
 import logging
 from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
-from guzo_booking_bot.message_router import process_message
 from dotenv import load_dotenv
 
-# Load environment variables from .env
-load_dotenv()
+# ✅ Add parent directory to path (so imports work)
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(BASE_DIR)
 
-# Configure logging for console + file output
+# ✅ Internal imports
+from guzo_booking_bot.message_router import process_message
+from guzo_booking_bot.modules.register_hotel import register_hotel  # 🔹 new import
+
+# ✅ Load environment variables
+load_dotenv()
+telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
+
+if not telegram_token:
+    print("❌ TELEGRAM_BOT_TOKEN missing in .env file.")
+    sys.exit(1)
+
+# ✅ UTF-8 Fix
+sys.stdout.reconfigure(encoding="utf-8")
+
+# ======================================================
+# LOGGING
+# ======================================================
+os.makedirs(os.path.join(BASE_DIR, "logs"), exist_ok=True)
 logging.basicConfig(
     format="%(asctime)s - GuzoBot - %(levelname)s - %(message)s",
     level=logging.INFO,
     handlers=[
-        logging.FileHandler("bot.log", encoding="utf-8"),
-        logging.StreamHandler()
+        logging.FileHandler(os.path.join(BASE_DIR, "logs", "bot.log"), encoding="utf-8"),
+        logging.StreamHandler(sys.stdout)
     ]
 )
+logger = logging.getLogger("GuzoBot")
 
-# --- Telegram Bot Handlers ---
+# ======================================================
+# TELEGRAM HANDLERS
+# ======================================================
 
 async def start(update, context):
-    """Welcome message when user starts the bot."""
-    await update.message.reply_text("Welcome to Guzo Guest Assist! How can we help you today?")
+    """Welcome message."""
+    await update.message.reply_text("👋 Welcome to Guzo Guest Assist! How can we help you today?")
+    logger.info(f"Started chat with {update.effective_user.username or update.effective_user.id}")
 
 async def handle_text(update, context):
-    """Handle any guest message and send reply."""
+    """Handle guest/hotel messages."""
     user = update.effective_user
-    message_text = update.message.text
-    reply_text = process_message("telegram", user.id, message_text)
-    await update.message.reply_text(reply_text)
+    text = update.message.text
+    logger.info(f"Message from {user.username or user.id}: {text}")
+    reply = process_message("telegram", user.id, text)
+    await update.message.reply_text(reply)
 
+# ======================================================
+# MAIN FUNCTION
+# ======================================================
 def main():
-    """Run Telegram bot."""
-    telegram_token = os.getenv("TELEGRAM_TOKEN")
-    if not telegram_token:
-        print("❌ TELEGRAM_TOKEN missing in .env file.")
-        return
+    try:
+        logger.info("🚀 Launching Telegram Bot...")
+        app = ApplicationBuilder().token(telegram_token).build()
 
-    app = ApplicationBuilder().token(telegram_token).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+        # 🔹 Add command handlers
+        app.add_handler(CommandHandler("start", start))
+        app.add_handler(CommandHandler("register", register_hotel))  # ✅ new /register handler
+        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
 
-    print("Guzo Guest Assist Telegram bot is running...")
-    app.run_polling()
+        print("🤖 Guzo Guest Assist Telegram bot is running...")
+        app.run_polling()
+    except Exception as e:
+        logger.error(f"❌ Fatal error: {e}")
+        print(f"❌ Fatal error: {e}")
 
 if __name__ == "__main__":
     main()

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Guzo Guest Assist â€“ Weekly Summary</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background-color: #f5f7fa;
+    color: #333;
+    padding: 0;
+    margin: 0;
+  }
+  .container {
+    max-width: 650px;
+    background: #fff;
+    margin: 20px auto;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+  h1 {
+    font-size: 22px;
+    color: #004aad;
+    text-align: center;
+    margin-bottom: 5px;
+  }
+  h2 {
+    font-size: 16px;
+    color: #555;
+    text-align: center;
+    margin-top: 0;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 25px;
+  }
+  th, td {
+    border: 1px solid #ddd;
+    padding: 10px 8px;
+    text-align: left;
+    font-size: 14px;
+  }
+  th {
+    background-color: #004aad;
+    color: #fff;
+    text-transform: uppercase;
+    font-size: 13px;
+  }
+  tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  .footer {
+    text-align: center;
+    font-size: 12px;
+    color: #888;
+    margin-top: 20px;
+  }
+  .success {
+    color: #008000;
+    font-weight: 600;
+  }
+  .warning {
+    color: #ff8c00;
+    font-weight: 600;
+  }
+  .error {
+    color: #c0392b;
+    font-weight: 600;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>í¿¨ Guzo Guest Assist</h1>
+    <h2>Weekly Summary Report â€“ {{ week_range }}</h2>
+    <p>Dear Manager,</p>
+    <p>
+      Below is the automated weekly summary for all partner hotels connected to the Guzo Guest Assist system.
+    </p>
+    <table>
+      <thead>
+        <tr>
+          <th>Hotel Name</th>
+          <th>Status</th>
+          <th>Details</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{ table_rows }}
+      </tbody>
+    </table>
+
+    <p style="margin-top: 25px;">
+      <strong>Generated:</strong> {{ generated_time }}<br>
+      <strong>System:</strong> Guzo Guest Assist v11.5
+    </p>
+
+    <div class="footer">
+      í³§ Sent automatically by <b>Guzo Guest Assist</b><br>
+      <a href="https://guzoassist.com" target="_blank">www.guzoassist.com</a>
+    </div>
+  </div>
+</body>
+</html>
