@@ -49,3 +49,4 @@ guzo_service.json
 # System / IDE files
 .vscode/
 .idea/
+node_modules/
