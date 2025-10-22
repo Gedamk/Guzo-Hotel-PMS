@@ -1,0 +1,44 @@
+{
+  "HOTELS": [
+    {
+      "id": "H001",
+      "name": "Kaku",
+      "city": "Unknown",
+      "email": "",
+      "telegram_chat_id": "5582570428",
+      "sheet_id": "",
+      "phone": "",
+      "registered_at": "2025-10-21 15:24:50"
+    },
+    {
+      "id": "H002",
+      "name": "Lidet",
+      "city": "Unknown",
+      "email": "",
+      "telegram_chat_id": "5651082512",
+      "sheet_id": "",
+      "phone": "",
+      "registered_at": "2025-10-21 15:24:50"
+    },
+    {
+      "id": "H003",
+      "name": "Guzo - Booking Assist",
+      "city": "Unknown",
+      "email": "",
+      "telegram_chat_id": "-4989050231",
+      "sheet_id": "",
+      "phone": "",
+      "registered_at": "2025-10-21 15:24:51"
+    },
+    {
+      "id": "H004",
+      "name": "Nahom",
+      "city": "Unknown",
+      "email": "",
+      "telegram_chat_id": "8090574639",
+      "sheet_id": "",
+      "phone": "",
+      "registered_at": "2025-10-21 16:58:15"
+    }
+  ]
+}

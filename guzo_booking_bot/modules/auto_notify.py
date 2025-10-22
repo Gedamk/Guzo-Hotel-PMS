@@ -12,4 +12,3 @@ print("Guzo Guest Assist Auto Notification started. Monitoring GuestAssist sheet
 while True:
     schedule.run_pending()
     time.sleep(1)
-``
