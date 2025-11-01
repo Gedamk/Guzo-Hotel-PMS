@@ -1,0 +1,8 @@
+repos:
+  - repo: local
+    hooks:
+      - id: utf8-check
+        name: UTF-8 Encoding Check
+        entry: python tools/check_utf8_integrity.py
+        language: system
+        types: [python]

@@ -1,0 +1,86 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Guzo Guest Assist Ã¢â‚¬â€œ Booking Confirmation</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f6f8fb;
+    color: #333;
+    margin: 0;
+    padding: 0;
+  }
+  .container {
+    max-width: 640px;
+    margin: 30px auto;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+  }
+  .header {
+    background: #0078d4;
+    color: #ffffff;
+    text-align: center;
+    padding: 16px 0;
+  }
+  .header h2 {
+    margin: 0;
+    font-size: 22px;
+  }
+  .content {
+    padding: 24px;
+    line-height: 1.6;
+    font-size: 15px;
+  }
+  blockquote {
+    border-left: 4px solid #0078d4;
+    margin: 12px 0;
+    padding-left: 12px;
+    color: #444;
+    font-style: italic;
+  }
+  .amharic {
+    font-family: "Noto Sans Ethiopic", "Abyssinica SIL", sans-serif;
+    color: #222;
+    margin-top: 20px;
+    background: #f2f6fa;
+    padding: 10px 15px;
+    border-radius: 6px;
+  }
+  .footer {
+    text-align: center;
+    font-size: 12px;
+    color: #777;
+    padding: 14px 0;
+    background: #fafafa;
+    border-top: 1px solid #eee;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h2>Ã­Â»Ã¯Â¸ Booking Confirmation</h2>
+    </div>
+    <div class="content">
+      <p>Dear <strong>{{guest_name}}</strong>,</p>
+      <p>We have received your booking request for <strong>{{hotel_name}}</strong>:</p>
+      <blockquote>{{message}}</blockquote>
+      <p>Our reservation team will confirm your stay shortly.</p>
+      <p><b>Date:</b> {{date}}</p>
+
+      <div class="amharic">
+        <p>Ã¡Å Â­Ã¡â€°Â¥Ã¡Ë†Â­Ã¡â€°Âµ Ã¡Å Â¥Ã¡Å â€¢Ã¡Å’Ã¡â€¹Â³Ã¡Â£ Ã¡â€¹Â¨Ã¡Ë†ËœÃ¡â€¹Â«Ã¡â€¹Â£ Ã¡Å’Â¥Ã¡â€¹Â«Ã¡â€°â€Ã¡â€¹Ã¡Å â€¢ Ã¡â€°Â°Ã¡â€°â‚¬Ã¡â€°Â¥Ã¡â€¹Â«Ã¡Ë†Ë†Ã¡Å â€¢Ã¡Â¢ Ã¡â€°Â Ã¡â€°â€¦Ã¡Ë†Â­Ã¡â€°Â¡ Ã¡â€°Â£Ã¡Ë†Ë†Ã¡Ë†Ã¡â€¹Â«Ã¡â€°Â½Ã¡Å â€¢ Ã¡â€¹Â­Ã¡Ë†ËœÃ¡Ë†Ã¡Ë†ÂµÃ¡â€¹Ã¡â€°Â³Ã¡Ë†Ã¡Â¢</p>
+      </div>
+
+      <p>Thank you for choosing <b>Guzo Guest Assist</b>.</p>
+    </div>
+    <div class="footer">
+      Ã‚Â© {{year}} Guzo Guest Assist Ã¢â‚¬â€ Your Stay, Our Assist Ã­Â·ÂªÃ­Â·Â¹
+    </div>
+  </div>
+</body>
+</html>
+

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cancellation Confirmation – Guzo Guest Assist</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Helvetica, Arial, sans-serif;
+      margin: 0; padding: 0;
+      background-color: #f4f7fa;
+      color: #333;
+    }
+    .header {
+      background-color: #c1272d;
+      color: #fff;
+      text-align: center;
+      padding: 25px 0;
+      border-top-left-radius: 10px;
+      border-top-right-radius: 10px;
+    }
+    .header img {
+      max-width: 120px;
+      margin-bottom: 8px;
+    }
+    .container {
+      max-width: 640px;
+      margin: 40px auto;
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    .content { padding: 30px; }
+    h1 { color: #c1272d; }
+    p { line-height: 1.7; font-size: 15px; }
+    .footer {
+      font-size: 13px;
+      text-align: center;
+      color: #666;
+      margin-top: 25px;
+    }
+    a { color: #c1272d; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="https://i.imgur.com/YxIoX5K.png" alt="Guzo Logo">
+      <h2>Guzo Guest Assist</h2>
+      <p>Your Stay, Our Assist</p>
+    </div>
+    <div class="content">
+      <h1>Booking Cancellation</h1>
+
+      <p>Dear <strong>{{guest_name}}</strong>,</p>
+      <p>We’ve received your cancellation request for 
+        <strong>{{hotel_name}}</strong>.  
+        Your booking record will be updated accordingly.</p>
+
+      <p><strong>Details:</strong><br/>
+      {{message}}<br/>
+      <em>Date:</em> {{date}}</p>
+
+      <hr/>
+      <p><strong>Amharic:</strong><br/>
+      ❌ የ<strong>{{hotel_name}}</strong> መያዣ መሰረዝ ጥያቄዎን ተቀብያለን።  
+      መያዣዎ በቅርቡ ይዘምናል።</p>
+
+      <div class="footer">
+        — The <strong>Guzo Guest Assist</strong> Team<br/>
+        ✉️ reports@guzoassist.com | ��� <a href="#">www.guzoassist.com</a><br/>
+        &copy; {{year}} Guzo Guest Assist
+      </div>
+    </div>
+  </div>
+</body>
+</html>

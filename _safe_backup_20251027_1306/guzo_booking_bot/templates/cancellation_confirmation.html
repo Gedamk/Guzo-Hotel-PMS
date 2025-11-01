@@ -1,0 +1,73 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Guzo Guest Assist â€“ Cancellation Confirmation</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #f6f8fb;
+    color: #333;
+    margin: 0;
+    padding: 0;
+  }
+  .container {
+    max-width: 640px;
+    margin: 30px auto;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    overflow: hidden;
+  }
+  .header {
+    background: #d93025;
+    color: white;
+    text-align: center;
+    padding: 15px 0;
+  }
+  .content {
+    padding: 25px;
+    line-height: 1.6;
+  }
+  .footer {
+    text-align: center;
+    font-size: 12px;
+    color: #777;
+    margin: 20px 0 10px;
+  }
+  .amharic {
+    font-family: 'Noto Sans Ethiopic', sans-serif;
+    color: #222;
+    margin-top: 20px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <h2>âŒ Cancellation Confirmation</h2>
+  </div>
+  <div class="content">
+    <p>Dear <strong>{{guest_name}}</strong>,</p>
+
+    <p>We have received your cancellation request for <strong>{{hotel_name}}</strong>:</p>
+    <blockquote>{{message}}</blockquote>
+
+    <p>Your reservation has been marked for cancellation on <b>{{date}}</b>.</p>
+    <p>Weâ€™re sorry to see you go, but we hope to host you again soon.</p>
+
+    <div class="amharic">
+      <p>áŠ­á‰¥áˆ­á‰µ áŠ¥áŠ•áŒá‹³á£ á‹¨áˆ˜á‹«á‹£á‹áŠ• áˆµáˆ¨á‹› áŒ¥á‹«á‰„ á‰°á‰€á‰¥á‹«áˆˆáŠ•á¢ á‰ á‰…áˆ­á‰¡ á‹¨á‰¦á‰³á‹ áˆµáˆ¨á‹› á‹­á‰°áŒˆá‰ áˆ«áˆá¢</p>
+      <p>á‹ˆá‹°áŠá‰µ áŠ¥áŠ•á‹°áŒˆáŠ“ áŠ¥áŠ•áŒˆáŠ“áŠ á‰ áˆ°áˆ‹áˆá¢</p>
+    </div>
+
+    <p>Thank you for choosing <b>Guzo Guest Assist</b>.</p>
+  </div>
+
+  <div class="footer">
+    Â© {{year}} Guzo Guest Assist â€” Your Stay, Our Assist í¼
+  </div>
+</div>
+</body>
+</html>
+

@@ -1,9 +1,0 @@
-From: John Doe <johndoe@example.com>
-To: gedam_ka@yahoo.com
-Subject: New Booking Request
-
-Name: John Doe
-Check-in: 2025-10-25
-Nights: 2
-Room: Deluxe Suite
-Rate: 3200
