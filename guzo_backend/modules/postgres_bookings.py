@@ -2,8 +2,34 @@
 """
 postgres_bookings.py – Save Guzo bookings into PostgreSQL
 
-This version is simplified to match your current `bookings` table,
-WITHOUT needing any ALTER TABLE / superuser access.
+This version is designed to work with your current `bookings` table
+and booking flow, without needing any ALTER TABLE / superuser access.
+
+It assumes:
+
+- A `bookings` table with (at least) these columns:
+
+    confirmation_id
+    hotel_id
+    guest_name
+    guest_email
+    check_in_date
+    check_out_date
+    nights
+    room_type
+    rate_per_night_etb
+    total_revenue_etb
+    payment_method
+    booking_status
+    payment_status
+
+- A `hotels` table with:
+
+    id
+    property_code   (unique per hotel)
+
+- Optionally, a UNIQUE or PRIMARY KEY constraint on `confirmation_id`
+  in `bookings` so that ON CONFLICT (confirmation_id) works.
 """
 
 import os
@@ -80,10 +106,10 @@ def insert_booking_from_sheet_dict(booking: Dict[str, Any]) -> int:
         "Auto Reply"
         "Remark"
 
-    We also expect:
+    We also expect EXTRA FIELDS from the bot flow (not in the sheet):
 
-        property_code   (e.g., DRE001) – used to resolve hotel_id
-        guest_email     – from the bot flow
+        property_code   (e.g., "DRE001") – used to resolve hotel_id
+        guest_email     – email collected by the bot
 
     This version only writes to the columns that actually
     exist in your current `bookings` table.
@@ -218,7 +244,8 @@ def insert_booking_from_sheet_dict(booking: Dict[str, Any]) -> int:
                 logger.info("[PostgresBookings] Inserting booking: %s", params)
 
                 cur.execute(sql, params)
-                new_id = cur.fetchone()[0]
+                row = cur.fetchone()
+                new_id = row[0] if row else None
 
                 logger.info(
                     "[PostgresBookings] ✅ Saved booking %s to Postgres with id=%s",
@@ -235,8 +262,34 @@ def insert_booking_from_sheet_dict(booking: Dict[str, Any]) -> int:
 # ----------------------------------------
 def save_booking_to_postgres(booking: Dict[str, Any]) -> int:
     """
-    Old name kept for compatibility with message_router.py.
+    Old name kept for compatibility with existing code
+    (e.g. message_router / booking_flow).
+
     Simply forwards to insert_booking_from_sheet_dict().
     """
     return insert_booking_from_sheet_dict(booking)
 
+
+if __name__ == "__main__":
+    # Optional manual test (you can run: python -m guzo_backend.modules.postgres_bookings)
+    from datetime import date
+
+    sample = {
+        "confirmation_id": "TEST-123",
+        "property_code": "TEST_HOTEL",
+        "guest_name": "Test Guest",
+        "guest_email": "test@example.com",
+        "check_in_date": date.today(),
+        "check_out_date": date.today(),
+        "nights": 1,
+        "room_type": "Test Room",
+        "rate_per_night_etb": 1000,
+        "total_revenue_etb": 1000,
+        "payment_method": "Cash",
+        "booking_status": "Confirmed",
+        "payment_status": "Pending",
+    }
+
+    print("Inserting test booking...")
+    bid = save_booking_to_postgres(sample)
+    print("Inserted booking id:", bid)
