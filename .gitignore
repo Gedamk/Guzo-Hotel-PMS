@@ -51,3 +51,5 @@ guzo_service.json
 .idea/
 node_modules/
 nul
+bash.exe.stackdump
+bot_log.txt
