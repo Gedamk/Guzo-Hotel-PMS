@@ -1,0 +1,5 @@
+@echo off
+cd /d "C:\Users\Gedan\Desktop\Guzo"
+call venv\Scripts\activate
+python -m guzo_booking_bot.modules.message_router
+pause

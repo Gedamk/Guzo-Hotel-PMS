@@ -1,0 +1,12 @@
+.hero-vis{
+  height:260px; border-radius:16px; border:1px solid var(--brand-line);
+  background:linear-gradient(135deg, var(--brand-sky), white);
+  position:relative; overflow:hidden;
+}
+@media (min-width:640px){ .hero-vis{ height:300px } }
+.hero-vis__inner{ position:absolute; inset:0; padding:20px; }
+.hero-vis__title{ font-size:13px; font-weight:700; color: color-mix(in oklab, var(--brand-stone) 70%, white); margin-bottom:10px }
+
+.trust-row{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:18px }
+@media (min-width:640px){ .trust-row{ grid-template-columns:repeat(4,1fr) } }
+.trust-card{ text-align:center; font-size:12px; font-weight:700; padding:12px 0 }

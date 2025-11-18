@@ -1,21 +1,35 @@
 # -*- coding: utf-8 -*-
 """
-Payment Receipts
-Generates and sends multilingual receipts for all payment providers.
-Auto-detects guest language from booking data.
-Supports Email, WhatsApp, and Telegram notifications.
+payment_receipts.py – Guzo Guest Assist Multilingual Payment Receipts
+----------------------------------------------------------------------
+Generates and sends multilingual payment receipts for Stripe, Telebirr,
+and future PayPal transactions.
+
+✅ UTF-8 safe and secure
+✅ Auto-detects guest language from booking data
+✅ Sends via Email, WhatsApp, and Telegram (manager alerts)
 """
 
+import os
 from datetime import datetime
-from guzo_backend.modules import email_sender, whatsapp_sender, telegram_sender
+from dotenv import load_dotenv
+from guzo_backend.modules import (
+    email_sender,
+    whatsapp_sender,
+    telegram_notifier as telegram_sender,
+)
 
-# ==============================
-# Multilingual Templates
-# ==============================
+# Load environment variables
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../../.env"))
+MANAGER_TELEGRAM_CHAT_ID = os.getenv("MANAGER_TELEGRAM_CHAT_ID", "5582570428")
+
+# =====================================================
+# Multilingual Receipt Templates
+# =====================================================
 TEMPLATES = {
     "en": (
         "Dear {guest_name},\n\n"
-        "ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Your payment has been processed.\n\n"
+        "Your payment has been successfully processed.\n\n"
         "Provider: {provider}\n"
         "Amount: {amount}\n"
         "Status: {status}\n"
@@ -24,35 +38,35 @@ TEMPLATES = {
         "Thank you for booking with Guzo Guest Assist!"
     ),
     "am": (
-        "ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂµ {guest_name},\n\n"
-        "ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ­ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ«ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ³ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ­ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ·ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢\n\n"
-        "ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ­: {provider}\n"
-        "ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ: {amount}\n"
-        "ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ³: {status}\n"
-        "ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ»: {reference}\n"
-        "ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ: {timestamp}\n\n"
-        "ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¨Guzo Guest Assist ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ­ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¥ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ½ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¥ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ!"
+        "ውድ {guest_name},\n\n"
+        "ክፍያዎ ተሳክቶ ተከናውኗል።\n\n"
+        "አቅራቢ: {provider}\n"
+        "መጠን: {amount}\n"
+        "ሁኔታ: {status}\n"
+        "መዝገብ ቁጥር: {reference}\n"
+        "ቀን: {timestamp}\n\n"
+        "ከGuzo Guest Assist ጋር ያስቀመጡትን በጣም እናመሰግናለን!"
     ),
     "om": (
         "Kabajamoo {guest_name},\n\n"
-        "ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Kaffaltiin kee milkaa'ee raawwatameera.\n\n"
-        "Ogeessa Tajaajilaa: {provider}\n"
+        "Kaffaltiin kee milkaa’een raawwatameera.\n\n"
+        "Tajaajila: {provider}\n"
         "Hanga: {amount}\n"
         "Haala: {status}\n"
         "Lakkoofsa Fudhannaa: {reference}\n"
         "Guyyaa: {timestamp}\n\n"
-        "Guzo Guest Assist waliin galma'uu kee galatoomaa!"
+        "Guzo Guest Assist waliin galma’uun kee galatoomaa!"
     ),
 }
 
 DEFAULT_LANGUAGE = "en"
 
-# ==============================
+# =====================================================
 # Receipt Generator
-# ==============================
+# =====================================================
 def generate_receipt(booking, provider, amount, currency, status, reference):
     """
-    Build a receipt dictionary using booking record + payment info.
+    Build a receipt dictionary from booking and payment info.
     Auto-detects language from booking['Language'].
     """
     language = booking.get("Language", DEFAULT_LANGUAGE).lower()
@@ -63,7 +77,7 @@ def generate_receipt(booking, provider, amount, currency, status, reference):
         "guest_name": booking.get("Guest Name", "Guest"),
         "provider": provider.capitalize(),
         "amount": f"{amount:.2f} {currency.upper()}",
-        "status": status,
+        "status": status.capitalize(),
         "reference": reference,
         "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         "language": language,
@@ -71,51 +85,72 @@ def generate_receipt(booking, provider, amount, currency, status, reference):
         "contact_phone": booking.get("Contact Phone", ""),
     }
 
-
-# ==============================
+# =====================================================
 # Receipt Dispatcher
-# ==============================
-def send_receipt(receipt, manager_alert=False):
+# =====================================================
+def send_receipt(receipt, manager_alert: bool = False):
     """
-    Send receipt across Email, WhatsApp, and (optionally) Telegram.
+    Dispatch receipt via Email, WhatsApp, and optionally Telegram.
     """
     lang = receipt.get("language", DEFAULT_LANGUAGE)
     body = TEMPLATES[lang].format(**receipt)
-    subject = f"Payment Receipt - {receipt['provider']} - Guzo Guest Assist"
+    subject = f"Payment Receipt - {receipt['provider']} | Guzo Guest Assist"
 
     # --- Email ---
     if receipt.get("contact_email"):
         try:
             email_sender.send_email(receipt["contact_email"], subject, body)
-            print(f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ§ Receipt sent via Email ({lang}) to {receipt['contact_email']}")
+            print(f"📧 Email receipt sent ({lang}) → {receipt['contact_email']}")
         except Exception as e:
-            print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Email receipt failed: {e}")
+            print(f"⚠️ Email sending failed: {e}")
 
     # --- WhatsApp ---
     if receipt.get("contact_phone"):
         try:
-            whatsapp_sender.send_whatsapp(receipt["contact_phone"], {
-                "guest_name": receipt["guest_name"],
-                "message": f"Payment confirmed: {receipt['amount']} via {receipt['provider']} (Ref: {receipt['reference']})"
-            })
-            print(f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ± Receipt sent via WhatsApp to {receipt['contact_phone']}")
+            msg = (
+                f"Dear {receipt['guest_name']}, your payment of {receipt['amount']} "
+                f"via {receipt['provider']} (Ref: {receipt['reference']}) has been processed. "
+                "Thank you for booking with Guzo Guest Assist."
+            )
+            whatsapp_sender.send_whatsapp_message(receipt["contact_phone"], msg)
+            print(f"📱 WhatsApp receipt sent → {receipt['contact_phone']}")
         except Exception as e:
-            print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ WhatsApp receipt failed: {e}")
+            print(f"⚠️ WhatsApp sending failed: {e}")
 
-    # --- Telegram (Manager Alert) ---
+    # --- Telegram Manager Alert ---
     if manager_alert:
         try:
             manager_msg = (
-                f"ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ *Payment Alert*\n\n"
-                f"Guest: {receipt['guest_name']}\n"
-                f"Provider: {receipt['provider']}\n"
-                f"Amount: {receipt['amount']}\n"
-                f"Status: {receipt['status']}\n"
-                f"Reference: {receipt['reference']}\n"
-                f"Date: {receipt['timestamp']}\n"
-                f"Language: {receipt['language'].upper()}"
+                f"🏨 *Payment Alert*\n\n"
+                f"👤 Guest: {receipt['guest_name']}\n"
+                f"💳 Provider: {receipt['provider']}\n"
+                f"💰 Amount: {receipt['amount']}\n"
+                f"📄 Status: {receipt['status']}\n"
+                f"🔖 Ref: {receipt['reference']}\n"
+                f"🕒 Date: {receipt['timestamp']}\n"
+                f"🌐 Lang: {receipt['language'].upper()}"
             )
-            telegram_sender.send_telegram_message("5582570428", manager_msg)
-            print("ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¨ Manager notified via Telegram")
+            telegram_sender.send_telegram_message(MANAGER_TELEGRAM_CHAT_ID, manager_msg)
+            print(f"📨 Manager notified via Telegram → Chat ID {MANAGER_TELEGRAM_CHAT_ID}")
         except Exception as e:
-            print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Telegram manager alert failed: {e}")
+            print(f"⚠️ Telegram manager alert failed: {e}")
+
+# =====================================================
+# Self-test (optional)
+# =====================================================
+if __name__ == "__main__":
+    dummy_booking = {
+        "Guest Name": "Test Guest",
+        "Language": "en",
+        "Contact Email": "guest@example.com",
+        "Contact Phone": "+12025550123",
+    }
+    test_receipt = generate_receipt(
+        booking=dummy_booking,
+        provider="Stripe",
+        amount=120.5,
+        currency="USD",
+        status="success",
+        reference="TEST-12345",
+    )
+    send_receipt(test_receipt, manager_alert=True)
