@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-monthly_owner_dashboard.py – Monthly Owner / Investor View (v1.0)
+monthly_owner_dashboard.py – Monthly Owner / Investor View (v1.1)
 -----------------------------------------------------------------
 Streamlit dashboard built on top of:
     guzo_backend.modules.reports_monthly_owner.get_monthly_owner_report
@@ -37,6 +37,22 @@ def _current_year_month():
 
 def _format_month(year: int, month: int) -> str:
     return f"{year}-{month:02d}"
+
+
+# ---------------------------------------------------------
+# Cached loader (best practice for performance)
+# ---------------------------------------------------------
+@st.cache_data(ttl=300)
+def load_monthly_report(year: int, month: int, property_code: str | None):
+    """
+    Cached wrapper around get_monthly_owner_report().
+    This avoids hitting Postgres on every small UI change.
+    """
+    return get_monthly_owner_report(
+        year=year,
+        month=month,
+        property_code=property_code,
+    )
 
 
 # ---------------------------------------------------------
@@ -82,15 +98,16 @@ def main():
     )
 
     if st.sidebar.button("🔄 Refresh report"):
-        st.experimental_rerun()
+        # Clear cache so new DB data is pulled
+        load_monthly_report.clear()
 
     # ---------------- Fetch report ----------------
     st.subheader(f"Summary for {_format_month(year, month)}")
 
     try:
-        report = get_monthly_owner_report(
-            year=year,
-            month=month,
+        report = load_monthly_report(
+            year=int(year),
+            month=int(month),
             property_code=property_code or None,
         )
     except Exception as e:
@@ -189,10 +206,11 @@ def main():
             import pandas as pd
 
             df_methods = pd.DataFrame(rows)
+            # Dataframe is fine to keep as use_container_width
             st.dataframe(df_methods, use_container_width=True)
 
             try:
-                # simple revenue bar chart
+                # simple revenue bar chart (Streamlit native)
                 chart_df = df_methods.set_index("Method")[["Revenue (ETB)"]]
                 st.bar_chart(chart_df)
             except Exception:
