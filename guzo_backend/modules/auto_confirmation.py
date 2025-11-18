@@ -1,113 +1,79 @@
 # -*- coding: utf-8 -*-
 """
-auto_confirmation.py – Guzo Guest Assist (v11.1)
+auto_confirmation.py – Guzo Guest Assist (v12.1)
 ------------------------------------------------
-Global hospitality-grade auto confirmation handler.
-
-✨ Features:
-• Bilingual (English + Amharic) confirmations
-• Telegram + Email + WhatsApp/SMS support
-• Auto-intent detection (booking / cancellation / general)
-• Logs every action to Google Sheets
-• Fully async + safe fallbacks
+Handles multilingual confirmations, email + Telegram
+notifications, and unified logging to hotel + central sheets.
 """
 
-import os, asyncio
-from datetime import datetime
+import os
+import random
+import asyncio
+import datetime
 from dotenv import load_dotenv
 from telegram import Bot
 from guzo_backend.modules import google_sheets, email_sender
 
 # ------------------------------------------------------------------
-# 🔧 Load environment variables
+# 🔧 Environment setup
 # ------------------------------------------------------------------
-load_dotenv(dotenv_path="C:/Users/Gedan/Desktop/Guzo/.env", override=True)
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../../.env"), override=True)
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 
 # ------------------------------------------------------------------
-# 🌍 MULTILINGUAL MESSAGE BUILDER
+# 🌍 Multilingual Natural Message
 # ------------------------------------------------------------------
 def build_multilingual_message(intent: str, hotel_name: str) -> str:
-    """Return a natural, bilingual (EN + AM) hospitality message."""
-    today = datetime.now().strftime("%A, %B %d, %Y")
+    """Return a polite bilingual (English + Amharic) hospitality message."""
+    today = datetime.datetime.now().strftime("%A, %B %d, %Y")
 
-    if intent == "booking":
-        eng = (
-            f"🛎️ Thank you for choosing *{hotel_name}*.\n"
-            "Your booking request has been received and is being processed.\n"
-            "Our team will confirm your stay shortly.\n"
-            f"📅 {today}"
-        )
-        amh = (
-            f"🛎️ ስለ *{hotel_name}* መያዣዎ እናመሰግናለን። "
-            "መያዣዎ ተቀባይነት አግኝቷል። በቅርቡ ይረጋገጣል።"
-        )
+    greetings_en = [
+        f"🛎️ Dear guest, thank you for choosing *{hotel_name}*!",
+        f"Welcome to *{hotel_name}*, we’re delighted to assist you!",
+        f"Your booking request at *{hotel_name}* has been received."
+    ]
+    followup_en = [
+        "Our front desk team will confirm your stay shortly.",
+        "You’ll receive your confirmation soon.",
+        "We’re reviewing availability and will update you soon."
+    ]
 
-    elif intent == "cancellation":
-        eng = (
-            f"❌ We’ve received your cancellation request for *{hotel_name}*.\n"
-            "Your booking will be updated accordingly.\n"
-            f"📅 {today}"
-        )
-        amh = (
-            f"❌ የ*{hotel_name}* መሰረዝ ጥያቄዎን ተቀብያለን። "
-            "መያዣዎ በቅርቡ ይዘምናል።"
-        )
+    greetings_am = [
+        f"🛎️ እንኳን ወደ *{hotel_name}* በደህና መጡ።",
+        f"ውድ እንግዳ፣ ስለ *{hotel_name}* መያዣዎ እናመሰግናለን።",
+        f"የ *{hotel_name}* መያዣዎ ተቀብያለች።"
+    ]
+    followup_am = [
+        "በቅርቡ ይረጋገጣል።",
+        "የፊት ገቢ ቡድናችን በቅርቡ ይዘጋጅልዎታል።",
+        "በቅርቡ መያዣዎን እናረጋግጣለን።"
+    ]
 
-    else:
-        eng = (
-            f"💬 Thank you for contacting *{hotel_name}* via Guzo Guest Assist.\n"
-            "Your message has been received and will be answered shortly.\n"
-            f"📅 {today}"
-        )
-        amh = (
-            f"💬 እናመሰግናለን። የ*{hotel_name}* ጥያቄዎ ተቀብያለን። "
-            "በቅርቡ እንመልስልዎታለን።"
-        )
+    eng = f"{random.choice(greetings_en)}\n{random.choice(followup_en)}\n📅 {today}"
+    amh = f"{random.choice(greetings_am)} {random.choice(followup_am)}"
 
-    return f"{eng}\n\n{amh}\n\n— *Guzo Guest Assist*"
+    return f"{eng}\n\n{amh}\n\n— *Guzo Guest Assist Front Desk*"
 
 
 # ------------------------------------------------------------------
-# 🎯 INTENT DETECTOR
+# 🎯 Intent Detection
 # ------------------------------------------------------------------
 def detect_intent(message: str) -> str:
     msg = message.lower()
-    if any(w in msg for w in ["book", "reserve", "stay", "room", "night"]):
+    if any(w in msg for w in ["book", "reserve", "stay", "room", "night", "መያዣ", "ሆቴል"]):
         return "booking"
-    if any(w in msg for w in ["cancel", "change", "modify", "reschedule"]):
+    if any(w in msg for w in ["cancel", "change", "modify", "delete", "መሰረዝ", "መቀየር"]):
         return "cancellation"
+    if any(w in msg for w in ["hi", "hello", "price", "available", "ሰላም", "ዋጋ"]):
+        return "inquiry"
     return "general"
 
 
 # ------------------------------------------------------------------
-# 📧 EMAIL TEMPLATE RENDERER
-# ------------------------------------------------------------------
-def build_template_email(guest_name, hotel_name, message, template_name):
-    """Load and personalize HTML email template."""
-    try:
-        path = os.path.join("guzo_backend", "templates", template_name)
-        with open(path, "r", encoding="utf-8") as f:
-            html = f.read()
-        today = datetime.now().strftime("%A, %B %d, %Y")
-        html = (
-            html.replace("{{guest_name}}", guest_name)
-            .replace("{{hotel_name}}", hotel_name)
-            .replace("{{message}}", message)
-            .replace("{{date}}", today)
-            .replace("{{year}}", str(datetime.now().year))
-        )
-        return html
-    except Exception as e:
-        print(f"⚠️ Template rendering failed: {e}")
-        return f"<p>Dear {guest_name}, your request for {hotel_name} has been received.</p>"
-
-
-# ------------------------------------------------------------------
-# 📨 TELEGRAM SENDER
+# 📨 Telegram Sender
 # ------------------------------------------------------------------
 async def send_telegram_message(chat_id: str, text: str):
-    """Send a Telegram message asynchronously."""
+    """Send Telegram message to hotel contact."""
     try:
         bot = Bot(token=TELEGRAM_BOT_TOKEN)
         await bot.send_message(chat_id=chat_id, text=text, parse_mode="Markdown")
@@ -119,69 +85,69 @@ async def send_telegram_message(chat_id: str, text: str):
 
 
 # ------------------------------------------------------------------
-# 🤖 MAIN CONFIRMATION HANDLER
+# 🤖 Main Confirmation Handler
 # ------------------------------------------------------------------
 async def confirm_guest_request(guest_name, hotel_name, message, recipient_email=None):
-    """Unified handler for booking/cancellation confirmations."""
+    """Send confirmation via Email + Telegram and log results."""
     intent = detect_intent(message)
-    print(f"📨 Processing {intent} confirmation for {guest_name} ({hotel_name})")
+    print(f"📨 Processing {intent} for {guest_name} ({hotel_name})")
 
-    # 1️⃣ Email confirmation
+    record = google_sheets.find_hotel_record(hotel_name)
+    if not record:
+        print(f"[WARN] No hotel record found for {hotel_name}.")
+        return "Hotel Not Found"
+
+    # 1️⃣ Email
     email_status = "Not Sent"
-    if recipient_email:
+    recipient = recipient_email or record.get("Reservation Email") or record.get("Main Contact Email")
+    if recipient:
         try:
-            template = (
-                "booking_confirmation.html"
-                if intent == "booking"
-                else "cancellation_confirmation.html"
-            )
-            subject = f"Guzo Guest Assist – {'Booking' if intent=='booking' else 'Cancellation'} Confirmation"
-            html_body = build_template_email(guest_name, hotel_name, message, template)
-            success = email_sender.send_email(recipient_email, subject, html_body)
-            email_status = "Email Sent" if success else "Email Failed"
-            print(f"📧 {email_status} → {recipient_email}")
+            subject = f"Guzo Guest Assist – {intent.title()} Confirmation"
+            body = build_multilingual_message(intent, hotel_name)
+            sent = email_sender.send_email(recipient, subject, body)
+            email_status = "Email Sent" if sent else "Email Failed"
+            print(f"[EmailSender] {email_status} → {recipient}")
         except Exception as e:
-            print(f"⚠️ Email send failed: {e}")
+            print(f"⚠️ Email failed: {e}")
             email_status = "Email Failed"
 
-    # 2️⃣ Telegram notification to hotel manager
+    # 2️⃣ Telegram
     tg_status = "Not Sent"
-    record = google_sheets.find_hotel_record(hotel_name)
-    if record and "Telegram Chat ID" in record and record["Telegram Chat ID"]:
-        chat_id = str(record["Telegram Chat ID"]).strip()
-        text_msg = build_multilingual_message(intent, hotel_name)
-        tg_success = await send_telegram_message(chat_id, text_msg)
-        tg_status = "Telegram Sent" if tg_success else "Telegram Failed"
+    chat_id = record.get("Telegram Chat ID") or record.get("Chat ID")
+    if chat_id:
+        try:
+            msg = build_multilingual_message(intent, hotel_name)
+            tg_success = await send_telegram_message(str(chat_id).strip(), msg)
+            tg_status = "Telegram Sent" if tg_success else "Telegram Failed"
+        except Exception as e:
+            print(f"⚠️ Telegram send error: {e}")
+            tg_status = "Telegram Failed"
 
-    # 3️⃣ SMS / WhatsApp fallback (if available)
-    sms_status = "Not Sent"
-    if record and "Phone" in record and record["Phone"]:
-        phone = str(record["Phone"]).strip()
-        text_msg = build_multilingual_message(intent, hotel_name)
-        if hasattr(google_sheets, "send_sms_or_whatsapp"):
-            sms_success = google_sheets.send_sms_or_whatsapp(phone, text_msg, channel="whatsapp")
-            sms_status = "WhatsApp Sent" if sms_success else "WhatsApp Failed"
+    # 3️⃣ Unified Google Sheets Logging
+    try:
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        row = [
+            timestamp,
+            guest_name,
+            "Telegram",
+            "",
+            "",
+            "",
+            "",
+            "",
+            "",
+            email_status,
+            "",
+            "Unpaid",
+            "",
+            "",
+            "System",
+            "Auto via Guzo Bot",
+            f"{intent.title()} confirmation via auto_confirmation.py"
+        ]
+        google_sheets.log_booking_to_sheets(hotel_name, row)
+        print(f"🗂️ Logged confirmation for {guest_name} ({hotel_name}) → {email_status}, {tg_status}")
+    except Exception as e:
+        print(f"⚠️ Logging to Google Sheets failed: {e}")
 
-    # 4️⃣ Log result to Google Sheets
-    final_status = f"{email_status}, {tg_status}, {sms_status}"
-    google_sheets.log_new_request(guest_name, hotel_name, message, status=final_status)
-    print(f"🗂️ Logged confirmation for {guest_name} ({hotel_name}) → {final_status}")
-
-    return final_status
-
-
-# ------------------------------------------------------------------
-# 🧪 STANDALONE TEST
-# ------------------------------------------------------------------
-if __name__ == "__main__":
-    print("🔍 Testing multilingual auto confirmation module (v11.1)…")
-    google_sheets.init_client()
-
-    asyncio.run(
-        confirm_guest_request(
-            "Test Guest",
-            "Sofi Hotel",
-            "Need booking for 2 nights",
-            "manager@sofihotel.com",
-        )
-    )
+    return f"{email_status}, {tg_status}"

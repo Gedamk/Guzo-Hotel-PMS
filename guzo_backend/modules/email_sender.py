@@ -1,114 +1,212 @@
 # -*- coding: utf-8 -*-
 """
-email_sender.py – Secure multilingual email delivery for Guzo Guest Assist.
----------------------------------------------------------------------------
-Handles all transactional, booking, and report emails via SendGrid.
-Uses domain-authenticated sender (reports@guzoassist.com) for best deliverability.
+email_sender.py – Guzo Guest Assist Email Utility (v6.0 Unified)
+---------------------------------------------------------------
+Handles transactional, confirmation, and report emails through SendGrid.
+Supports plain text + HTML + PDF attachments.
 """
 
 import os
 import base64
-import logging
+from pathlib import Path
 from dotenv import load_dotenv
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import (
     Mail, Attachment, FileContent, FileName, FileType, Disposition
 )
 
-# -------------------------------------------------------------
-# 🌍 Environment setup
-# -------------------------------------------------------------
-# ✅ FIXED: Go up two directories to correctly find `.env`
-dotenv_path = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    ".env"
-)
-load_dotenv(dotenv_path)
+# ============================================================
+# LOAD ENVIRONMENT VARIABLES
+# ============================================================
+BASE_DIR = Path(__file__).resolve().parents[2]
+dotenv_path = BASE_DIR / ".env"
+
+print(f"🔍 Loading environment from: {dotenv_path}")
+
+if load_dotenv(dotenv_path):
+    print("✅ Environment file loaded.")
+else:
+    print("⚠️ Failed to load .env file!")
 
 SENDGRID_API_KEY = os.getenv("SENDGRID_API_KEY")
-FROM_EMAIL = os.getenv("FROM_EMAIL", "reports@guzoassist.com")
+DEFAULT_SENDER = os.getenv("DEFAULT_SENDER_EMAIL", "no-reply@guzoassist.com")
+REPLY_TO_EMAIL = os.getenv("REPLY_TO_EMAIL", "support@guzoassist.com")
+TEST_EMAIL = os.getenv("TEST_EMAIL", "nahom2natanim@gmail.com")
 
-logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+print(f"🔑 SENDGRID_API_KEY loaded: {bool(SENDGRID_API_KEY)}")
+print(f"📧 Default sender: {DEFAULT_SENDER}")
+print(f"📩 Test email target: {TEST_EMAIL}")
 
-# -------------------------------------------------------------
-# 📧 Core email sender
-# -------------------------------------------------------------
-def send_invoice_email(to_email: str, subject: str, body_text: str, pdf_path: str = None):
+
+# ============================================================
+# GENERIC EMAIL FUNCTION
+# ============================================================
+def send_email(to_email, subject, body, pdf_path=None):
     """
-    Send an email with optional PDF attachment (invoice, report, etc.)
-    using SendGrid authenticated domain.
+    Send a transactional or report email via SendGrid.
+    Supports plain text or HTML, and optional PDF attachment.
     """
     if not SENDGRID_API_KEY:
-        logger.error("❌ Missing SENDGRID_API_KEY in environment.")
-        print("❌ Missing SENDGRID_API_KEY in environment.")
-        return False
-
-    if not to_email:
-        logger.error("❌ Missing recipient email address.")
-        print("❌ Missing recipient email address.")
+        print("❌ SENDGRID_API_KEY missing in environment.")
         return False
 
     try:
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
         message = Mail(
-            from_email=FROM_EMAIL,
+            from_email=DEFAULT_SENDER,
             to_emails=to_email,
             subject=subject,
-            html_content=body_text,
+            html_content=body if "<" in body else None,
+            plain_text_content=body if "<" not in body else None,
         )
+        message.reply_to = REPLY_TO_EMAIL
 
-        # ---------------------------------------------------------
-        # 📎 Optional PDF attachment
-        # ---------------------------------------------------------
+        # Optional PDF attachment
         if pdf_path and os.path.exists(pdf_path):
-            try:
-                with open(pdf_path, "rb") as f:
-                    encoded_file = base64.b64encode(f.read()).decode()
-                attachment = Attachment(
-                    FileContent(encoded_file),
-                    FileName(os.path.basename(pdf_path)),
-                    FileType("application/pdf"),
-                    Disposition("attachment"),
-                )
-                message.attachment = attachment
-                logger.info(f"📎 Attached file: {os.path.basename(pdf_path)}")
-            except Exception as e:
-                logger.warning(f"⚠️ Could not attach file: {e}")
+            with open(pdf_path, "rb") as f:
+                encoded = base64.b64encode(f.read()).decode()
+            attachment = Attachment()
+            attachment.file_content = FileContent(encoded)
+            attachment.file_type = FileType("application/pdf")
+            attachment.file_name = FileName(os.path.basename(pdf_path))
+            attachment.disposition = Disposition("attachment")
+            message.attachment = attachment
+            print(f"📎 Attached file: {pdf_path}")
 
-        # ---------------------------------------------------------
-        # ✉️ Send email through SendGrid
-        # ---------------------------------------------------------
-        sg = SendGridAPIClient(SENDGRID_API_KEY)
         response = sg.send(message)
-
-        if response.status_code in (200, 202):
-            print(f"✅ Email successfully sent to {to_email}")
-            logger.info(f"✅ Email successfully sent to {to_email}")
-            return True
-        else:
-            print(f"⚠️ Email failed with status {response.status_code}")
-            logger.error(f"⚠️ Email failed with status {response.status_code}")
-            return False
-
+        print(f"✅ Email sent to {to_email} | Status: {response.status_code}")
+        return True
     except Exception as e:
-        logger.error(f"⚠️ Email sending failed: {e}")
-        print(f"⚠️ Email sending failed: {e}")
+        print(f"⚠️ Error sending email: {e}")
         return False
 
 
-# -------------------------------------------------------------
-# 🧪 Direct standalone test mode
-# -------------------------------------------------------------
-if __name__ == "__main__":
-    print("🚀 Testing Guzo Guest Assist email sender...")
-    test_email = os.getenv("TO_EMAIL", "owner@guzoassist.com")
-    print(f"🧩 Using recipient: {test_email}")
-    success = send_invoice_email(
-        to_email=test_email,
-        subject="✅ Guzo Guest Assist Automated Email Test",
-        body_text="<strong>Your SendGrid configuration is working perfectly!</strong>",
+# ============================================================
+# BOOKING CONFIRMATION EMAIL (USED BY TELEGRAM BOT)
+# ============================================================
+def send_confirmation_email(to_emails, subject, content, from_email=None):
+    """
+    Sends multilingual booking confirmation to guest + hotel.
+    Automatically triggered when booking is confirmed.
+    """
+    if not SENDGRID_API_KEY:
+        print("❌ SENDGRID_API_KEY missing. Cannot send confirmation email.")
+        return False
+
+    if isinstance(to_emails, str):
+        to_emails = [to_emails]
+
+    from_email = from_email or DEFAULT_SENDER
+    guest = content.get("Guest Name", "Guest")
+    hotel = content.get("Hotel Name", "Hotel")
+    checkin = content.get("Check-In Date", "—")
+    checkout = content.get("Check-Out Date", "—")
+    nights = content.get("Nights", "—")
+    room = content.get("Room Type", "—")
+    total = content.get("Total Revenue (ETB)", "—")
+    conf_id = content.get("Confirmation ID", "—")
+    phone = content.get("Phone (Front Desk)", "—")
+    pay_method = content.get("Payment Method", "—")
+    lang = content.get("lang", "en")
+
+    greeting = {
+        "en": f"Dear {guest},",
+        "am": f"ውድ {guest}፣",
+        "om": f"Kabajamoo {guest},"
+    }.get(lang, f"Dear {guest},")
+
+    intro = {
+        "en": f"We’re delighted to confirm your reservation at <strong>{hotel}</strong>.",
+        "am": f"በ<strong>{hotel}</strong> የእርስዎን መያዣ እንደተረጋገጠ ደስ ይላል።",
+        "om": f"Turtin kee <strong>{hotel}</strong> irratti mirkanaaʼeera."
+    }.get(lang)
+
+    html_body = f"""
+    <html>
+      <body style="font-family:Arial, sans-serif; background:#f5f7fa; padding:25px;">
+        <table width="600" align="center" cellpadding="0" cellspacing="0"
+               style="background:white; border-radius:10px; overflow:hidden;">
+          <tr style="background:#004080; color:white;">
+            <td style="padding:20px; font-size:18px; font-weight:bold;">
+              🏨 Booking Confirmation – {hotel}
+            </td>
+          </tr>
+          <tr><td style="padding:25px; font-size:15px; color:#333;">
+            <p>{greeting}</p>
+            <p>{intro}</p>
+            <hr style="border:none; border-top:1px solid #ddd;">
+            <h3>Reservation Details</h3>
+            <table width="100%" cellpadding="6" cellspacing="0" style="border-collapse:collapse;">
+              <tr><td><strong>Hotel</strong></td><td>{hotel}</td></tr>
+              <tr><td><strong>Check-In</strong></td><td>{checkin}</td></tr>
+              <tr><td><strong>Check-Out</strong></td><td>{checkout}</td></tr>
+              <tr><td><strong>Nights</strong></td><td>{nights}</td></tr>
+              <tr><td><strong>Room Type</strong></td><td>{room}</td></tr>
+              <tr><td><strong>Payment</strong></td><td>{pay_method}</td></tr>
+              <tr><td><strong>Total</strong></td><td>{total} ETB</td></tr>
+              <tr><td><strong>Confirmation ID</strong></td><td>{conf_id}</td></tr>
+            </table>
+            <hr style="border:none; border-top:1px solid #ddd;">
+            <p>📞 Front Desk: {phone}<br>
+               🌐 <a href="https://guzoassist.com" style="color:#004080;">www.guzoassist.com</a></p>
+            <p>✨ Thank you for choosing Guzo Guest Assist. We look forward to welcoming you soon!</p>
+            <p style="color:#888; font-size:12px;">This is an automated message. Please do not reply.</p>
+          </td></tr>
+        </table>
+      </body>
+    </html>
+    """
+
+    plain_body = (
+        f"{greeting}\n\n"
+        f"We’re delighted to confirm your reservation at {hotel}.\n\n"
+        f"📅 Check-In: {checkin}\n"
+        f"📅 Check-Out: {checkout}\n"
+        f"🛏️ Room Type: {room}\n"
+        f"💳 Payment: {pay_method}\n"
+        f"💰 Total: {total} ETB\n"
+        f"🔖 Confirmation ID: {conf_id}\n\n"
+        f"For any assistance, contact {phone}\n"
+        f"🌐 www.guzoassist.com\n\n"
+        f"✨ Thank you for choosing Guzo Guest Assist."
     )
-    if success:
-        print("✅ Test completed successfully.")
+
+    try:
+        sg = SendGridAPIClient(SENDGRID_API_KEY)
+        for email in to_emails:
+            msg = Mail(
+                from_email=from_email,
+                to_emails=email,
+                subject=subject,
+                html_content=html_body,
+                plain_text_content=plain_body
+            )
+            msg.reply_to = REPLY_TO_EMAIL
+            response = sg.send(msg)
+            print(f"✅ Confirmation email sent to {email} | Status: {response.status_code}")
+        return True
+    except Exception as e:
+        print(f"⚠️ Confirmation email failed: {e}")
+        return False
+
+
+# ============================================================
+# TEST EXECUTION
+# ============================================================
+if __name__ == "__main__":
+    print("\n🚀 Running Guzo Guest Assist Email Test...")
+
+    subject = "Guzo Guest Assist – Email Test Confirmation"
+    body = (
+        "Hello Gedan,\n\n"
+        "✅ This is a test email from your Guzo Guest Assist system.\n"
+        "If you received this message, your SendGrid setup works perfectly!\n\n"
+        "Warm regards,\n"
+        "Guzo Guest Assist Bot 🤖"
+    )
+
+    ok = send_email(TEST_EMAIL, subject, body)
+    if ok:
+        print("✅ [DONE] Test email sent successfully.")
     else:
-        print("⚠️ Test failed. Please check your SendGrid credentials or domain setup.")
+        print("❌ [ERROR] Failed to send test email.")

@@ -1,47 +1,64 @@
-# guzo_backend/modules/whatsapp_sender.py
+# -*- coding: utf-8 -*-
 """
-WhatsApp Sender Module
-Handles sending WhatsApp messages via Twilio with multilingual templates.
+whatsapp_sender.py – Guzo Guest Assist WhatsApp Message Sender
+---------------------------------------------------------------
+Handles WhatsApp notifications to guests and hotel managers.
+
+✅ Features:
+- UTF-8 clean (no encoding errors)
+- Simulated mode for local testing (default)
+- Ready for real Twilio or WhatsApp Cloud API integration
 """
 
 import os
-from twilio.rest import Client
-from guzo_backend import config
+from dotenv import load_dotenv
 
-# Twilio setup
-ACCOUNT_SID = config.TWILIO_ACCOUNT_SID
-AUTH_TOKEN = config.TWILIO_AUTH_TOKEN
-FROM_WHATSAPP = config.TWILIO_WHATSAPP_FROM
+# Load environment variables
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "../../.env"))
 
-client = Client(ACCOUNT_SID, AUTH_TOKEN)
+# ======================================================
+# CONFIGURATION
+# ======================================================
+USE_TWILIO = os.getenv("USE_TWILIO", "false").lower() == "true"
 
-# === Multilingual Templates ===
-TEMPLATES = {
-    "en": "ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Hello {guest}, your booking at {hotel} is {status}. Check-in: {check_in}, Check-out: {check_out}.",
-    "am": "ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ {guest}ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ£ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ {hotel} ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ«ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¨ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂµ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¦ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ³ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¨ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ« ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ³ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ«: {check_in}, ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ«: {check_out}ÃÂÃÂÃÂÃÂ¡ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ¢",
-    "om": "ÃÂÃÂÃÂÃÂ°ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Akkam {guest}, booking kee {hotel} irratti {status}. Check-in: {check_in}, Check-out: {check_out}.",
-}
+# Optional Twilio credentials (only needed for live sending)
+TWILIO_ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
+TWILIO_WHATSAPP_NUMBER = os.getenv("TWILIO_WHATSAPP_NUMBER")
 
-def send_whatsapp(to_number, placeholders, lang="en"):
+# ======================================================
+# MAIN FUNCTION
+# ======================================================
+def send_whatsapp_message(to_number: str, message: str):
     """
-    Send WhatsApp to a guest.
-    Uses multilingual templates (English, Amharic, Afaan Oromo).
+    Send WhatsApp message to a given phone number.
+    Default behavior: simulated print (safe for testing).
+    If USE_TWILIO=True and credentials are valid, sends a real WhatsApp message.
     """
-    try:
-        if not to_number.startswith("+"):
-            to_number = f"+251{to_number}" if len(to_number) == 9 else f"+{to_number}"
+    if USE_TWILIO and TWILIO_ACCOUNT_SID and TWILIO_AUTH_TOKEN and TWILIO_WHATSAPP_NUMBER:
+        try:
+            from twilio.rest import Client
 
-        template = TEMPLATES.get(lang, TEMPLATES["en"])
-        body = template.format(**placeholders)
+            client = Client(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN)
+            full_to = f"whatsapp:{to_number}"
+            full_from = f"whatsapp:{TWILIO_WHATSAPP_NUMBER}"
+            msg = client.messages.create(from_=full_from, to=full_to, body=message)
+            print(f"📱 [WhatsApp] Sent to {to_number}: Message SID {msg.sid}")
+            return True
 
-        msg = client.messages.create(
-            body=body,
-            from_=FROM_WHATSAPP,
-            to=f"whatsapp:{to_number}"
-        )
-        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ WhatsApp sent to {to_number}, SID: {msg.sid}")
-        return msg.sid
+        except Exception as e:
+            print(f"⚠️ [WhatsApp] Error sending message via Twilio: {e}")
+            return False
 
-    except Exception as e:
-        print(f"ÃÂÃÂÃÂÃÂ¢ÃÂÃÂÃÂÃÂÃÂÃÂÃÂÃÂ Failed to send WhatsApp to {to_number}: {e}")
-        raise
+    else:
+        # Simulated sender for local testing
+        print(f"📱 [WhatsApp] (Simulated) Sending to {to_number}: {message}")
+        return True
+
+# ======================================================
+# SELF-TEST
+# ======================================================
+if __name__ == "__main__":
+    test_number = "+12025550123"
+    test_message = "✅ WhatsApp sender test successful."
+    send_whatsapp_message(test_number, test_message)
