@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-monthly_owner_dashboard.py – Monthly Owner / Investor View (v1.1)
+monthly_owner_dashboard.py – Monthly Owner / Investor View (v2.0)
 -----------------------------------------------------------------
 Streamlit dashboard built on top of:
     guzo_backend.modules.reports_monthly_owner.get_monthly_owner_report
@@ -9,6 +9,7 @@ Audience:
     • Hotel owners
     • Asset managers
     • Investors
+    • Central system admins (read-only, multi-property)
 
 Core KPIs (per property, per month):
     • Occupancy %
@@ -17,14 +18,32 @@ Core KPIs (per property, per month):
     • Room Revenue (ETB)
     • Room Nights Sold
     • Number of Bookings
-    • Basic payment mix breakdown (if available)
+    • Payment mix breakdown (if available)
 """
 
 import datetime
+from pathlib import Path
 
+import pandas as pd
 import streamlit as st
+from dotenv import load_dotenv
 
+from guzo_backend.modules.auth_simple import require_role
+from guzo_backend.modules.google_sheets import read_hotels_master
 from guzo_backend.modules.reports_monthly_owner import get_monthly_owner_report
+
+
+# ---------------------------------------------------------
+# Environment
+# ---------------------------------------------------------
+ROOT_DIR = Path(__file__).resolve().parents[2]  # project root
+ENV_PATH = ROOT_DIR / ".env"
+load_dotenv(ENV_PATH)
+
+st.set_page_config(
+    page_title="Guzo – Monthly Owner Dashboard",
+    layout="wide",
+)
 
 
 # ---------------------------------------------------------
@@ -39,35 +58,40 @@ def _format_month(year: int, month: int) -> str:
     return f"{year}-{month:02d}"
 
 
-# ---------------------------------------------------------
-# Cached loader (best practice for performance)
-# ---------------------------------------------------------
 @st.cache_data(ttl=300)
-def load_monthly_report(year: int, month: int, property_code: str | None):
-    """
-    Cached wrapper around get_monthly_owner_report().
-    This avoids hitting Postgres on every small UI change.
-    """
-    return get_monthly_owner_report(
-        year=year,
-        month=month,
-        property_code=property_code,
-    )
+def _load_hotels_visible(allowed_properties: list[str] | None):
+    """Return DataFrame of hotels limited by allowed_properties."""
+    try:
+        df = read_hotels_master()
+    except Exception:
+        return pd.DataFrame(columns=["Property Code", "Hotel Name"])
+
+    if not allowed_properties or "ALL" in allowed_properties:
+        return df
+
+    return df[df["Property Code"].isin(allowed_properties)]
+
+
+@st.cache_data(ttl=300)
+def _load_monthly_report(year: int, month: int, property_code: str):
+    return get_monthly_owner_report(year=year, month=month, property_code=property_code)
+
+
+# ---------------------------------------------------------
+# Auth / role
+# ---------------------------------------------------------
+auth = require_role(["central_admin", "hotel_manager", "portfolio_owner"])
+allowed_properties = auth.get("allowed_properties") or []
 
 
 # ---------------------------------------------------------
 # Streamlit App
 # ---------------------------------------------------------
 def main():
-    st.set_page_config(
-        page_title="Guzo – Monthly Owner Dashboard",
-        layout="wide",
-    )
-
     st.title("📊 Monthly Owner Dashboard")
     st.caption(
-        "High-level performance snapshot for hotel owners and investors – "
-        "powered by Guzo Guest Assist & Postgres."
+        "High-level performance snapshot for hotel owners, investors, and managers – "
+        "powered by Guzo Guest Assist & PostgreSQL."
     )
 
     # ---------------- Sidebar controls ----------------
@@ -91,24 +115,29 @@ def main():
         step=1,
     )
 
-    property_code = st.sidebar.text_input(
-        "Property Code",
-        value="DRE001",
-        help="Use the hotel property code as stored in the `hotels` table (e.g., DRE001, N&N002).",
+    # Property selection based on allowed_properties + Hotel_Contacts_Master
+    df_visible = _load_hotels_visible(allowed_properties)
+    if df_visible.empty:
+        st.error("No hotels available for this account. Check onboarding / permissions.")
+        st.stop()
+
+    property_code = st.sidebar.selectbox(
+        "Property",
+        options=df_visible["Property Code"].tolist(),
+        format_func=lambda code: f"{code} – {df_visible.set_index('Property Code').loc[code, 'Hotel Name']}",
     )
 
     if st.sidebar.button("🔄 Refresh report"):
-        # Clear cache so new DB data is pulled
-        load_monthly_report.clear()
+        st.experimental_rerun()
 
     # ---------------- Fetch report ----------------
     st.subheader(f"Summary for {_format_month(year, month)}")
 
     try:
-        report = load_monthly_report(
-            year=int(year),
-            month=int(month),
-            property_code=property_code or None,
+        report = _load_monthly_report(
+            year=year,
+            month=month,
+            property_code=property_code,
         )
     except Exception as e:
         st.error(f"Could not load monthly report. Error: {e}")
@@ -182,12 +211,6 @@ def main():
     if not by_method:
         st.info("No payment breakdown data available for this month.")
     else:
-        # Expecting structure like:
-        # {
-        #   "💵 Cash": {"bookings": 2, "nights": 8, "revenue_etb": 48000},
-        #   "Card": {...},
-        #   ...
-        # }
         rows = []
         try:
             for label, stats in by_method.items():
@@ -203,14 +226,11 @@ def main():
             rows = []
 
         if rows:
-            import pandas as pd
-
             df_methods = pd.DataFrame(rows)
-            # Dataframe is fine to keep as use_container_width
-            st.dataframe(df_methods, use_container_width=True)
+            st.dataframe(df_methods, width="stretch")
 
             try:
-                # simple revenue bar chart (Streamlit native)
+                # simple revenue bar chart
                 chart_df = df_methods.set_index("Method")[["Revenue (ETB)"]]
                 st.bar_chart(chart_df)
             except Exception:
@@ -227,10 +247,8 @@ def main():
     example_bookings = report.get("example_bookings") or report.get("bookings_sample")
 
     if example_bookings:
-        import pandas as pd
-
         df_bookings = pd.DataFrame(example_bookings)
-        st.dataframe(df_bookings, use_container_width=True)
+        st.dataframe(df_bookings, width="stretch")
     else:
         st.write("No sample bookings available in this report.")
 
