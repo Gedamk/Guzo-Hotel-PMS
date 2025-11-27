@@ -15,6 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from guzo_api.routers import reports
 
+
 app = FastAPI(
     title="Guzo API",
     description="Backend API for Guzo Guest Assist dashboards (daily, monthly, portfolio).",

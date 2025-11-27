@@ -14,7 +14,8 @@ This version is upgraded for multi-bot:
 • Guests of a property bot NEVER see a list of other hotels
 
 This version is also upgraded to:
-• Save every confirmed booking into PostgreSQL (public.bookings)
+• Use FastAPI backend endpoints (/bot/availability, /bot/bookings)
+  as the single source of truth for room availability + DB bookings.
 """
 
 import os
@@ -31,12 +32,16 @@ from telegram.ext import (
     CommandHandler,
     filters,
 )
+
 from guzo_backend.modules import google_sheets, email_sender
 from guzo_backend.modules.central_sync import sync_booking_to_central  # noqa: F401
 from guzo_backend.modules.postgres_hotels import get_hotel_by_property_code
-from guzo_backend.modules import postgres_bookings  # ✅ use module, not function
-from guzo_backend.modules.postgres_bookings import save_booking_to_postgres
 
+# ✅ NEW: use backend client to talk to FastAPI /bot endpoints
+from guzo_booking_bot.modules.backend_client import (
+    check_availability_for_bot,
+    create_booking_for_bot,
+)
 
 # =====================================================
 # ENVIRONMENT – ROOT + PER-BOT OVERRIDE
@@ -76,12 +81,14 @@ PROPERTY_FALLBACK_RES_EMAIL = os.getenv("HOTEL_RESERVATION_EMAIL")
 PROPERTY_FALLBACK_PHONE = os.getenv("HOTEL_PHONE")
 
 # Path to JSON fallback (already used by your runner)
-HOTELS_CONFIG_JSON = os.path.join(os.path.dirname(__file__), "../../hotels_config.json")
-
+HOTELS_CONFIG_JSON = os.path.join(
+    os.path.dirname(__file__), "../../hotels_config.json"
+)
 
 # =====================================================
 # HOTEL ROW HELPERS (unify Sheet + JSON keys)
 # =====================================================
+
 
 def get_hotel_property_code(row: dict) -> str:
     """
@@ -141,10 +148,11 @@ logging.basicConfig(
 
 print("🛎️ Launching Guzo Guest Assist – Luxury Hospitality Edition v65")
 
-
 # =====================================================
 # GOOGLE SHEETS CLIENT
 # =====================================================
+
+
 def init_sheets_client():
     """Initialize Google Sheets service account client safely."""
     try:
@@ -199,7 +207,9 @@ def _load_hotels_from_json():
         with open(HOTELS_CONFIG_JSON, "r", encoding="utf-8") as f:
             data = json.load(f)
         if isinstance(data, list):
-            logging.info(f"[HotelJSON] Loaded {len(data)} hotel(s) from JSON fallback.")
+            logging.info(
+                f"[HotelJSON] Loaded {len(data)} hotel(s) from JSON fallback."
+            )
             return data
         logging.error("[HotelJSON] JSON root is not a list; ignoring.")
         return []
@@ -304,7 +314,6 @@ LANGUAGES = {
     },
 }
 
-
 # =====================================================
 # SESSION UTILITIES
 # =====================================================
@@ -408,6 +417,13 @@ async def handle_hotel_selection(update: Update, session, client, lang):
 
 
 async def handle_date_entry(update: Update, session, lang):
+    """
+    Handle check-in and check-out dates.
+
+    ✅ NEW:
+       After check-out date is valid, we call FastAPI /bot/availability via
+       check_availability_for_bot() to ensure rooms exist in Postgres.
+    """
     text = update.message.text.strip()
     data = session["data"]
 
@@ -423,6 +439,7 @@ async def handle_date_entry(update: Update, session, lang):
         )
         return
 
+    # Step 1: Check-in date
     if session["step"] == "check_in_date":
         data["Check-In Date"] = str(date_obj)
         session["step"] = "check_out_date"
@@ -436,6 +453,7 @@ async def handle_date_entry(update: Update, session, lang):
         )
         return
 
+    # Step 2: Check-out date
     if session["step"] == "check_out_date":
         check_in = datetime.datetime.strptime(
             data["Check-In Date"], "%Y-%m-%d"
@@ -449,14 +467,67 @@ async def handle_date_entry(update: Update, session, lang):
                 }[lang]
             )
             return
+
         data["Check-Out Date"] = str(date_obj)
         data["Nights"] = (date_obj - check_in).days
+
+        # ✅ NEW: Check real availability via backend /bot/availability
+        property_code = data.get("Property Code")
+        if property_code:
+            try:
+                avail = check_availability_for_bot(
+                    property_code=property_code,
+                    check_in=data["Check-In Date"],
+                    check_out=data["Check-Out Date"],
+                    rooms=1,
+                )
+                if not avail.get("available"):
+                    # If backend returns nice message, reuse it
+                    backend_msg = avail.get("message") or ""
+                    human_msg = {
+                        "en": (
+                            "❌ Unfortunately, there is no availability for those dates.\n\n"
+                            f"{backend_msg}\n\n"
+                            "Please try different dates."
+                        ),
+                        "am": (
+                            "❌ ያስገቡት ቀናት ላይ ክፍት ክፍሎች የሉም።\n\n"
+                            f"{backend_msg}\n\n"
+                            "እባክዎ ሌሎች ቀናት ይሞክሩ።"
+                        ),
+                        "om": (
+                            "❌ Guyyoota kanaaf kottuun hin jiruu.\n\n"
+                            f"{backend_msg}\n\n"
+                            "Mee guyyaa biro yaali.",
+                        ),
+                    }[lang]
+                    # Reset step back to check_in_date so they can retry
+                    session["step"] = "check_in_date"
+                    await update.message.reply_text(human_msg)
+                    return
+                else:
+                    # Optionally show backend's positive message
+                    backend_msg = avail.get("message")
+                    if backend_msg:
+                        await update.message.reply_text(backend_msg)
+            except Exception as e:
+                logging.error(f"[AvailabilityCheck] Error calling backend: {e}")
+                # Fail gracefully: continue with old flow, no crash
+                await update.message.reply_text(
+                    {
+                        "en": "ℹ️ We could not verify live availability right now, but we’ll continue your request.",
+                        "am": "ℹ️ በአሁኑ ጊዜ ቀጥታ ክፍትነትን ማረጋገጥ አልቻልንም፣ ግን መርሃ ግብሩን እንቀጥላለን።",
+                        "om": "ℹ️ Amma haala kallattiin sakattaʼuu hin dandeenye, garuu itti fufna.",
+                    }[lang]
+                )
+
+        # If availability is OK or check failed gracefully → go to room selection
         session["step"] = "room_type"
         await update.message.reply_text(
             {
                 "en": f"🛏️ Great! You’ll stay for {data['Nights']} night(s). Now fetching available rooms...",
-                "am": f"🛏️ ጥሩ! ለ {data['Nights']} ሌሊት ትቆያላችሁ።",
-                "om": f"🛏️ Gaariidha! Halkanoota {data['Nights']} turtuuf.",
+                "am": f"🛏️ ጥሩ! ለ {data['Nights']} ሌሊት ትቆያላችሁ። አሁን የሚገኙ ክፍሎችን እንመልከታለን...",
+                "om": f"🛏️ Gaariidha! Halkanoota {data['Nights']} turtuuf. Amma kottuu jiruu ilaalla...",
             }[lang]
         )
 
@@ -566,7 +637,15 @@ async def handle_payment(update: Update, session, lang):
 # STEP 7 – GUEST EMAIL, SAVE BOOKING, SEND CONFIRMATION
 # =====================================================
 async def handle_guest_email(update: Update, client, session, lang):
-    """Step 7 – Validate guest email → save booking + send email + save to Postgres."""
+    """
+    Step 7 – Validate guest email → save booking + send email.
+
+    ✅ NEW:
+      • Use FastAPI /bot/bookings via create_booking_for_bot() to create the
+        canonical booking record in Postgres.
+      • Still append to Google Sheets + central master for reporting.
+      • Removed double direct Postgres inserts (#3 fix).
+    """
     email = update.message.text.strip()
     if not re.match(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
         await update.message.reply_text(
@@ -592,52 +671,74 @@ async def handle_guest_email(update: Update, client, session, lang):
     data["Payment Date"] = now.strftime("%Y-%m-%d")
     data["Property Code"] = data.get("Property Code", "UNKNOWN")
 
+    # ✅ Create canonical booking via FastAPI backend (/bot/bookings)
+    booking_id = None
+    try:
+        backend_booking = create_booking_for_bot(
+            property_code=data.get("Property Code", "UNKNOWN"),
+            check_in=data.get("Check-In Date"),
+            check_out=data.get("Check-Out Date"),
+            guest_name=data.get("Guest Name", "Guest"),
+            channel="telegram",
+            total_amount_etb=data.get("Total Revenue (ETB)"),
+        )
+        booking_id = backend_booking.get("booking_id")
+        # Optional: override hotel name / property code if backend returns them
+        if backend_booking.get("hotel_name"):
+            data["Hotel Name"] = backend_booking["hotel_name"]
+        if backend_booking.get("property_code"):
+            data["Property Code"] = backend_booking["property_code"]
+
+        data["Backend Booking ID"] = booking_id
+        logging.info(
+            f"[BotBookings] ✅ Created backend booking id={booking_id} for guest={data['Guest Name']}"
+        )
+    except Exception as e:
+        logging.error(f"[BotBookings] ❌ Failed to create backend booking: {e}")
+        # We still continue keeping the guest experience smooth; but backend may miss record
+
     # ✅ Save booking to Google Sheets via helper
-    google_sheets.append_booking(data)
-    logging.info(f"✅ Booking saved for {data['Guest Name']}")
-    google_sheets.sync_to_master(data)
-    logging.info(f"[CentralSync] ✅ Booking synced for {data.get('Hotel Name', 'N/A')}")
-
-    # ✅ Also save booking into PostgreSQL
     try:
-        postgres_bookings.insert_booking_from_sheet_dict(data)
+        google_sheets.append_booking(data)
+        logging.info(f"✅ Booking saved to hotel sheet for {data['Guest Name']}")
+        google_sheets.sync_to_master(data)
+        logging.info(
+            f"[CentralSync] ✅ Booking synced for {data.get('Hotel Name', 'N/A')}"
+        )
     except Exception as e:
-        logging.error(f"[PostgresBookings] ❌ Failed to save booking to Postgres: {e}")
-    
-        # ✅ Also save booking into PostgreSQL
-    try:
-        save_booking_to_postgres(data)
-    except Exception as e:
-        logging.error(f"[PostgresBookings] ❌ Failed to save booking to Postgres: {e}")
-
+        logging.error(f"[SheetsBookings] ❌ Failed to write booking to Sheets: {e}")
 
     # Telegram confirmation message
+    ref_line = f"🧾 Confirmation ID: {data['Confirmation ID']}"
+    if booking_id:
+        ref_line += f"\n🔢 Backend Ref: {booking_id}"
+
     msg = {
         "en": (
             f"✅ *Booking Confirmed!*\n\n"
             f"🏨 Hotel: {data.get('Hotel Name', 'Hotel')}\n"
-            f"🧾 Confirmation ID: {data['Confirmation ID']}\n"
-            f"📅 {data['Check-In Date']} → {data['Check-Out Date']}\n"
+            f"{ref_line}\n"
+            f"📅 {data.get('Check-In Date','')} → {data.get('Check-Out Date','')}\n"
             f"👤 Guest: {data['Guest Name']}\n"
-            f"💰 Total: {data['Total Revenue (ETB)']} ETB\n\n"
+            f"💰 Total: {data.get('Total Revenue (ETB)',0)} ETB\n\n"
             "📧 A confirmation email has been sent to your inbox."
         ),
         "am": (
             f"✅ *ቦኪንግዎ ተረጋገጠ!*\n\n"
             f"🏨 ሆቴል፡ {data.get('Hotel Name', 'Hotel')}\n"
-            f"🧾 የቃል መጠየቂያ ቁጥር፡ {data['Confirmation ID']}\n"
-            f"📅 {data['Check-In Date']} → {data['Check-Out Date']}\n"
+            f"{ref_line}\n"
+            f"📅 {data.get('Check-In Date','')} → {data.get('Check-Out Date','')}\n"
             f"👤 እንግዳ፡ {data['Guest Name']}\n"
-            f"💰 ጠቅላላ ዋጋ፡ {data['Total Revenue (ETB)']} ብር\n\n"
-            "📧 የማረጋገጫ ኢሜል ወደ መልዕክት መልእክት ሳጥንዎ ተልኳል።"
+            f"💰 ጠቅላላ ዋጋ፡ {data.get('Total Revenue (ETB)',0)} ብር\n\n"
+            "📧 የማረጋገጫ ኢሜል ወደ መልዕክት ሳጥንዎ ተልኳል።"
         ),
         "om": (
             f"✅ *Turtin kee ni mirkanaa’e!*\n\n"
             f"🏨 Hoteela: {data.get('Hotel Name', 'Hotel')}\n"
-            f"🧾 ID Mirkaneessaa: {data['Confirmation ID']}\n"
-            f"📅 {data['Check-In Date']} → {data['Check-Out Date']}\n"
+            f"{ref_line}\n"
+            f"📅 {data.get('Check-In Date','')} → {data.get('Check-Out Date','')}\n"
             f"👤 Daawataa: {data['Guest Name']}\n"
-            f"💰 Waliigala Kaffaltii: {data['Total Revenue (ETB)']} ETB\n\n"
+            f"💰 Waliigala Kaffaltii: {data.get('Total Revenue (ETB)',0)} ETB\n\n"
             "📧 Imeelii mirkaneessaa gara sanduuqa kee ergameera."
         ),
     }[lang]
@@ -665,6 +766,7 @@ async def handle_guest_email(update: Update, client, session, lang):
         "Room Type": data.get("Room Type", ""),
         "Total Revenue (ETB)": data.get("Total Revenue (ETB)", ""),
         "Confirmation ID": data.get("Confirmation ID", ""),
+        "Backend Booking ID": booking_id,
         "Phone (Front Desk)": data.get("Phone (Front Desk)", "N/A"),
         "Payment Method": data.get("Payment Method", ""),
         "lang": lang,
@@ -839,7 +941,9 @@ async def handle_concierge_request(update: Update, session, lang, client):
                 "💆‍♀️ በአቅራቢያ የሚገኝ የስፓ አገልግሎት እንረዳለን።",
                 "💆‍♀️ Spa dhiyoo siif ni qopheessina.",
             )
-    elif any(k in text for k in ["dining", "restaurant", "food", "ምግብ", "ሬስቶራንት"]):
+    elif any(
+        k in text for k in ["dining", "restaurant", "food", "ምግብ", "ሬስቶራንት"]
+    ):
         if "restaurant" in amenities:
             reply = respond(
                 f"🍽️ {hotel_name} offers all-day dining with local and international cuisine.",
@@ -942,7 +1046,9 @@ async def router(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     data.setdefault("Hotel Name", name)
                     data.setdefault("Sheet ID", PROPERTY_FALLBACK_SHEET_ID)
                     if PROPERTY_FALLBACK_RES_EMAIL:
-                        data.setdefault("Reservation Email", PROPERTY_FALLBACK_RES_EMAIL)
+                        data.setdefault(
+                            "Reservation Email", PROPERTY_FALLBACK_RES_EMAIL
+                        )
                     if PROPERTY_FALLBACK_PHONE:
                         data.setdefault("Phone (Front Desk)", PROPERTY_FALLBACK_PHONE)
 
@@ -976,7 +1082,9 @@ async def router(update: Update, context: ContextTypes.DEFAULT_TYPE):
         elif "afaan" in lower or "oromo" in lower:
             session["lang"] = "om"
         else:
-            await update.message.reply_text("⚠️ Please tap one of the language options.")
+            await update.message.reply_text(
+                "⚠️ Please tap one of the language options."
+            )
             return
 
         session["step"] = "main_menu"
@@ -1051,7 +1159,9 @@ async def router(update: Update, context: ContextTypes.DEFAULT_TYPE):
                             f"sheet_id={sheet_id}"
                         )
                     else:
-                        logging.error("[BOOK] Property bot could not resolve a hotel row.")
+                        logging.error(
+                            "[BOOK] Property bot could not resolve a hotel row."
+                        )
                         await update.message.reply_text(
                             "⚠️ Configuration issue: this hotel's booking profile is not connected yet."
                         )
@@ -1069,7 +1179,7 @@ async def router(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 )
                 return
 
-            # 🌐 CENTRAL BOT: show hotel list (old behavior)
+            # 🌐 CENTRAL BOT: if already have hotel in session, skip list
             if data.get("Hotel Name") and data.get("Sheet ID"):
                 session["step"] = "check_in_date"
                 await update.message.reply_text(
@@ -1153,3 +1263,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

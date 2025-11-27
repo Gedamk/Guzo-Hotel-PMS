@@ -1,0 +1,1 @@
+{"detail":"Error generating daily PDF: column \"total_amount_etb\" does not exist\nLINE 2:             SELECT COALESCE(SUM(total_amount_etb), 0) AS rev...\n                                        ^\n"}

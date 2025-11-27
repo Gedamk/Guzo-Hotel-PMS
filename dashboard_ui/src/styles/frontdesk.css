@@ -1,0 +1,324 @@
+/* src/styles/frontdesk.css */
+
+/* Overall layout */
+.frontdesk-root {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #111827;
+}
+
+/* Page header */
+.fd-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.fd-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #0f172a;
+}
+
+.fd-subtitle {
+  margin-top: 0.25rem;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.fd-header-date {
+  text-align: right;
+}
+
+.fd-header-label {
+  display: block;
+  font-size: 0.7rem;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.fd-header-value {
+  display: inline-flex;
+  margin-top: 0.15rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+/* Sections */
+.fd-section {
+  background: #ffffff;
+  border-radius: 0.9rem;
+  border: 1px solid #e5e7eb;
+  padding: 1rem 1.1rem 1.1rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+}
+
+.fd-section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.fd-section-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.fd-section-chip {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: #ecfdf3;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+/* KPI summary bar */
+.fd-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0 1.5rem;
+}
+
+.fd-summary-item {
+  background: #f9fafb;
+  border-radius: 0.75rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e5e7eb;
+}
+
+.fd-summary-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.fd-summary-value {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* Main grid: left (BookingsConsole) / right (FrontDeskBookings) */
+.fd-page-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1.2fr);
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.fd-page-main,
+.fd-page-side {
+  background: #ffffff;
+  border-radius: 0.9rem;
+  border: 1px solid #e5e7eb;
+  padding: 1rem 1.1rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
+}
+
+/* On mobile – stack columns */
+@media (max-width: 900px) {
+  .fd-page-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .fd-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .fd-header-date {
+    text-align: left;
+  }
+}
+
+/* Grid of smaller sections (older version – still used in FrontDeskBookings) */
+.fd-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1.3fr;
+  gap: 1rem;
+}
+
+@media (max-width: 900px) {
+  .fd-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Card sections */
+.fd-card {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.03);
+  overflow-x: auto; /* mobile horizontal scroll */
+}
+
+.fd-card h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Table */
+.fd-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.75rem;
+}
+
+.fd-table thead {
+  background: #f9fafb;
+}
+
+.fd-table th,
+.fd-table td {
+  padding: 0.45rem 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.fd-table th {
+  font-weight: 600;
+  color: #4b5563;
+  font-size: 0.7rem;
+}
+
+.fd-table tbody tr:hover {
+  background: #f3f4f6;
+}
+
+/* Empty state */
+.fd-empty {
+  font-size: 0.8rem;
+  color: #6b7280;
+  padding: 0.5rem 0;
+}
+
+/* Status badges */
+.fd-status {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.fd-status-booked {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.fd-status-inhouse {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.fd-status-checkedout {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.fd-status-default {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+/* Action buttons */
+.fd-table button {
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  border: none;
+  font-size: 0.7rem;
+  font-weight: 500;
+  cursor: pointer;
+  background: #2563eb;
+  color: white;
+}
+
+.fd-table button[disabled] {
+  opacity: 0.5;
+  cursor: default;
+  background: #9ca3af;
+}
+
+/* Export buttons + toolbar */
+.fd-reports-toolbar {
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px dashed #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.fd-reports-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.fd-reports-caption {
+  margin-top: 0.15rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.fd-reports-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.fd-btn-export {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 1px solid #2563eb;
+  background: #2563eb;
+  color: #ffffff;
+  text-decoration: none;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.06s ease;
+}
+
+.fd-btn-export:hover {
+  background: #1d4ed8;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.25);
+  transform: translateY(-1px);
+}
+
+.fd-btn-export--secondary {
+  background: #ffffff;
+  color: #1d4ed8;
+  border-color: #cbd5f5;
+}
+
+.fd-btn-export--secondary:hover {
+  background: #eff6ff;
+  box-shadow: 0 4px 10px rgba(129, 140, 248, 0.25);
+}
