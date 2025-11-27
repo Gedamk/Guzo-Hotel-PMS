@@ -53,3 +53,7 @@ node_modules/
 nul
 bash.exe.stackdump
 bot_log.txt
+
+# Auto-generated daily/weekly reports
+*.pdf
+*.xlsx

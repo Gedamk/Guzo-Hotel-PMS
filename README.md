@@ -268,3 +268,122 @@ Before public release or hotel client demo:
 ---
 
 Would you like me to generate this entire tracker as a **ready-to-save file (`PROJECT_COMPLETION_REPORT.md`)** inside your `/dashboard/` or `/docs/` folder so you can view or share it instantly?
+
+## Reporting API & Monthly Scripts
+
+### API endpoints
+
+The Guzo backend exposes hotel performance reports via FastAPI:
+
+- **Portfolio report (all hotels)**  
+  `GET /reports/portfolio?year=YYYY&month=MM`  
+  Returns:
+  - `summary` (bookings, room nights, room revenue, ADR, RevPAR, occupancy, rooms available)
+  - `per_hotel` breakdown
+  - `by_payment_method`
+  - `daily_trend`
+  - `sample_bookings` (example reservations for that period)
+
+- **Single hotel report**  
+  `GET /reports/hotel?property_code=CODE&year=YYYY&month=MM`  
+  e.g.
+  - `property_code=DRE001` → Dream Big Hotel
+  - `property_code=NN002` → N&N Luxury Hotel
+
+Both endpoints require a simple bearer token:
+
+```http
+Authorization: Bearer admin-secret-123
+
+# Guzo – Front Desk Console (PMS MVP)
+
+This project is a mini–property management system (PMS) focused on **Room Division / Front Desk**:
+
+- Rooms availability & occupancy by property (DRE001, N&N002)
+- Front Desk Console with today's Arrivals / In-House / Departures / Future bookings
+- Daily PDF & Excel (CSV) “Guzo Daily Report” export
+
+---
+
+## 1. Requirements
+
+- Python 3.12+
+- Node.js + npm
+- PostgreSQL running with the `guzo_db` schema
+- `.env` configured with `GUZO_DB_*` and `AUTH_TOKEN=admin-secret-123`
+
+---
+
+## 2. Setup (first time)
+
+```bash
+cd ~/Desktop/Guzo
+
+# Python deps
+python -m venv venv
+source venv/Scripts/activate
+pip install -r requirements.txt
+
+# Frontend deps
+cd dashboard_ui
+npm install
+
+
+You can copy-paste that straight into `README.md` and adjust small details later.
+
+---
+
+## 3️⃣ Quick sanity check for PMS “global standard”
+
+Before you sleep on it, just confirm these from the browser:
+
+1. **Rooms Availability strip**
+   - Shows both:
+     - Dream Big Hotel (DRE001)
+     - N&N Luxury Hotel (N&N002)
+   - Occupancy %, total, booked, available correct vs `/rooms/availability` curl.
+
+2. **Front Desk Console (big card)**
+   - Scope buttons: Today / Arrivals / In-House / Departures / Upcoming / Cancelled.
+   - Property filter: All / DRE001 / N&N002.
+   - KPIs update when you switch scope & property.
+
+3. **FrontDeskBookings (classic tables)**
+   - Four cards: Arrivals / In House / Departures / Future.
+   - Status badges (booked / in-house / checked-out) show correct colors.
+   - Mobile view: cards stack vertically, table scrolls sideways.
+
+4. **Daily exports**
+   - PDF opens in a PDF viewer and has:
+     - Date, hotel names, basic KPIs, booking lines.
+   - Excel/CSV opens in Excel or Sheets and has booking rows.
+
+If those four are true, your **Room Division / Front Desk MVP is complete** by hotel SOP standards.
+
+---
+
+If you like, next I can:  
+
+- Help you write a **short “pitch” section** in the README (for investors / hotel GMs).  
+- Or define **Phase 2**: F&B, night audit, or manager’s monthly revenue dashboard.
+
+## 5. Daily Room Division Reports
+
+From the Front Desk dashboard, use:
+
+- **Download PDF** – generates `guzo_daily_report_<date>.pdf`
+- **Download Excel** – generates `guzo_daily_report_<date>.csv`
+
+Or via terminal:
+
+```bash
+cd ~/Desktop/Guzo
+source venv/Scripts/activate
+
+curl -o daily-2025-11-24.pdf \
+  "http://127.0.0.1:8000/reports/daily/pdf?business_date=2025-11-24" \
+  -H "Authorization: Bearer admin-secret-123"
+
+curl -o daily-2025-11-24.xlsx \
+  "http://127.0.0.1:8000/reports/daily/excel?business_date=2025-11-24" \
+  -H "Authorization: Bearer admin-secret-123"

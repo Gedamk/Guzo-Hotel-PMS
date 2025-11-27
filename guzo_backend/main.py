@@ -1,105 +1,108 @@
 # -*- coding: utf-8 -*-
 """
-Guzo Guest Assist – Multi-Channel Bot
--------------------------------------
-Main Telegram entry point for Guzo Guest Assist.
-Handles guest and hotel messages, registration, and routing.
+guzo_backend.main – FastAPI app for Guzo Guest Assist backend
 """
 
-import sys
-import os
-import logging
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters
-from dotenv import load_dotenv
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from guzo_backend.api import bookings_list_api
 
-# ✅ Add parent directory to path (so imports work)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-sys.path.append(BASE_DIR)
+from guzo_backend.api.routes_reports import router as reports_router
+from .api_frontdesk import router as frontdesk_router
+from .api_bookings import router as bookings_router
+from .routers import frontdesk
+from .routers import bot_bookings
+from .routers import availability
+from .routers import bot_availability
+from guzo_backend.api import bookings_list_api
+from guzo_backend.api import rooms_api
+from guzo_backend.api import bookings_list_api  # example
+from guzo_backend.api.reports_daily_api import router as reports_daily_router
+from guzo_backend.api.reports_periodic_api import router as reports_periodic_router
+from guzo_backend.api.health_api import router as health_router  # coming next
+from guzo_backend.api.availability_api import router as availability_router
+from guzo_backend.api.kpi_api import router as kpi_router
+from guzo_backend.api.bookings_actions_api import router as bookings_actions_router
+from guzo_backend.api.reports_owner_api import router as reports_owner_router
+from guzo_backend.api.reports_daily_api import router as reports_daily_router
+from guzo_backend.api.rooms_status_api import router as rooms_status_router
+from guzo_backend.api.rooms_housekeeping_api import router as housekeeping_router
+from guzo_backend.api.frontdesk_assign_api import router as frontdeskAssignRouter
 
-# ✅ Internal imports
-from guzo_backend.message_router import process_message
-from guzo_backend.modules.register_hotel import register_hotel  # 🔹 /register command handler
 
-# ✅ Load environment variables
-load_dotenv()
-telegram_token = os.getenv("TELEGRAM_BOT_TOKEN")
-
-if not telegram_token:
-    print("❌ TELEGRAM_BOT_TOKEN missing in .env file.")
-    sys.exit(1)
-
-# ✅ UTF-8 output fix
-sys.stdout.reconfigure(encoding="utf-8")
-
-# ======================================================
-# LOGGING
-# ======================================================
-os.makedirs(os.path.join(BASE_DIR, "logs"), exist_ok=True)
-logging.basicConfig(
-    format="%(asctime)s - GuzoBot - %(levelname)s - %(message)s",
-    level=logging.INFO,
-    handlers=[
-        logging.FileHandler(os.path.join(BASE_DIR, "logs", "bot.log"), encoding="utf-8"),
-        logging.StreamHandler(sys.stdout),
-    ],
+app = FastAPI(
+    title="Guzo Guest Assist Backend",
+    version="0.1.0",
 )
-logger = logging.getLogger("GuzoBot")
 
-# ======================================================
-# TELEGRAM HANDLERS
-# ======================================================
+app.include_router(availability_router)
+app.include_router(kpi_router)
+app.include_router(frontdesk.router)
+app.include_router(bot_bookings.router)
+app.include_router(availability.router)
+app.include_router(bot_availability.router)
+app.include_router(bookings_list_api.router)
+app.include_router(bookings_list_api.router)
+app.include_router(rooms_api.router)
+app.include_router(bookings_list_api.router)  # existing
 
-async def start(update, context):
-    """Welcome message when /start command is issued."""
-    await update.message.reply_text(
-        "👋 Welcome to Guzo Guest Assist!\n"
-        "How can we help you today?"
-    )
-    logger.info(f"Started chat with {update.effective_user.username or update.effective_user.id}")
+app.include_router(reports_daily_router)      # ⬅ add this line
+app.include_router(reports_periodic_router)
+app.include_router(health_router)
+app.include_router(kpi_router, prefix="/kpi", tags=["kpi"])
 
-async def handle_text(update, context):
-    """Handles all incoming guest/hotel messages."""
-    user = update.effective_user
-    text = update.message.text.strip()
-    logger.info(f"Message from {user.username or user.id}: {text}")
 
-    try:
-        # ✅ Call the synchronous router (NO await)
-        response = process_message(update, context)
+app.include_router(frontdesk_router)
+app.include_router(reports_router)
+app.include_router(availability_router)
+app.include_router(bookings_actions_router)
+app.include_router(reports_owner_router)
+app.include_router(reports_daily_router)
+app.include_router(rooms_status_router)
+app.include_router(housekeeping_router)
+app.include_router(frontdeskAssignRouter)
 
-        # If router returns a message, send it back
-        if response:
-            await update.message.reply_text(response)
-        else:
-            await update.message.reply_text("🤖 Thank you! Your request is being processed.")
 
-    except Exception as e:
-        logger.exception(f"Error while processing message: {e}")
-        await update.message.reply_text("⚠️ Sorry, something went wrong while processing your message.")
 
-# ======================================================
-# MAIN FUNCTION
-# ======================================================
-def main():
-    """Starts the Telegram bot."""
-    try:
-        logger.info("🚀 Launching Telegram Bot...")
-        app = ApplicationBuilder().token(telegram_token).build()
+# -------------------------------------------------
+# CORS – allow React frontend to access FastAPI
+# -------------------------------------------------
 
-        # 🔹 Register command and message handlers
-        app.add_handler(CommandHandler("start", start))
-        app.add_handler(CommandHandler("register", register_hotel))
-        app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://192.168.56.1:3000",   # React dev server on your network
+]
 
-        print("🤖 Guzo Guest Assist Telegram bot is running...")
-        app.run_polling()
+# CORS etc…
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-    except Exception as e:
-        logger.error(f"❌ Fatal error: {e}")
-        print(f"❌ Fatal error: {e}")
+# -------------------------------------------------
+# Health endpoint
+# -------------------------------------------------
+@app.get("/health")
+def health_check():
+    return {
+        "status": "ok",
+        "service": "guzo-backend",
+        "version": "v1",
+    }
 
-# ======================================================
-# ENTRY POINT
-# ======================================================
-if __name__ == "__main__":
-    main()
+
+# -------------------------------------------------
+# Routers
+# -------------------------------------------------
+# Reports (portfolio, monthly, etc.)
+app.include_router(reports_router)
+
+# Front desk live daily operational bookings
+app.include_router(frontdesk_router, prefix="/frontdesk", tags=["frontdesk"])
+
+# Booking updates (status changes: check-in, check-out)
+app.include_router(bookings_router)
