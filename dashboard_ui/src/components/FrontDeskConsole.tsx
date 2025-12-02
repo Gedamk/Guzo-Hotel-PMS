@@ -1,288 +1,345 @@
-// dashboard_ui/src/components/FrontDeskConsole.tsx
-
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-} from "react";
+// src/components/FrontDeskConsole.tsx
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import AssignRoomModal from "./AssignRoomModal"; // (kept for future use if you need a popup)
 
 const API_BASE = "http://127.0.0.1:8000";
 const AUTH_TOKEN = "<REDACTED_DEMO_BEARER_TOKEN>";
 
-// --- date helpers ----------------------------------------------------------
-
-const toLocalDate = (isoDate: string): Date => {
-  const [year, month, day] = isoDate.split("-").map(Number);
-  return new Date(year, month - 1, day);
-};
-
-const isSameDay = (a: string, b: string): boolean => {
-  if (!a || !b) return false;
-  return a === b;
-};
-
-// Approximate number of rooms per property (updated!)
-const ROOMS_TOTAL_BY_PROPERTY: Record<string, number> = {
-  DRE001: 120,
-  "N&N002": 80,
-};
-
-// Map property_code -> hotel name
+// Map property_code -> hotel name (for display)
 const HOTEL_NAME_BY_PROPERTY: Record<string, string> = {
   DRE001: "Dream Big Hotel",
   "N&N002": "N&N Luxury Hotel",
 };
 
-type BookingStatus =
-  | "confirmed"
+// Approximate number of rooms per property
+const ROOMS_TOTAL_BY_PROPERTY: Record<string, number> = {
+  DRE001: 60, // Dream Big Hotel
+  "N&N002": 45, // N&N Luxury Hotel
+};
+
+// Keep types flexible to avoid TS errors if backend sends "Confirmed"/"confirmed"
+type BookingStatus = string;
+type Channel = string;
+type Bucket =
+  | "arrivals"
   | "in_house"
-  | "checked_out"
+  | "departures"
+  | "upcoming"
   | "cancelled"
-  | "no_show"
   | string;
 
-type BackendBooking = {
-  id: number;
-  booking_code: string | null;
-  guest_name: string;
-  room_number: string | null;
-  room_type: string | null;
-  check_in: string;
-  check_out: string;
-  status: string;
-  channel: string | null;
-  total_amount_etb: number | null;
-  created_at: string;
-  updated_at: string;
-  notes: string | null;
-  property_code: string | null;
-};
-
-type Booking = {
+interface FrontDeskBooking {
   id: number;
   guest_name: string;
-  property_code: string;
   hotel_name: string;
-  check_in: string;
-  check_out: string;
-  status: BookingStatus;
-  channel: string;
-  total_amount_etb: number;
-  room_number?: string | null;
-  guest_note?: string | null;
-};
+  property_code: string;
+  room_number: string | null;
+  room_type?: string | null;
+  check_in_date: string; // "2025-12-01"
+  check_out_date: string; // "2025-12-06"
+  nights?: number | null;
+  status: BookingStatus; // booking_status from backend
+  channel: Channel;
+  total_amount?: number | null;
+  currency?: string | null;
+  note?: string | null;
+  bucket: Bucket; // computed on frontend
+}
 
-type BookingStatusUpdate = {
-  new_status: BookingStatus;
-};
+interface HouseCount {
+  property_code: string;
+  date: string;
+  total_rooms: number;
+  occupied_rooms: number;
+  out_of_order_rooms: number;
+  available_rooms: number;
+  occupancy_pct: number;
+  arrivals_today: number;
+  departures_today: number;
+  cancelled_today: number;
+}
 
-type AssignRoomResponse = {
-  booking_id: number;
-  room_number: string;
-};
+// We allow two shapes:
+// 1) { bookings: [...], house_count?: {...} }
+// 2) plain array: [...]
+type FrontDeskApiData = ApiFrontDeskResponse | FrontDeskBooking[];
 
-// --- status helpers --------------------------------------------------------
+interface ApiFrontDeskResponse {
+  house_count?: HouseCount;
+  bookings: FrontDeskBooking[];
+}
 
-const normalizeStatus = (raw: string | null | undefined): BookingStatus => {
-  if (!raw) return "confirmed";
-  const s = raw.trim().toLowerCase();
-
-  switch (s) {
-    case "confirmed":
-      return "confirmed";
-    case "in_house":
-    case "in house":
-      return "in_house";
-    case "checked_out":
-    case "checked out":
-      return "checked_out";
-    case "cancelled":
-    case "canceled":
-      return "cancelled";
-    case "no_show":
-    case "no show":
-      return "no_show";
-    default:
-      return s as BookingStatus;
+const formatMoney = (amount?: number | null, currency?: string | null) => {
+  const safeAmount =
+    typeof amount === "number" && !Number.isNaN(amount) ? amount : 0;
+  const safeCurrency = currency && currency.trim() ? currency : "ETB"; // default to ETB
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: safeCurrency,
+      maximumFractionDigits: 0,
+    }).format(safeAmount);
+  } catch {
+    // Fallback if currency code is invalid
+    return `${safeAmount.toLocaleString("en-US")} ${safeCurrency}`;
   }
 };
 
-// format status label for display
-const formatStatusLabel = (status: BookingStatus): string => {
-  if (!status) return "pending";
-  return String(status).replace(/_/g, " ");
+// --- helpers -----------------------------------------------------------
+
+// Robust nights calculator (handles "YYYY-MM-DD" or generic date strings)
+const calculateNights = (checkIn: string, checkOut: string): number | null => {
+  if (!checkIn || !checkOut) return null;
+
+  const isoRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+  let ci: Date;
+  let co: Date;
+
+  if (isoRegex.test(checkIn) && isoRegex.test(checkOut)) {
+    const [ciY, ciM, ciD] = checkIn.split("-").map(Number);
+    const [coY, coM, coD] = checkOut.split("-").map(Number);
+    ci = new Date(ciY, ciM - 1, ciD);
+    co = new Date(coY, coM - 1, coD);
+  } else {
+    ci = new Date(checkIn);
+    co = new Date(checkOut);
+  }
+
+  if (isNaN(ci.getTime()) || isNaN(co.getTime())) return null;
+
+  const msPerDay = 1000 * 60 * 60 * 24;
+  const diff = co.getTime() - ci.getTime();
+  const nights = diff / msPerDay;
+
+  if (nights <= 0) return 1; // minimum 1 night if dates are weird
+  return Math.round(nights);
 };
 
-type Scope = "today" | "inhouse" | "arrivals" | "departures" | "all";
+const parseYmd = (s: string): Date | null => {
+  const isoRegex = /^\d{4}-\d{2}-\d{2}$/;
+  if (!isoRegex.test(s)) return null;
+  const [y, m, d] = s.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  return isNaN(dt.getTime()) ? null : dt;
+};
 
-const scopeOptions: { value: Scope; label: string }[] = [
-  { value: "today", label: "Today (touches today)" },
-  { value: "inhouse", label: "In-House" },
-  { value: "arrivals", label: "Arrivals" },
-  { value: "departures", label: "Departures" },
-  { value: "all", label: "All (±30 days)" },
-];
-
-// --- API helpers -----------------------------------------------------------
-
-const assignRoomApi = async (bookingId: number): Promise<string> => {
-  const res = await axios.post<AssignRoomResponse>(
-    `${API_BASE}/frontdesk/assign-room`,
-    { booking_id: bookingId },
-    {
-      headers: {
-        Authorization: `Bearer ${AUTH_TOKEN}`,
-        "Content-Type": "application/json",
-      },
-    }
+const isSameDay = (a: Date, b: Date): boolean => {
+  return (
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate()
   );
-  return res.data.room_number;
 };
 
-// --- Main component --------------------------------------------------------
+// Classify bucket based on status first, then dates + businessDate
+const classifyBucket = (
+  rawStatus: string | null | undefined,
+  checkIn: string,
+  checkOut: string,
+  businessDate: string
+): Bucket => {
+  const status = (rawStatus || "").toLowerCase();
+
+  // 1) Hard overrides based on status
+  if (
+    status === "cancelled" ||
+    status === "canceled" ||
+    status === "no_show" ||
+    status === "no-show"
+  ) {
+    return "cancelled";
+  }
+
+  if (status === "in_house" || status === "in house") {
+    return "in_house";
+  }
+
+  if (status === "checked_out" || status === "checked out") {
+    // Once it's checked-out, show under Departures
+    return "departures";
+  }
+
+  // 2) Fallback to date logic
+  const ci = parseYmd(checkIn);
+  const co = parseYmd(checkOut);
+  const bd = parseYmd(businessDate);
+
+  if (!ci || !co || !bd) {
+    // If dates are weird, treat as upcoming
+    return "upcoming";
+  }
+
+  if (isSameDay(ci, bd)) return "arrivals";
+  if (isSameDay(co, bd)) return "departures";
+  if (ci < bd && co > bd) return "in_house";
+  if (ci > bd) return "upcoming";
+
+  return "upcoming";
+};
+
+// Normalize status label per booking + bucket (for display only)
+const getDisplayStatus = (
+  booking: FrontDeskBooking,
+  bucket: Bucket
+): string => {
+  const raw = (booking.status || "").toLowerCase();
+
+  if (bucket === "arrivals") {
+    return "Confirmed";
+  }
+
+  if (bucket === "in_house") {
+    return "In House";
+  }
+
+  if (bucket === "departures") {
+    if (raw === "checked_out" || raw === "checked out") {
+      return "Checked Out";
+    }
+    return "Departure";
+  }
+
+  if (raw === "cancelled" || raw === "canceled") return "Cancelled";
+  if (raw === "no_show" || raw === "no-show") return "No-Show";
+
+  // fallback: capitalize raw
+  if (!raw) return "—";
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+};
+
+// Status pill colors based on raw status
+const getStatusPillClass = (status: BookingStatus): string => {
+  const raw = (status || "").toLowerCase();
+  if (raw === "in_house" || raw === "in house") {
+    return "bg-sky-50 text-sky-700 ring-sky-200";
+  }
+  if (raw === "checked_out" || raw === "checked out") {
+    return "bg-slate-50 text-slate-700 ring-slate-200";
+  }
+  if (raw === "cancelled" || raw === "canceled") {
+    return "bg-rose-50 text-rose-700 ring-rose-200";
+  }
+  if (raw === "no_show" || raw === "no-show") {
+    return "bg-amber-50 text-amber-700 ring-amber-200";
+  }
+  // default: confirmed
+  return "bg-emerald-50 text-emerald-700 ring-emerald-200";
+};
+
+const channelPill =
+  "inline-flex items-center rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700 ring-1 ring-indigo-200";
+
+// --- main component ----------------------------------------------------
 
 const FrontDeskConsole: React.FC = () => {
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState<number | null>(null);
+  const [businessDate, setBusinessDate] = useState(() => {
+    const d = new Date();
+    return d.toISOString().slice(0, 10); // "YYYY-MM-DD"
+  });
+  const [viewScope, setViewScope] = useState<"touches" | "today">("touches");
+  const [selectedProperty, setSelectedProperty] = useState("ALL");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedProperty, setSelectedProperty] = useState<string>("ALL");
-  const [scope, setScope] = useState<Scope>("today");
+  const [data, setData] = useState<FrontDeskApiData | null>(null);
 
-  const today = new Date();
-  const todayStr = today.toISOString().slice(0, 10); // YYYY-MM-DD
+  const propertyOptions = [
+    { code: "ALL", name: "All Properties" },
+    { code: "DRE001", name: "Dream Big Hotel" },
+    { code: "N&N002", name: "N&N Luxury Hotel" },
+  ];
 
-  const fetchBookings = useCallback(async () => {
+  // Load bookings from backend and normalize into FrontDeskBooking[]
+  const loadBookings = async () => {
     try {
       setLoading(true);
       setError(null);
 
-      const headers = {
-        Authorization: `Bearer ${AUTH_TOKEN}`,
-      };
+      const res = await axios.get(`${API_BASE}/frontdesk/bookings`, {
+        params: {
+          scope: viewScope, // "touches" or "today"
+          date: businessDate, // "2025-12-01"
+        },
+        headers: {
+          Authorization: `Bearer ${AUTH_TOKEN}`,
+        },
+      });
 
-      const res = await axios.get<BackendBooking[]>(
-        `${API_BASE}/frontdesk/bookings?scope=${scope}`,
-        { headers }
-      );
+      const raw = res.data;
 
-      const mapped: Booking[] = (res.data || []).map((b) => {
-        const propertyCode = b.property_code || "UNKNOWN";
-        const hotelName =
-          HOTEL_NAME_BY_PROPERTY[propertyCode] || propertyCode || "N/A";
+      const rows: any[] = Array.isArray(raw)
+        ? raw
+        : Array.isArray(raw?.bookings)
+        ? raw.bookings
+        : [];
+
+      const mapped: FrontDeskBooking[] = rows.map((r) => {
+        const property_code: string = r.property_code || "DRE001";
+        const hotel_name =
+          HOTEL_NAME_BY_PROPERTY[property_code] || property_code;
+
+        const status: string = r.booking_status || r.status || "";
+        const bucket: Bucket = classifyBucket(
+          status,
+          r.check_in_date,
+          r.check_out_date,
+          businessDate
+        );
 
         return {
-          id: b.id,
-          guest_name: b.guest_name,
-          property_code: propertyCode,
-          hotel_name: hotelName,
-          check_in: b.check_in,
-          check_out: b.check_out,
-          status: normalizeStatus(b.status), // ✅ normalize here
-          channel: b.channel || "",
-          total_amount_etb: b.total_amount_etb ?? 0,
-          room_number: b.room_number,
-          guest_note: b.notes,
+          id: r.id,
+          guest_name: r.guest_name,
+          hotel_name,
+          property_code,
+          room_number: r.room_number ?? null,
+          room_type: r.room_type ?? null,
+          check_in_date: r.check_in_date,
+          check_out_date: r.check_out_date,
+          nights: calculateNights(r.check_in_date, r.check_out_date),
+          status,
+          channel: r.channel || "",
+          total_amount: r.total_amount ?? null,
+          currency: r.currency ?? "ETB",
+          note: r.note ?? null,
+          bucket,
         };
       });
 
-      setBookings(mapped);
+      console.log("Frontdesk bookings response (normalized):", mapped);
+      setData(mapped);
     } catch (err: any) {
-      console.error("FrontDeskConsole – error loading bookings", err);
-      const msg =
-        err?.response?.status
-          ? `HTTP ${err.response.status} – ${err.response.statusText}`
-          : err?.message || "Failed to load bookings";
-      setError(msg);
+      console.error(
+        "Error loading bookings:",
+        err?.response?.data || err.message || err
+      );
+      setError(
+        "Error loading bookings. " +
+          (err?.response?.data?.detail ||
+            err.message ||
+            "Please check backend connection.")
+      );
     } finally {
       setLoading(false);
     }
-  }, [scope]);
-
-  useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
-
-  const propertyOptions = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const b of bookings) {
-      if (!map.has(b.property_code)) {
-        map.set(b.property_code, b.hotel_name);
-      }
-    }
-    return Array.from(map.entries()).map(([code, name]) => ({ code, name }));
-  }, [bookings]);
-
-  const filteredBookings = useMemo(() => {
-    if (selectedProperty === "ALL") return bookings;
-    return bookings.filter((b) => b.property_code === selectedProperty);
-  }, [bookings, selectedProperty]);
-
-  const calcNights = (ci: string, co: string) => {
-    const a = toLocalDate(ci);
-    const b = toLocalDate(co);
-    const diffMs = b.getTime() - a.getTime();
-    return Math.max(diffMs / (1000 * 60 * 60 * 24), 0);
   };
 
-  const isInHouse = (b: Booking) => b.status === "in_house";
+  // --- Action handlers: Assign Room / Check In / Check Out --------------
 
-  const arrivalsToday = filteredBookings.filter(
-    (b) => b.status === "confirmed" && isSameDay(b.check_in, todayStr)
-  );
+  const handleAssignRoom = async (booking: FrontDeskBooking) => {
+    const current = booking.room_number || "";
+    const room = window.prompt(
+      `Assign room for ${booking.guest_name} (${booking.property_code}):`,
+      current
+    );
+    if (!room) return;
 
-  const inHouse = filteredBookings.filter(isInHouse);
-
-  const departuresToday = filteredBookings.filter(
-    (b) =>
-      isSameDay(b.check_out, todayStr) &&
-      (b.status === "in_house" || b.status === "checked_out")
-  );
-
-  const cancelled = filteredBookings.filter(
-    (b) => b.status === "cancelled" || b.status === "no_show"
-  );
-
-  const upcoming = filteredBookings.filter(
-    (b) => b.status === "confirmed" && b.check_in > todayStr
-  );
-
-  const roomsOccupiedToday = inHouse.length;
-  let roomsTotalForScope = 0;
-
-  if (selectedProperty === "ALL") {
-    const seenProps = new Set<string>();
-    for (const b of filteredBookings) {
-      if (!seenProps.has(b.property_code)) {
-        seenProps.add(b.property_code);
-        roomsTotalForScope += ROOMS_TOTAL_BY_PROPERTY[b.property_code] ?? 0;
-      }
-    }
-  } else {
-    roomsTotalForScope =
-      ROOMS_TOTAL_BY_PROPERTY[selectedProperty] ?? roomsOccupiedToday ?? 0;
-  }
-
-  const occupancyPct =
-    roomsTotalForScope > 0
-      ? (roomsOccupiedToday / roomsTotalForScope) * 100
-      : 0;
-
-  const handleStatusChange = async (
-    bookingId: number,
-    newStatus: BookingStatus
-  ) => {
     try {
-      setBusyId(bookingId);
+      setLoading(true);
+      setError(null);
 
-      const payload: BookingStatusUpdate = { new_status: newStatus };
-
-      const res = await axios.patch(
-        `${API_BASE}/frontdesk/bookings/${bookingId}/status`,
-        payload,
+      await axios.post(
+        `${API_BASE}/frontdesk/assign-room`,
+        { booking_id: booking.id, room_number: room },
         {
           headers: {
             Authorization: `Bearer ${AUTH_TOKEN}`,
@@ -291,487 +348,611 @@ const FrontDeskConsole: React.FC = () => {
         }
       );
 
-      const updatedRaw = res.data as BackendBooking;
-      const updated: Booking = {
-        id: updatedRaw.id,
-        guest_name: updatedRaw.guest_name,
-        property_code: updatedRaw.property_code || "UNKNOWN",
-        hotel_name:
-          HOTEL_NAME_BY_PROPERTY[updatedRaw.property_code || ""] ||
-          updatedRaw.property_code ||
-          "N/A",
-        check_in: updatedRaw.check_in,
-        check_out: updatedRaw.check_out,
-        status: normalizeStatus(updatedRaw.status),
-        channel: updatedRaw.channel || "",
-        total_amount_etb: updatedRaw.total_amount_etb ?? 0,
-        room_number: updatedRaw.room_number,
-        guest_note: updatedRaw.notes,
-      };
-
-      setBookings((prev) =>
-        prev.map((b) => (b.id === bookingId ? updated : b))
+      await loadBookings();
+    } catch (err: any) {
+      console.error(
+        "Error assigning room:",
+        err?.response?.data || err.message || err
       );
-    } catch (err) {
-      console.error(err);
-      alert("Failed to update booking status");
+      setError(
+        "Unable to assign room. " +
+          (err?.response?.data?.detail || err.message || "")
+      );
     } finally {
-      setBusyId(null);
+      setLoading(false);
     }
   };
 
-  const handleAssignRoom = async (bookingId: number) => {
+  const handleCheckIn = async (booking: FrontDeskBooking) => {
     try {
-      setBusyId(bookingId);
-      const roomNumber = await assignRoomApi(bookingId);
-      setBookings((prev) =>
-        prev.map((b) =>
-          b.id === bookingId ? { ...b, room_number: roomNumber } : b
-        )
+      setLoading(true);
+      setError(null);
+
+      await axios.post(
+        `${API_BASE}/frontdesk/check-in`,
+        { booking_id: booking.id },
+        {
+          headers: {
+            Authorization: `Bearer ${AUTH_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+        }
       );
-    } catch (err) {
-      console.error(err);
-      alert("Failed to assign room");
+
+      await loadBookings();
+    } catch (err: any) {
+      console.error(
+        "Error performing check-in:",
+        err?.response?.data || err.message || err
+      );
+      setError(
+        "Unable to perform check-in. " +
+          (err?.response?.data?.detail || err.message || "")
+      );
     } finally {
-      setBusyId(null);
+      setLoading(false);
     }
   };
 
-  if (loading) {
-    return <div style={{ padding: "1rem" }}>Loading front desk view…</div>;
-  }
+  const handleCheckOut = async (booking: FrontDeskBooking) => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  if (error) {
-    return (
-      <div style={{ padding: "1rem", color: "red" }}>
-        Error loading bookings: {error}
-      </div>
+      await axios.post(
+        `${API_BASE}/frontdesk/check-out`,
+        { booking_id: booking.id },
+        {
+          headers: {
+            Authorization: `Bearer ${AUTH_TOKEN}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      await loadBookings();
+    } catch (err: any) {
+      console.error(
+        "Error performing check-out:",
+        err?.response?.data || err.message || err
+      );
+      setError(
+        "Unable to perform check-out. " +
+          (err?.response?.data?.detail || err.message || "")
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Reload when businessDate / property / scope changes
+  useEffect(() => {
+    loadBookings();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [businessDate, selectedProperty, viewScope]);
+
+  // Normalize data to: bookingsByBucket + optional houseCount
+  const { bookingsByBucket, houseCount } = useMemo(() => {
+    const emptyBuckets: Record<Bucket, FrontDeskBooking[]> = {
+      arrivals: [],
+      in_house: [],
+      departures: [],
+      upcoming: [],
+      cancelled: [],
+    };
+
+    if (!data) {
+      return {
+        bookingsByBucket: emptyBuckets,
+        houseCount: undefined as HouseCount | undefined,
+      };
+    }
+
+    let bookings: FrontDeskBooking[] = [];
+    let hc: HouseCount | undefined = undefined;
+
+    if (Array.isArray(data)) {
+      bookings = data;
+    } else if (Array.isArray((data as ApiFrontDeskResponse).bookings)) {
+      bookings = (data as ApiFrontDeskResponse).bookings;
+    } else {
+      console.warn("Unexpected frontdesk response shape:", data);
+      return {
+        bookingsByBucket: emptyBuckets,
+        houseCount: undefined as HouseCount | undefined,
+      };
+    }
+
+    // Filter by selected property if not ALL
+    if (selectedProperty !== "ALL") {
+      bookings = bookings.filter((b) => b.property_code === selectedProperty);
+    }
+
+    // Bucket bookings
+    const result: Record<Bucket, FrontDeskBooking[]> = {
+      arrivals: [],
+      in_house: [],
+      departures: [],
+      upcoming: [],
+      cancelled: [],
+    };
+
+    for (const b of bookings) {
+      const key = (b.bucket || "").toLowerCase() as Bucket;
+      if (key in result) {
+        result[key].push(b);
+      } else {
+        result.upcoming.push(b); // fallback
+      }
+    }
+
+    // --- Compute house count / occupancy for current view --------------------
+
+    const propertiesInScope = new Set<string>(
+      bookings.map((b) => b.property_code)
     );
-  }
 
-  const selectedHotelLabel =
-    selectedProperty === "ALL"
-      ? "All Properties"
-      : propertyOptions.find((p) => p.code === selectedProperty)?.name ||
-        selectedProperty;
+    let totalRooms = 0;
+    propertiesInScope.forEach((code) => {
+      const rooms = ROOMS_TOTAL_BY_PROPERTY[code];
+      if (typeof rooms === "number" && rooms > 0) {
+        totalRooms += rooms;
+      }
+    });
 
-  const currentScopeLabel =
-    scopeOptions.find((s) => s.value === scope)?.label || "Today";
+    if (totalRooms > 0) {
+      const occupiedRooms = result.in_house.length + result.arrivals.length;
+      const occupancyPct =
+        totalRooms > 0 ? (occupiedRooms / totalRooms) * 100 : 0;
+
+      hc = {
+        property_code:
+          selectedProperty === "ALL" ? "PORTFOLIO" : selectedProperty,
+        date: businessDate,
+        total_rooms: totalRooms,
+        occupied_rooms: occupiedRooms,
+        out_of_order_rooms: 0,
+        available_rooms: Math.max(0, totalRooms - occupiedRooms),
+        occupancy_pct: occupancyPct,
+        arrivals_today: result.arrivals.length,
+        departures_today: result.departures.length,
+        cancelled_today: result.cancelled.length,
+      };
+    }
+
+    return { bookingsByBucket: result, houseCount: hc };
+  }, [data, selectedProperty, businessDate]);
+
+  const hc = houseCount;
 
   return (
-    <div
-      style={{
-        padding: "1.5rem",
-        fontFamily:
-          "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-      }}
-    >
-      <h1
-        style={{
-          fontSize: "1.8rem",
-          fontWeight: 700,
-          marginBottom: "0.25rem",
-        }}
-      >
-        🛎 Front Desk – Room Division Console
-      </h1>
+    <div className="min-h-screen bg-slate-100 py-8">
+      <div className="mx-auto max-w-6xl px-4">
+        <div className="flex overflow-hidden rounded-3xl bg-white shadow-xl shadow-slate-200/80 ring-1 ring-slate-200/70">
+          {/* Left sidebar */}
+          <div className="flex w-16 flex-col items-center justify-between border-r border-slate-100 bg-slate-50/80 py-6">
+            <button className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 text-white shadow-md">
+              🛎️
+            </button>
+            <button className="inline-flex h-8 w-8 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-sm">
+              ⚙️
+            </button>
+          </div>
 
-      <p style={{ marginBottom: "0.5rem", color: "#555" }}>
-        Today:{" "}
-        <strong>
-          {today.toLocaleDateString(undefined, {
-            year: "numeric",
-            month: "short",
-            day: "numeric",
-          })}
-        </strong>
-      </p>
+          {/* Main content */}
+          <div className="flex-1 px-5 pb-6 pt-5 sm:px-8 sm:pb-8 sm:pt-6">
+            {/* Header */}
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-indigo-50 text-indigo-600 ring-1 ring-indigo-100">
+                    GZ
+                  </span>
+                  <div>
+                    <h1 className="text-lg font-semibold tracking-tight text-slate-900">
+                      Front Desk – Room Division Console
+                    </h1>
+                    <p className="mt-1 text-xs text-slate-500">
+                      Today: {businessDate} · Portfolio view of arrivals,
+                      in-house, and departures.
+                    </p>
+                  </div>
+                </div>
+              </div>
 
-      {/* Controls: scope + property */}
-      <div
-        style={{
-          marginBottom: "1.5rem",
-          display: "flex",
-          flexWrap: "wrap",
-          alignItems: "center",
-          gap: "0.75rem",
-        }}
-      >
-        <span style={{ fontSize: "0.9rem", color: "#555" }}>View scope:</span>
+              {/* Filters: business date, scope, property */}
+              <div className="flex flex-col gap-2 text-xs text-slate-600 sm:flex-row">
+                <InfoCard label="Business Date">
+                  <input
+                    type="date"
+                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    value={businessDate}
+                    onChange={(e) => setBusinessDate(e.target.value)}
+                  />
+                </InfoCard>
 
-        <select
-          value={scope}
-          onChange={(e) => setScope(e.target.value as Scope)}
-          style={{
-            padding: "0.35rem 0.75rem",
-            borderRadius: "999px",
-            border: "1px solid #ccc",
-            fontSize: "0.9rem",
-          }}
-        >
-          {scopeOptions.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
+                <InfoCard label="View scope">
+                  <select
+                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    value={viewScope}
+                    onChange={(e) =>
+                      setViewScope(
+                        e.target.value === "touches" ? "touches" : "today"
+                      )
+                    }
+                  >
+                    <option value="touches">Today (touches today)</option>
+                    <option value="today">Today (business date only)</option>
+                  </select>
+                </InfoCard>
 
-        <span
-          style={{
-            fontSize: "0.9rem",
-            color: "#555",
-            marginLeft: "1rem",
-          }}
-        >
-          Property:
-        </span>
+                <InfoCard label="Property">
+                  <select
+                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    value={selectedProperty}
+                    onChange={(e) => setSelectedProperty(e.target.value)}
+                  >
+                    {propertyOptions.map((p) => (
+                      <option key={p.code} value={p.code}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </select>
+                </InfoCard>
+              </div>
+            </div>
 
-        <select
-          value={selectedProperty}
-          onChange={(e) => setSelectedProperty(e.target.value)}
-          style={{
-            padding: "0.35rem 0.75rem",
-            borderRadius: "999px",
-            border: "1px solid #ccc",
-            fontSize: "0.9rem",
-          }}
-        >
-          <option value="ALL">All Properties</option>
-          {propertyOptions.map((p) => (
-            <option key={p.code} value={p.code}>
-              {p.name} ({p.code})
-            </option>
-          ))}
-        </select>
+            <div className="mt-4 h-px bg-slate-100" />
 
-        <span style={{ fontSize: "0.85rem", color: "#777" }}>
-          Viewing: <strong>{selectedHotelLabel}</strong> –{" "}
-          <span>{currentScopeLabel}</span>
-        </span>
+            {/* Loading + Error */}
+            {loading && (
+              <p className="mt-2 text-xs text-slate-400">Loading data...</p>
+            )}
+
+            {error && (
+              <div className="mt-3 rounded-2xl border border-rose-100 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+                {error}
+              </div>
+            )}
+
+            {/* House Count + KPI row */}
+            <section className="mt-4">
+              <h2 className="text-sm font-semibold text-slate-900">
+                House Count & Occupancy – Portfolio
+              </h2>
+              <p className="text-xs text-slate-500">
+                In-House / Total Rooms:&nbsp;
+                <span className="font-medium">
+                  {hc ? `${hc.occupied_rooms} / ${hc.total_rooms}` : "—"}
+                </span>
+                &nbsp;· Occupancy:&nbsp;
+                <span className="font-medium">
+                  {hc ? `${hc.occupancy_pct.toFixed(1)}%` : "—"}
+                </span>
+              </p>
+
+              {/* Summary pills */}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <StatPill
+                  label="Arrivals Today"
+                  value={bookingsByBucket.arrivals.length}
+                  tone="emerald"
+                />
+                <StatPill
+                  label="In-House Rooms"
+                  value={bookingsByBucket.in_house.length}
+                  tone="sky"
+                />
+                <StatPill
+                  label="Departures Today"
+                  value={bookingsByBucket.departures.length}
+                  tone="violet"
+                />
+                <StatPill
+                  label="Cancelled / No-Show"
+                  value={bookingsByBucket.cancelled.length}
+                  tone="rose"
+                />
+                <StatPill
+                  label="Occupancy (Rooms) – Portfolio"
+                  value={hc?.occupancy_pct ?? 0}
+                  suffix="%"
+                  tone="indigo"
+                />
+              </div>
+            </section>
+
+            {/* Arrivals */}
+            <BucketSection
+              title="Arrivals Today"
+              colorDot="bg-emerald-500"
+              bucketKey="arrivals"
+              bookings={bookingsByBucket.arrivals}
+              onAssignRoom={handleAssignRoom}
+              onCheckIn={handleCheckIn}
+              onCheckOut={handleCheckOut}
+            />
+
+            {/* In-House */}
+            <BucketSection
+              title="In-House"
+              colorDot="bg-amber-400"
+              bucketKey="in_house"
+              bookings={bookingsByBucket.in_house}
+              onAssignRoom={handleAssignRoom}
+              onCheckIn={handleCheckIn}
+              onCheckOut={handleCheckOut}
+            />
+
+            {/* Departures */}
+            <BucketSection
+              title="Departures Today"
+              colorDot="bg-sky-500"
+              bucketKey="departures"
+              bookings={bookingsByBucket.departures}
+              onAssignRoom={handleAssignRoom}
+              onCheckIn={handleCheckIn}
+              onCheckOut={handleCheckOut}
+            />
+
+            {/* Upcoming */}
+            <BucketSection
+              title="Upcoming Bookings"
+              colorDot="bg-slate-400"
+              bucketKey="upcoming"
+              bookings={bookingsByBucket.upcoming}
+              onAssignRoom={handleAssignRoom}
+              onCheckIn={handleCheckIn}
+              onCheckOut={handleCheckOut}
+            />
+
+            {/* Cancelled / No-Show */}
+            <BucketSection
+              title="Cancelled / No-Show"
+              colorDot="bg-rose-500"
+              bucketKey="cancelled"
+              bookings={bookingsByBucket.cancelled}
+              onAssignRoom={handleAssignRoom}
+              onCheckIn={handleCheckIn}
+              onCheckOut={handleCheckOut}
+            />
+          </div>
+        </div>
       </div>
-
-      {/* KPI cards */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-          gap: "1rem",
-          marginBottom: "1.5rem",
-        }}
-      >
-        <KpiCard label="Arrivals Today" value={arrivalsToday.length.toString()} />
-        <KpiCard label="In-House Rooms" value={inHouse.length.toString()} />
-        <KpiCard
-          label="Departures Today"
-          value={departuresToday.length.toString()}
-        />
-        <KpiCard
-          label="Cancelled / No-Show"
-          value={cancelled.length.toString()}
-        />
-        <KpiCard
-          label="Occupancy (Rooms)"
-          value={occupancyPct.toFixed(1) + "%"}
-        />
-      </div>
-
-      {/* Sections */}
-      <Section
-        title="🟢 Arrivals Today"
-        bookings={arrivalsToday}
-        calcNights={calcNights}
-        onStatusChange={handleStatusChange}
-        onAssignRoom={handleAssignRoom}
-        busyId={busyId}
-        mode="arrivals"
-      />
-
-      <Section
-        title="🟡 In-House"
-        bookings={inHouse}
-        calcNights={calcNights}
-        onStatusChange={handleStatusChange}
-        onAssignRoom={handleAssignRoom}
-        busyId={busyId}
-        mode="in_house"
-      />
-
-      <Section
-        title="🔵 Departures Today"
-        bookings={departuresToday}
-        calcNights={calcNights}
-        onStatusChange={handleStatusChange}
-        onAssignRoom={handleAssignRoom}
-        busyId={busyId}
-        mode="departures"
-      />
-
-      <Section
-        title="📆 Upcoming Bookings"
-        bookings={upcoming}
-        calcNights={calcNights}
-        onStatusChange={handleStatusChange}
-        onAssignRoom={handleAssignRoom}
-        busyId={busyId}
-        mode="upcoming"
-      />
-
-      <Section
-        title="❌ Cancelled / No-Show"
-        bookings={cancelled}
-        calcNights={calcNights}
-        onStatusChange={handleStatusChange}
-        busyId={busyId}
-        mode="readonly"
-      />
     </div>
   );
 };
 
-// --- KPI Card -------------------------------------------------------
+export default FrontDeskConsole;
 
-const KpiCard: React.FC<{ label: string; value: string }> = ({
+// --- small UI helpers --------------------------------------------------
+
+const InfoCard: React.FC<{ label: string; children: React.ReactNode }> = ({
   label,
-  value,
+  children,
 }) => (
-  <div
-    style={{
-      borderRadius: "0.75rem",
-      border: "1px solid #e2e2e2",
-      padding: "0.9rem",
-      backgroundColor: "#fff",
-      boxShadow: "0 1px 3px rgba(0, 0, 0, 0.04)",
-    }}
-  >
-    <div
-      style={{
-        fontSize: "0.85rem",
-        color: "#777",
-        marginBottom: "0.25rem",
-      }}
-    >
-      {label}
+  <div className="flex items-center gap-2 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2 shadow-sm">
+    <div className="flex flex-col">
+      <span className="text-[10px] font-medium uppercase tracking-wide text-slate-400">
+        {label}
+      </span>
+      {children}
     </div>
-
-    <div style={{ fontSize: "1.3rem", fontWeight: 600 }}>{value}</div>
   </div>
 );
 
-// --- Section -------------------------------------------------------
+interface StatPillProps {
+  label: string;
+  value: number;
+  suffix?: string;
+  tone: "emerald" | "sky" | "violet" | "rose" | "indigo";
+}
 
-type SectionMode =
-  | "arrivals"
-  | "in_house"
-  | "departures"
-  | "upcoming"
-  | "readonly";
-
-type SectionProps = {
-  title: string;
-  bookings: Booking[];
-  calcNights: (ci: string, co: string) => number;
-  onStatusChange: (id: number, newStatus: BookingStatus) => void;
-  onAssignRoom?: (id: number) => void;
-  busyId: number | null;
-  mode: SectionMode;
-};
-
-const Section: React.FC<SectionProps> = ({
-  title,
-  bookings,
-  calcNights,
-  onStatusChange,
-  onAssignRoom,
-  busyId,
-  mode,
-}) => {
-  const formatDate = (iso: string) => {
-    const d = toLocalDate(iso);
-    if (Number.isNaN(d.getTime())) return iso;
-    return d.toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-    });
-  };
-
-  const formatCurrency = (v: number) =>
-    v.toLocaleString("en-US", { maximumFractionDigits: 0 });
-
-  const renderActions = (b: Booking) => {
-    const disabled = busyId === b.id;
-
-    if (
-      mode !== "readonly" &&
-      (!b.room_number || b.room_number === "TBD") &&
-      onAssignRoom
-    ) {
-      return (
-        <button
-          style={buttonStyle}
-          disabled={disabled}
-          onClick={() => onAssignRoom(b.id)}
-        >
-          {disabled ? "..." : "Assign Room"}
-        </button>
-      );
-    }
-
-    if (mode === "arrivals") {
-      return (
-        <button
-          style={buttonStyle}
-          disabled={disabled}
-          onClick={() => onStatusChange(b.id, "in_house")}
-        >
-          {disabled ? "..." : "Check In"}
-        </button>
-      );
-    }
-
-    if (mode === "in_house" || mode === "departures") {
-      return (
-        <button
-          style={buttonStyle}
-          disabled={disabled}
-          onClick={() => onStatusChange(b.id, "checked_out")}
-        >
-          {disabled ? "..." : "Check Out"}
-        </button>
-      );
-    }
-
-    return null;
+const StatPill: React.FC<StatPillProps> = ({ label, value, suffix, tone }) => {
+  const toneMap: Record<StatPillProps["tone"], string> = {
+    emerald: "bg-emerald-50 text-emerald-800 ring-emerald-100",
+    sky: "bg-sky-50 text-sky-800 ring-sky-100",
+    violet: "bg-violet-50 text-violet-800 ring-violet-100",
+    rose: "bg-rose-50 text-rose-800 ring-rose-100",
+    indigo: "bg-indigo-50 text-indigo-800 ring-indigo-100",
   };
 
   return (
-    <div style={{ marginBottom: "1.5rem" }}>
-      <h2
-        style={{
-          fontSize: "1.2rem",
-          marginBottom: "0.5rem",
-        }}
-      >
-        {title}{" "}
-        <span style={{ fontSize: "0.9rem", color: "#777" }}>
-          ({bookings.length})
-        </span>
-      </h2>
-
-      {bookings.length === 0 ? (
-        <p style={{ color: "#777" }}>No bookings in this category.</p>
-      ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table
-            style={{
-              width: "100%",
-              minWidth: "900px",
-              borderCollapse: "collapse",
-              borderRadius: "0.5rem",
-              overflow: "hidden",
-            }}
-          >
-            <thead>
-              <tr style={{ backgroundColor: "#f5f5f5" }}>
-                <Th>Guest</Th>
-                <Th>Hotel</Th>
-                <Th>Property</Th>
-                <Th>Room</Th>
-                <Th>Check-In</Th>
-                <Th>Check-Out</Th>
-                <Th>Nights</Th>
-                <Th>Status</Th>
-                <Th>Channel</Th>
-                <Th>Total (ETB)</Th>
-                <Th>Note</Th>
-                <Th>Action</Th>
-              </tr>
-            </thead>
-
-            <tbody>
-              {bookings.map((b) => (
-                <tr key={b.id}>
-                  <Td>{b.guest_name}</Td>
-                  <Td>{b.hotel_name}</Td>
-                  <Td>{b.property_code}</Td>
-                  <Td>{b.room_number || "TBD"}</Td>
-                  <Td>{formatDate(b.check_in)}</Td>
-                  <Td>{formatDate(b.check_out)}</Td>
-                  <Td>{calcNights(b.check_in, b.check_out)}</Td>
-
-                  <td style={{ textTransform: "capitalize" }}>
-                    {formatStatusLabel(b.status)}
-                  </td>
-
-                  <td style={{ textTransform: "capitalize" }}>
-                    {b.channel || "-"}
-                  </td>
-
-                  <Td>{formatCurrency(b.total_amount_etb)}</Td>
-
-                  <td style={{ maxWidth: "160px" }}>
-                    <span
-                      style={{
-                        fontSize: "0.8rem",
-                        display: "inline-block",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {b.guest_note || b.guest_name}
-                    </span>
-                  </td>
-
-                  <Td>{renderActions(b)}</Td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+    <div
+      className={`${toneMap[tone]} inline-flex items-center justify-between gap-4 rounded-2xl px-3 py-1.5 text-[11px] font-medium ring-1`}
+    >
+      <span>{label}</span>
+      <span className="text-sm font-semibold">
+        {value}
+        {suffix ?? ""}
+      </span>
     </div>
   );
 };
 
-// --- Styled Cells ----------------------------------------------------
+interface BucketSectionProps {
+  title: string;
+  colorDot: string;
+  bucketKey: Bucket;
+  bookings: FrontDeskBooking[];
+  onAssignRoom: (b: FrontDeskBooking) => void;
+  onCheckIn: (b: FrontDeskBooking) => void;
+  onCheckOut: (b: FrontDeskBooking) => void;
+}
 
-const buttonStyle: React.CSSProperties = {
-  borderRadius: "999px",
-  border: "none",
-  padding: "0.35rem 0.9rem",
-  fontSize: "0.8rem",
-  fontWeight: 600,
-  cursor: "pointer",
-  backgroundColor: "#2563eb",
-  color: "#fff",
+const BucketSection: React.FC<BucketSectionProps> = ({
+  title,
+  colorDot,
+  bucketKey,
+  bookings,
+  onAssignRoom,
+  onCheckIn,
+  onCheckOut,
+}) => {
+  return (
+    <section className="mt-6">
+      <div className="mb-2 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className={`h-2 w-2 rounded-full ${colorDot}`} />
+          <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+          <span className="text-xs text-slate-400">({bookings.length})</span>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-slate-100 bg-slate-50/70">
+        {bookings.length === 0 ? (
+          <div className="px-4 py-4 text-xs text-slate-500">
+            No bookings in this category.
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-slate-100 text-xs">
+              <thead className="bg-white">
+                <tr>
+                  <Th>Guest</Th>
+                  <Th>Hotel</Th>
+                  <Th>Property</Th>
+                  <Th>Room</Th>
+                  <Th>Check-In</Th>
+                  <Th>Check-Out</Th>
+                  <Th className="text-center">Nights</Th>
+                  <Th>Status</Th>
+                  <Th>Channel</Th>
+                  <Th className="text-right">Total</Th>
+                  <Th className="text-right">Action</Th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 bg-white/80">
+                {bookings.map((b) => {
+                  const nights =
+                    b.nights != null
+                      ? b.nights
+                      : calculateNights(b.check_in_date, b.check_out_date);
+                  const displayStatus = getDisplayStatus(b, bucketKey);
+                  const pillClass = getStatusPillClass(b.status);
+
+                  const canAssignRoom =
+                    !b.room_number &&
+                    (bucketKey === "arrivals" || bucketKey === "in_house");
+                  const canCheckIn = bucketKey === "arrivals";
+                  const isAlreadyCheckedOut =
+                    (b.status || "").toLowerCase() === "checked_out" ||
+                    displayStatus === "Checked Out";
+                  const canCheckOut =
+                    bucketKey === "in_house" ||
+                    (bucketKey === "departures" && !isAlreadyCheckedOut);
+
+                  return (
+                    <tr key={b.id} className="hover:bg-slate-50/80">
+                      <Td className="font-medium text-slate-900">
+                        {b.guest_name}
+                      </Td>
+                      <Td>{b.hotel_name}</Td>
+                      <Td className="text-[11px] text-slate-500">
+                        {b.property_code}
+                      </Td>
+                      <Td>
+                        {b.room_number ? (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-700 ring-1 ring-slate-200">
+                            {b.room_number}
+                            {b.room_type && (
+                              <span className="text-slate-400">
+                                {b.room_type}
+                              </span>
+                            )}
+                          </span>
+                        ) : (
+                          <span className="text-[11px] text-slate-400">
+                            TBD
+                          </span>
+                        )}
+                      </Td>
+                      <Td>{b.check_in_date}</Td>
+                      <Td>{b.check_out_date}</Td>
+                      <Td className="text-center">
+                        {nights != null ? nights : "—"}
+                      </Td>
+                      <Td>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium ring-1 ${pillClass}`}
+                        >
+                          {displayStatus}
+                        </span>
+                      </Td>
+                      <Td>
+                        <span className={channelPill}>{b.channel || "—"}</span>
+                      </Td>
+                      <Td className="whitespace-nowrap text-right">
+                        {formatMoney(b.total_amount, b.currency)}
+                      </Td>
+                      <Td className="whitespace-nowrap text-right">
+                        {canAssignRoom || canCheckIn || canCheckOut ? (
+                          <div className="flex justify-end gap-1">
+                            {canAssignRoom && (
+                              <button
+                                onClick={() => onAssignRoom(b)}
+                                className="inline-flex items-center rounded-full bg-white px-2 py-1 text-[11px] font-semibold text-indigo-600 ring-1 ring-indigo-200 hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+                              >
+                                Assign Room
+                              </button>
+                            )}
+                            {canCheckIn && (
+                              <button
+                                onClick={() => onCheckIn(b)}
+                                className="inline-flex items-center rounded-full bg-indigo-600 px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+                              >
+                                Check In
+                              </button>
+                            )}
+                            {canCheckOut && (
+                              <button
+                                onClick={() => onCheckOut(b)}
+                                className="inline-flex items-center rounded-full bg-indigo-600 px-3 py-1.5 text-[11px] font-semibold text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-1"
+                              >
+                                Check Out
+                              </button>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-slate-400">
+                            No action
+                          </span>
+                        )}
+                      </Td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+    </section>
+  );
 };
 
-const Th: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+const Th: React.FC<React.ThHTMLAttributes<HTMLTableCellElement>> = ({
+  children,
+  className = "",
+  ...rest
+}) => (
   <th
-    style={{
-      textAlign: "left",
-      padding: "0.5rem 0.75rem",
-      fontSize: "0.85rem",
-      fontWeight: 600,
-      borderBottom: "1px solid #ddd",
-      whiteSpace: "nowrap",
-    }}
+    className={`whitespace-nowrap px-3 py-2 text-left text-[11px] font-semibold uppercase tracking-wide text-slate-400 ${className}`}
+    {...rest}
   >
     {children}
   </th>
 );
 
-const Td: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+const Td: React.FC<React.TdHTMLAttributes<HTMLTableCellElement>> = ({
+  children,
+  className = "",
+  ...rest
+}) => (
   <td
-    style={{
-      padding: "0.45rem 0.75rem",
-      fontSize: "0.85rem",
-      borderBottom: "1px solid #eee",
-      whiteSpace: "nowrap",
-    }}
+    className={`whitespace-nowrap px-3 py-2 align-middle text-[12px] text-slate-700 ${className}`}
+    {...rest}
   >
     {children}
   </td>
 );
-
-export default FrontDeskConsole;

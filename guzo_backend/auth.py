@@ -1,44 +1,61 @@
 # guzo_backend/auth.py
-#
-# Simple admin auth dependency for internal dashboard + front desk APIs.
-# Uses a static bearer token (default: "<REDACTED_DEMO_BEARER_TOKEN>") or GUZO_ADMIN_TOKEN env var.
 
-import os
-from fastapi import Header, HTTPException, status
+from __future__ import annotations
 
+from typing import Optional
 
-ADMIN_TOKEN = os.getenv("GUZO_ADMIN_TOKEN", "<REDACTED_DEMO_BEARER_TOKEN>")
+from fastapi import Header, HTTPException
 
 
-async def get_current_admin(authorization: str = Header(None)):
+# ---------------------------------------------------------------------------
+# Simple shared token for admin/dashboard access
+# ---------------------------------------------------------------------------
+
+SIMPLE_ADMIN_TOKEN = "<REDACTED_DEMO_BEARER_TOKEN>"
+
+
+def verify_simple_token(authorization: Optional[str] = Header(None)) -> str:
     """
-    Very simple admin check:
-      - Expect header:  Authorization: Bearer <REDACTED_DEMO_BEARER_TOKEN>
-      - If missing or wrong => 401 / 403
+    Very simple token verification used by internal APIs (rooms_api, frontdesk,
+    and any other admin/dashboard endpoints).
 
-    Used by:
-      - /reports/portfolio
-      - /frontdesk/* endpoints
+    Expected header:
+        Authorization: Bearer <REDACTED_DEMO_BEARER_TOKEN>
+
+    If the token is valid, returns the token string.
+    If not, raises HTTPException(401).
     """
     if not authorization:
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=401,
             detail="Missing Authorization header",
         )
 
-    if not authorization.startswith("Bearer "):
+    prefix = "Bearer "
+    if not authorization.startswith(prefix):
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
+            status_code=401,
             detail="Invalid Authorization header format",
         )
 
-    token = authorization.split(" ", 1)[1].strip()
-
-    if token != ADMIN_TOKEN:
+    token = authorization[len(prefix) :].strip()
+    if token != SIMPLE_ADMIN_TOKEN:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Invalid admin token",
+            status_code=401,
+            detail="Invalid token",
         )
 
-    # We don't need a full user object yet; just return a simple marker.
-    return {"role": "admin"}
+    return token
+
+
+# ---------------------------------------------------------------------------
+# Optional compatibility helpers for future use
+# ---------------------------------------------------------------------------
+
+def verify_admin_or_raise(authorization: Optional[str] = Header(None)) -> None:
+    """
+    Thin wrapper around verify_simple_token, kept for future compatibility.
+    Raises HTTPException if token is missing/invalid.
+    """
+    _ = verify_simple_token(authorization=authorization)
+    # If we get here, token is valid; no return value needed.

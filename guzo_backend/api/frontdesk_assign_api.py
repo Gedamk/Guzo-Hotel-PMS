@@ -1,37 +1,68 @@
 # guzo_backend/api/frontdesk_assign_api.py
-from fastapi import APIRouter, Header, HTTPException
-from pydantic import BaseModel
+
 from typing import Optional
 
-from guzo_db.postgres_hotels import assign_room_to_booking  # adjust import if needed
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
-router = APIRouter(prefix="/frontdesk", tags=["Front Desk"])
+from ..dependencies import get_db
 
-AUTH_TOKEN = "<REDACTED_DEMO_BEARER_TOKEN>"
+router = APIRouter(prefix="/frontdesk", tags=["frontdesk-assign"])
 
 
 class AssignRoomPayload(BaseModel):
-  booking_id: int
-  room: str
+    booking_id: int
+    property_code: Optional[str] = None
+    room_number: str
 
 
-@router.post("/assign-room")
-async def assign_room(
-  payload: AssignRoomPayload,
-  authorization: Optional[str] = Header(None),
-):
-  # Simple header auth – same as your other endpoints
-  if authorization != f"Bearer {AUTH_TOKEN}":
-    raise HTTPException(status_code=401, detail="Unauthorized")
+@router.post("/assign-room", status_code=status.HTTP_200_OK)
+def assign_room(payload: AssignRoomPayload, db: Session = Depends(get_db)):
+    """
+    Assign a physical room number to an existing booking.
 
-  try:
-    updated = assign_room_to_booking(
-      booking_id=payload.booking_id,
-      room_number=payload.room,
-    )
-  except ValueError as e:
-    raise HTTPException(status_code=404, detail=str(e))
-  except Exception as e:
-    raise HTTPException(status_code=500, detail=f"Failed to assign room: {e}")
+    We keep it simple:
+    - update `bookings.room_number`
+    - set status to 'in_house'
+    """
 
-  return updated
+    try:
+        update_sql = text(
+            """
+            UPDATE bookings
+            SET
+                room_number = :room_number,
+                status      = 'in_house'
+            WHERE id = :booking_id
+            """
+        )
+
+        result = db.execute(
+            update_sql,
+            {
+                "room_number": payload.room_number,
+                "booking_id": payload.booking_id,
+            },
+        )
+        db.commit()
+
+        if result.rowcount == 0:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Booking not found for assignment",
+            )
+
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        db.rollback()
+        # This drives the "Failed to assign room" message
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Error assigning room: {exc}",
+        ) from exc
+
+    # Frontend just refreshes /frontdesk/bookings after this
+    return {"ok": True}

@@ -1,272 +1,341 @@
 # guzo_backend/db/postgres_rooms.py
-#
-# Central helpers for:
-#  - Assigning rooms to bookings
-#  - Keeping room.status in sync with booking_status
-#
-# Uses:
-#   bookings(id, booking_status, hotel_id, property_code, ...)
-#   rooms(id, hotel_id, property_code, room_number, status, booking_id, ...)
 
-import os
-import logging
-from typing import Optional
+from __future__ import annotations
 
-import psycopg2
-from psycopg2.extras import RealDictCursor
+from typing import Dict, Any, List, Optional, Tuple
+from contextlib import closing
 
-logger = logging.getLogger(__name__)
+from ..core.postgres_db import get_db_connection
 
+
+# ---------------------------------------------------------------------------
+# 0. Compatibility helper for older code (availability router, etc.)
+# ---------------------------------------------------------------------------
 
 def get_connection():
     """
-    Open a new PostgreSQL connection using GUZO_DB_* env vars.
+    Backwards-compatible helper so older modules that import
+    `from ..db.postgres_rooms import get_connection`
+    still work.
+
+    Internally this just calls core.postgres_db.get_db_connection().
     """
-    dbname = os.getenv("GUZO_DB_NAME", "guzo_db")
-    user = os.getenv("GUZO_DB_USER", "guzo_user")
-    password = os.getenv("GUZO_DB_PASSWORD")
-    host = os.getenv("GUZO_DB_HOST", "localhost")
-    port = os.getenv("GUZO_DB_PORT", "5432")
-
-    return psycopg2.connect(
-        dbname=dbname,
-        user=user,
-        password=password,
-        host=host,
-        port=port,
-    )
+    return get_db_connection()
 
 
-def assign_room_to_booking(booking_id: int) -> Optional[str]:
+# ---------------------------------------------------------------------------
+# 1. Rooms summary for occupancy / house count
+# ---------------------------------------------------------------------------
+
+def get_rooms_summary_by_property() -> Dict[str, Dict[str, int]]:
     """
-    Assign the first free room for this booking's hotel/property.
+    Return aggregated room counts per property from the `rooms` table.
 
-    Policy (simple, but safe for v1):
-      - Find a room WHERE:
-          * property_code OR hotel_id matches booking
-          * booking_id IS NULL
-          * status in ('available', 'vacant_clean')
-      - Pick the smallest room_number
-      - Set rooms.booking_id = booking_id
-      - Set rooms.status = 'occupied'
-
-    Returns:
-      - room_number as string if assigned
-      - None if no free room or booking not found
+    SAFE VERSION:
+      - Only requires: rooms(property_code, ...)
+      - Does NOT assume `status` or `is_out_of_order` columns exist.
+      - Sets out_of_order_rooms = 0 for now.
     """
-    conn = get_connection()
+    conn = get_db_connection()
     try:
-        with conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                # Lock the booking row so we don't race with another front desk action
-                cur.execute(
-                    """
-                    SELECT id, hotel_id, property_code
-                    FROM bookings
-                    WHERE id = %s
-                    FOR UPDATE
-                    """,
-                    (booking_id,),
-                )
-                booking = cur.fetchone()
-                if not booking:
-                    logger.warning("assign_room_to_booking: booking %s not found", booking_id)
-                    return None
+        with closing(conn.cursor()) as cur:
+            cur.execute(
+                """
+                SELECT
+                    property_code,
+                    COUNT(*) AS total_rooms
+                FROM rooms
+                GROUP BY property_code
+                ORDER BY property_code
+                """
+            )
+            rows = cur.fetchall()
 
-                hotel_id = booking["hotel_id"]
-                property_code = booking["property_code"]
-
-                if not hotel_id and not property_code:
-                    logger.warning(
-                        "assign_room_to_booking: booking %s has no hotel_id/property_code",
-                        booking_id,
-                    )
-                    return None
-
-                # Choose free room by property_code if available, otherwise by hotel_id
-                if property_code:
-                    cur.execute(
-                        """
-                        SELECT id, room_number
-                        FROM rooms
-                        WHERE property_code = %s
-                          AND booking_id IS NULL
-                          AND status IN ('available', 'vacant_clean')
-                        ORDER BY room_number
-                        LIMIT 1
-                        """,
-                        (property_code,),
-                    )
-                else:
-                    cur.execute(
-                        """
-                        SELECT id, room_number
-                        FROM rooms
-                        WHERE hotel_id = %s
-                          AND booking_id IS NULL
-                          AND status IN ('available', 'vacant_clean')
-                        ORDER BY room_number
-                        LIMIT 1
-                        """,
-                        (hotel_id,),
-                    )
-
-                room = cur.fetchone()
-                if not room:
-                    logger.info(
-                        "assign_room_to_booking: no free room for booking %s (property=%s, hotel_id=%s)",
-                        booking_id,
-                        property_code,
-                        hotel_id,
-                    )
-                    return None
-
-                cur.execute(
-                    """
-                    UPDATE rooms
-                    SET booking_id = %s,
-                        status = 'occupied',
-                        updated_at = NOW()
-                    WHERE id = %s
-                    """,
-                    (booking_id, room["id"]),
-                )
-
-                logger.info(
-                    "assign_room_to_booking: assigned room %s to booking %s",
-                    room["room_number"],
-                    booking_id,
-                )
-
-                return str(room["room_number"])
-    except Exception:
-        logger.exception("assign_room_to_booking: error for booking %s", booking_id)
-        raise
+        summary: Dict[str, Dict[str, int]] = {}
+        for property_code, total_rooms in rows:
+            summary[property_code] = {
+                "total_rooms": int(total_rooms or 0),
+                "out_of_order_rooms": 0,  # placeholder until schema includes OOO
+            }
+        return summary
     finally:
         conn.close()
 
 
-def apply_booking_status_transition(booking_id: int, new_status: str) -> None:
+# ---------------------------------------------------------------------------
+# 2. Generic "list rooms" helper (used by dashboard / API)
+# ---------------------------------------------------------------------------
+
+def get_all_rooms(
+    property_code: Optional[str] = None,
+) -> List[Dict[str, Any]]:
     """
-    Apply booking_status change AND update linked room.status accordingly.
+    Return a list of rooms.
 
-    Room lifecycle (v1, Guzo standard):
-
-      - new_status = 'in_house'
-          booking.booking_status -> 'in_house'
-          room.status           -> 'occupied'    (guest is in-house)
-
-      - new_status = 'checked_out'
-          booking.booking_status -> 'checked_out'
-          room.status           -> 'vacant_dirty'
-          room.booking_id       -> NULL         (ready for cleaning / next booking)
-
-      - new_status in ('cancelled', 'no_show')
-          booking.booking_status -> 'cancelled' / 'no_show'
-          room.status           -> 'available'
-          room.booking_id       -> NULL
-
-      - otherwise:
-          only update booking.booking_status (no room change)
-
-    NOTE: We do NOT assume an 'updated_at' column on bookings, because
-          your current schema sample didn't include it.
+    If property_code is given, only rooms for that property are returned.
+    Otherwise, rooms for all properties are returned.
     """
-    conn = get_connection()
+    conn = get_db_connection()
     try:
-        with conn:
-            with conn.cursor(cursor_factory=RealDictCursor) as cur:
-                # Lock booking
+        with closing(conn.cursor()) as cur:
+            if property_code:
                 cur.execute(
                     """
-                    SELECT id, booking_status
-                    FROM bookings
-                    WHERE id = %s
-                    FOR UPDATE
-                    """,
-                    (booking_id,),
-                )
-                booking = cur.fetchone()
-                if not booking:
-                    raise ValueError(f"Booking {booking_id} not found")
-
-                # Lock any room linked to this booking
-                cur.execute(
-                    """
-                    SELECT id, status
+                    SELECT
+                        id,
+                        property_code,
+                        room_number,
+                        room_type,
+                        status,
+                        COALESCE(is_out_of_order, FALSE) AS is_out_of_order
                     FROM rooms
-                    WHERE booking_id = %s
-                    FOR UPDATE
+                    WHERE property_code = %s
+                    ORDER BY room_number
                     """,
-                    (booking_id,),
+                    (property_code,),
                 )
-                room = cur.fetchone()
-
-                # Update booking status
+            else:
                 cur.execute(
                     """
-                    UPDATE bookings
-                    SET booking_status = %s
-                    WHERE id = %s
-                    """,
-                    (new_status, booking_id),
+                    SELECT
+                        id,
+                        property_code,
+                        room_number,
+                        room_type,
+                        status,
+                        COALESCE(is_out_of_order, FALSE) AS is_out_of_order
+                    FROM rooms
+                    ORDER BY property_code, room_number
+                    """
                 )
+            rows = cur.fetchall()
 
-                # Update room if one is linked
-                if room:
-                    room_id = room["id"]
+        result: List[Dict[str, Any]] = []
+        for row in rows:
+            (
+                rid,
+                pcode,
+                room_number,
+                room_type,
+                status,
+                is_out_of_order,
+            ) = row
+            result.append(
+                {
+                    "id": rid,
+                    "property_code": pcode,
+                    "room_number": room_number,
+                    "room_type": room_type,
+                    "status": status,
+                    "is_out_of_order": bool(is_out_of_order),
+                }
+            )
+        return result
+    finally:
+        conn.close()
 
-                    if new_status == "in_house":
-                        # Guest is now in-house; keep room occupied
-                        cur.execute(
-                            """
-                            UPDATE rooms
-                            SET status = 'occupied',
-                                updated_at = NOW()
-                            WHERE id = %s
-                            """,
-                            (room_id,),
-                        )
 
-                    elif new_status == "checked_out":
-                        # Guest left: mark room dirty and free it from this booking
-                        cur.execute(
-                            """
-                            UPDATE rooms
-                            SET status = 'vacant_dirty',
-                                booking_id = NULL,
-                                updated_at = NOW()
-                            WHERE id = %s
-                            """,
-                            (room_id,),
-                        )
+# ---------------------------------------------------------------------------
+# 3. Internal helpers for argument parsing (backwards compatible)
+# ---------------------------------------------------------------------------
 
-                    elif new_status in ("cancelled", "no_show"):
-                        # Booking won't stay: free the room
-                        cur.execute(
-                            """
-                            UPDATE rooms
-                            SET status = 'available',
-                                booking_id = NULL,
-                                updated_at = NOW()
-                            WHERE id = %s
-                            """,
-                            (room_id,),
-                        )
+def _parse_assign_room_args(
+    *args,
+    **kwargs,
+) -> Tuple[int, str, str]:
+    """
+    Helper to keep backward compatibility with older calls that might use
+    positional args or keyword args.
 
-                    # For any other status (e.g. 'confirmed'), we leave the room as-is.
+    Expected logical parameters:
+      - booking_id: int
+      - property_code: str
+      - room_number: str
+    """
+    booking_id = kwargs.get("booking_id")
+    property_code = kwargs.get("property_code")
+    room_number = kwargs.get("room_number")
 
-                logger.info(
-                    "apply_booking_status_transition: booking %s -> %s",
-                    booking_id,
-                    new_status,
-                )
-    except Exception:
-        logger.exception(
-            "apply_booking_status_transition: error for booking %s -> %s",
-            booking_id,
-            new_status,
+    # Fallbacks for positional args: (booking_id, property_code, room_number)
+    if booking_id is None and len(args) > 0:
+        booking_id = args[0]
+    if property_code is None and len(args) > 1:
+        property_code = args[1]
+    if room_number is None and len(args) > 2:
+        room_number = args[2]
+
+    if booking_id is None or property_code is None or room_number is None:
+        raise ValueError(
+            "assign_room_to_booking requires booking_id, property_code, and room_number"
         )
-        raise
+
+    return int(booking_id), str(property_code), str(room_number)
+
+
+def _parse_status_transition_args(
+    *args,
+    **kwargs,
+) -> Tuple[int, str]:
+    """
+    Helper for apply_booking_status_transition, also backward compatible.
+
+    Expected logical parameters:
+      - booking_id: int
+      - new_status: str
+    """
+    booking_id = kwargs.get("booking_id")
+    new_status = kwargs.get("new_status")
+
+    if booking_id is None and len(args) > 0:
+        booking_id = args[0]
+    if new_status is None and len(args) > 1:
+        new_status = args[1]
+
+    if booking_id is None or new_status is None:
+        raise ValueError(
+            "apply_booking_status_transition requires booking_id and new_status"
+        )
+
+    return int(booking_id), str(new_status)
+
+
+# ---------------------------------------------------------------------------
+# 4. Booking / room assignment
+# ---------------------------------------------------------------------------
+
+def assign_room_to_booking(*args, **kwargs) -> None:
+    """
+    Assign a room to a booking and keep room status consistent.
+    """
+    booking_id, property_code, room_number = _parse_assign_room_args(
+        *args, **kwargs
+    )
+
+    conn = get_db_connection()
+    try:
+        with closing(conn.cursor()) as cur:
+            # 1. Find existing room for this booking (if any)
+            cur.execute(
+                """
+                SELECT property_code, room_number
+                FROM bookings
+                WHERE id = %s
+                """,
+                (booking_id,),
+            )
+            row = cur.fetchone()
+            old_property_code: Optional[str] = None
+            old_room_number: Optional[str] = None
+            if row:
+                old_property_code, old_room_number = row
+
+            # 2. Update booking to new property/room
+            cur.execute(
+                """
+                UPDATE bookings
+                SET property_code = %s,
+                    room_number = %s
+                WHERE id = %s
+                """,
+                (property_code, room_number, booking_id),
+            )
+
+            # 3. Free old room if it's different
+            if old_property_code and old_room_number:
+                if (
+                    old_property_code != property_code
+                    or old_room_number != room_number
+                ):
+                    cur.execute(
+                        """
+                        UPDATE rooms
+                        SET status = 'available'
+                        WHERE property_code = %s
+                          AND room_number = %s
+                        """,
+                        (old_property_code, old_room_number),
+                    )
+
+            # 4. Mark new room as occupied
+            cur.execute(
+                """
+                UPDATE rooms
+                SET status = 'occupied'
+                WHERE property_code = %s
+                  AND room_number = %s
+                """,
+                (property_code, room_number),
+            )
+
+        conn.commit()
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# 5. Booking status transitions
+# ---------------------------------------------------------------------------
+
+def apply_booking_status_transition(*args, **kwargs) -> None:
+    """
+    Apply a status transition to a booking and keep the associated room
+    occupancy in sync.
+    """
+    booking_id, new_status = _parse_status_transition_args(*args, **kwargs)
+    new_status = new_status.strip().lower()
+
+    conn = get_db_connection()
+    try:
+        with closing(conn.cursor()) as cur:
+            # 1. Get current booking room information
+            cur.execute(
+                """
+                SELECT property_code, room_number
+                FROM bookings
+                WHERE id = %s
+                """,
+                (booking_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                return
+
+            property_code, room_number = row
+
+            # 2. Update booking status
+            cur.execute(
+                """
+                UPDATE bookings
+                SET status = %s
+                WHERE id = %s
+                """,
+                (new_status, booking_id),
+            )
+
+            # 3. Adjust room status based on new booking status
+            if property_code and room_number:
+                if new_status == "in_house":
+                    cur.execute(
+                        """
+                        UPDATE rooms
+                        SET status = 'occupied'
+                        WHERE property_code = %s
+                          AND room_number = %s
+                        """,
+                        (property_code, room_number),
+                    )
+                elif new_status in ("checked_out", "cancelled"):
+                    cur.execute(
+                        """
+                        UPDATE rooms
+                        SET status = 'available'
+                        WHERE property_code = %s
+                          AND room_number = %s
+                        """,
+                        (property_code, room_number),
+                    )
+                # for 'confirmed' we leave room status unchanged
+
+        conn.commit()
     finally:
         conn.close()

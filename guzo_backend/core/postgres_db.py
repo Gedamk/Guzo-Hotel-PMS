@@ -1,45 +1,102 @@
-# guzo_backend/core/postgres_db.py
+"""
+Simplified PostgreSQL / SQLAlchemy configuration for local Guzo development.
+
+- Uses a single fixed user/database/host/port.
+- You only need to put your REAL `guzo_user` password in ONE place.
+- Exposes:
+    - `engine`        -> for raw SQL (text queries, etc.)
+    - `SessionLocal`  -> for ORM sessions
+    - `get_db()`      -> FastAPI dependency (yielding Session)
+    - `get_db_connection()` -> context manager for old-style raw connections
+"""
+
+from typing import Generator
+from contextlib import contextmanager
+
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+
+# -------------------------------------------------------------------
+# 🔐 LOCAL DATABASE SETTINGS
+# -------------------------------------------------------------------
+# These should match what you already use in psql:
 #
-# Shared PostgreSQL connection helper for all modules.
-# Uses GUZO_DB_* environment variables.
+#   psql "postgresql://guzo_user@localhost:5432/guzo_db"
+#   Password for user guzo_user:  <--- THAT password goes below
+#
+DB_USER = "guzo_user"
+DB_NAME = "guzo_db"
+DB_HOST = "localhost"
+DB_PORT = 5432
 
-from __future__ import annotations
-
-import os
-import logging
-
-import psycopg2
-from psycopg2.extras import RealDictCursor
-
-logger = logging.getLogger(__name__)
+# ⛔ IMPORTANT:
+# This MUST be the same password you type when psql prompts:
+#   Password for user guzo_user:
+DB_PASSWORD = "Guzo2025!"
 
 
-def get_connection():
+# -------------------------------------------------------------------
+# Build SQLAlchemy URL
+# -------------------------------------------------------------------
+SQLALCHEMY_DATABASE_URL: str = (
+    f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}"
+    f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+)
+
+# Engine with basic health-checking
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL,
+    pool_pre_ping=True,
+)
+
+# Session factory used by FastAPI
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine,
+)
+
+
+# -------------------------------------------------------------------
+# FastAPI dependency (ORM session)
+# -------------------------------------------------------------------
+def get_db() -> Generator:
     """
-    Open a new PostgreSQL connection using GUZO_DB_* env vars.
-    """
-    dbname = os.getenv("GUZO_DB_NAME", "guzo_db")
-    user = os.getenv("GUZO_DB_USER", "guzo_user")
-    password = os.getenv("GUZO_DB_PASSWORD")
-    host = os.getenv("GUZO_DB_HOST", "localhost")
-    port = os.getenv("GUZO_DB_PORT", "5432")
+    FastAPI dependency that yields a SQLAlchemy session.
 
+    Usage in routes:
+        from guzo_backend.core.postgres_db import get_db
+        from sqlalchemy.orm import Session
+
+        @router.get("/something")
+        def my_endpoint(db: Session = Depends(get_db)):
+            ...
+    """
+    db = SessionLocal()
     try:
-        conn = psycopg2.connect(
-            dbname=dbname,
-            user=user,
-            password=password,
-            host=host,
-            port=port,
-            cursor_factory=RealDictCursor,
-        )
-        return conn
-    except Exception as exc:
-        logger.exception(
-            "❌ Failed to open PostgreSQL connection to %s@%s:%s/%s",
-            user,
-            host,
-            port,
-            dbname,
-        )
-        raise
+        yield db
+    finally:
+        db.close()
+
+
+# -------------------------------------------------------------------
+# Backwards-compatible raw connection helper
+# -------------------------------------------------------------------
+@contextmanager
+def get_db_connection():
+    """
+    Backwards-compatible helper for old routers that expect
+    `get_db_connection()` as a context manager:
+
+        from ..core.postgres_db import get_db_connection
+
+        with get_db_connection() as conn:
+            rows = conn.execute(...)
+
+    Internally this just uses the same SQLAlchemy engine.
+    """
+    conn = engine.connect()
+    try:
+        yield conn
+    finally:
+        conn.close()

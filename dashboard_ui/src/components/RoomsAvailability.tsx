@@ -6,15 +6,21 @@ const API_BASE = "http://127.0.0.1:8000";
 const AUTH_TOKEN = "<REDACTED_DEMO_BEARER_TOKEN>";
 
 type RoomsAvailabilityProps = {
-  businessDate: string; // 👈 coming from AppShell
+  businessDate: string; // coming from AppShell
 };
 
+// Be flexible with backend field names so it works with both versions
 type AvailabilityResponse = {
   property_code: string;
   target_date: string;
-  total_rooms: number;
-  rooms_sold: number;
-  rooms_available: number;
+
+  // Some backends use rooms_total, others total_rooms
+  rooms_total?: number;
+  total_rooms?: number;
+
+  rooms_sold?: number;
+  rooms_available?: number;
+  occupancy_pct?: number;
 };
 
 const HOTEL_NAME_BY_PROPERTY: Record<string, string> = {
@@ -24,6 +30,12 @@ const HOTEL_NAME_BY_PROPERTY: Record<string, string> = {
 
 // Hard-coded portfolio list for now (matches your PMS design)
 const PORTFOLIO_PROPERTIES = ["DRE001", "N&N002"];
+
+// Canonical room counts (your business rule)
+const PROPERTY_TOTAL_ROOMS: Record<string, number> = {
+  DRE001: 120,
+  "N&N002": 80,
+};
 
 const RoomsAvailability: React.FC<RoomsAvailabilityProps> = ({
   businessDate,
@@ -56,7 +68,6 @@ const RoomsAvailability: React.FC<RoomsAvailabilityProps> = ({
             }
           );
 
-          // Backend returns one summary row per request
           results.push(res.data);
         }
 
@@ -69,7 +80,9 @@ const RoomsAvailability: React.FC<RoomsAvailabilityProps> = ({
       }
     };
 
-    fetchAvailability();
+    if (businessDate) {
+      fetchAvailability();
+    }
   }, [businessDate]);
 
   return (
@@ -87,7 +100,7 @@ const RoomsAvailability: React.FC<RoomsAvailabilityProps> = ({
           marginBottom: "0.25rem",
         }}
       >
-        Rooms Availability – {businessDate}
+        🛏 Rooms Availability – {businessDate}
       </h1>
 
       <p style={{ marginBottom: "1rem", color: "#555", fontSize: "0.9rem" }}>
@@ -109,6 +122,23 @@ const RoomsAvailability: React.FC<RoomsAvailabilityProps> = ({
         PORTFOLIO_PROPERTIES.map((code) => {
           const row = rows.find((r) => r.property_code === code);
           const hotelName = HOTEL_NAME_BY_PROPERTY[code] || code;
+
+          // --- derive safe values even if backend fields differ or are missing ----
+          const totalRooms =
+            row?.rooms_total ??
+            row?.total_rooms ??
+            PROPERTY_TOTAL_ROOMS[code] ??
+            0;
+
+          const roomsSold = row?.rooms_sold ?? 0;
+          const roomsAvailable =
+            row?.rooms_available ?? Math.max(totalRooms - roomsSold, 0);
+
+          const occupancyPct =
+            row?.occupancy_pct ??
+            (totalRooms > 0 ? (roomsSold / totalRooms) * 100 : 0);
+
+          const pctClamped = Math.max(0, Math.min(100, occupancyPct));
 
           return (
             <div
@@ -145,51 +175,74 @@ const RoomsAvailability: React.FC<RoomsAvailabilityProps> = ({
 
               {!row ? (
                 <p style={{ fontSize: "0.85rem", color: "#777" }}>
-                  No availability data.
+                  No availability data returned from backend.
                 </p>
               ) : (
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: "1rem",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  <div>
-                    <div style={{ color: "#777", fontSize: "0.8rem" }}>
-                      Total rooms
+                <>
+                  {/* KPI row */}
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: "1rem",
+                      fontSize: "0.9rem",
+                    }}
+                  >
+                    <div>
+                      <div style={{ color: "#777", fontSize: "0.8rem" }}>
+                        Total rooms
+                      </div>
+                      <div style={{ fontWeight: 600 }}>{totalRooms}</div>
                     </div>
-                    <div style={{ fontWeight: 600 }}>{row.total_rooms}</div>
-                  </div>
-                  <div>
-                    <div style={{ color: "#777", fontSize: "0.8rem" }}>
-                      Rooms sold
+                    <div>
+                      <div style={{ color: "#777", fontSize: "0.8rem" }}>
+                        Rooms sold
+                      </div>
+                      <div style={{ fontWeight: 600 }}>{roomsSold}</div>
                     </div>
-                    <div style={{ fontWeight: 600 }}>{row.rooms_sold}</div>
-                  </div>
-                  <div>
-                    <div style={{ color: "#777", fontSize: "0.8rem" }}>
-                      Rooms available
+                    <div>
+                      <div style={{ color: "#777", fontSize: "0.8rem" }}>
+                        Rooms available
+                      </div>
+                      <div style={{ fontWeight: 600 }}>{roomsAvailable}</div>
                     </div>
-                    <div style={{ fontWeight: 600 }}>
-                      {row.rooms_available}
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{ color: "#777", fontSize: "0.8rem" }}>
-                      Occupancy
-                    </div>
-                    <div style={{ fontWeight: 600 }}>
-                      {row.total_rooms > 0
-                        ? `${(
-                            (row.rooms_sold / row.total_rooms) *
-                            100
-                          ).toFixed(1)}%`
-                        : "–"}
+                    <div>
+                      <div style={{ color: "#777", fontSize: "0.8rem" }}>
+                        Occupancy
+                      </div>
+                      <div style={{ fontWeight: 600 }}>
+                        {totalRooms > 0
+                          ? `${pctClamped.toFixed(1)}%`
+                          : "–"}
+                      </div>
                     </div>
                   </div>
-                </div>
+
+                  {/* simple occupancy bar like a PMS */}
+                  <div
+                    style={{
+                      marginTop: "0.75rem",
+                      height: "0.5rem",
+                      borderRadius: "999px",
+                      backgroundColor: "#e5e7eb",
+                      overflow: "hidden",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${pctClamped}%`,
+                        height: "100%",
+                        background:
+                          pctClamped < 70
+                            ? "#10b981" // green
+                            : pctClamped < 90
+                            ? "#fbbf24" // amber
+                            : "#ef4444", // red
+                        transition: "width 0.3s ease",
+                      }}
+                    />
+                  </div>
+                </>
               )}
             </div>
           );
