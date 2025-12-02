@@ -1,77 +1,134 @@
-// src/components/AssignRoomModal.tsx
+// dashboard_ui/src/components/AssignRoomModal.tsx
+
 import React, { useState } from "react";
+import axios from "axios";
+
+const API_BASE = "http://127.0.0.1:8000";
+const AUTH_TOKEN = "admin-secret-123";
 
 interface AssignRoomModalProps {
-  bookingId: number;
-  guestName: string;
-  onConfirm: (room: string) => void;
-  onCancel: () => void;
-  loading?: boolean;
-  error?: string | null;
+  isOpen: boolean;
+  onClose: () => void;
+  onAssigned: () => void;
+  bookingId: number | null;
+  guestName?: string | null;
+  propertyCode?: string | null;
+  currentRoomNumber?: string | null;
 }
 
-const AssignRoomModal: React.FC<AssignRoomModalProps> = ({
+export const AssignRoomModal: React.FC<AssignRoomModalProps> = ({
+  isOpen,
+  onClose,
+  onAssigned,
   bookingId,
   guestName,
-  onConfirm,
-  onCancel,
-  loading = false,
-  error = null,
+  propertyCode,
+  currentRoomNumber,
 }) => {
-  const [room, setRoom] = useState("");
+  const [roomNumber, setRoomNumber] = useState<string>(currentRoomNumber || "");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  if (!isOpen || bookingId == null) {
+    return null;
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!room.trim() || loading) return;
-    onConfirm(room.trim());
+    setError(null);
+
+    const trimmedRoom = roomNumber.trim();
+    if (!trimmedRoom) {
+      setError("Room number is required.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      await axios.post(
+        `${API_BASE}/frontdesk/assign-room`,
+        {
+          booking_id: bookingId,
+          room_number: trimmedRoom,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${AUTH_TOKEN}`,
+          },
+        }
+      );
+
+      onAssigned();
+      onClose();
+    } catch (err: any) {
+      console.error("Error assigning room:", err);
+      const detail =
+        err?.response?.data?.detail ||
+        "Failed to assign room. Please check availability and try again.";
+      setError(String(detail));
+    } finally {
+      setSubmitting(false);
+    }
   };
 
+  const guestLabel = guestName || "Guest";
+  const propertyLabel = propertyCode || "Property";
+
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60">
-      <div className="w-full max-w-sm rounded-2xl border border-slate-700 bg-slate-900 p-4 shadow-xl">
-        <h3 className="text-sm font-semibold text-slate-100">
-          Assign Room
-        </h3>
-        <p className="mt-1 text-[11px] text-slate-400">
-          Booking #{bookingId} · {guestName}
+    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-40">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-5">
+        <div className="flex justify-between items-center mb-3">
+          <h2 className="text-lg font-semibold">Assign Room</h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-800"
+          >
+            ✕
+          </button>
+        </div>
+
+        <p className="text-sm text-gray-700 mb-3">
+          <span className="font-medium">Guest:</span> {guestLabel} •{" "}
+          <span className="font-medium">Property:</span> {propertyLabel}
         </p>
 
-        <form onSubmit={handleSubmit} className="mt-3 space-y-3">
+        {error && (
+          <div className="mb-3 rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">
+            ⚠ {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="mb-1 block text-[11px] text-slate-300">
+            <label className="block text-sm font-medium mb-1" htmlFor="roomNumber">
               Room number
             </label>
             <input
+              id="roomNumber"
               type="text"
-              value={room}
-              onChange={(e) => setRoom(e.target.value)}
-              placeholder="e.g. 205, 305B..."
-              className="w-full rounded-md border border-slate-700 bg-slate-950 px-2 py-1.5 text-xs text-slate-100 outline-none focus:border-emerald-500"
-              disabled={loading}
+              value={roomNumber}
+              onChange={(e) => setRoomNumber(e.target.value)}
+              className="w-full border rounded px-2 py-1 text-sm"
+              placeholder="e.g. 305"
             />
           </div>
 
-          {error && (
-            <p className="text-[11px] text-rose-300">
-              {error}
-            </p>
-          )}
-
-          <div className="flex justify-end gap-2 pt-1">
+          <div className="flex justify-end space-x-2">
             <button
               type="button"
-              onClick={onCancel}
-              className="rounded-full border border-slate-700 px-3 py-1 text-[11px] text-slate-300 hover:bg-slate-800"
-              disabled={loading}
+              onClick={onClose}
+              className="px-3 py-1.5 rounded border border-gray-300 text-sm text-gray-700 hover:bg-gray-100"
+              disabled={submitting}
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="rounded-full bg-emerald-600 px-3 py-1 text-[11px] font-semibold text-slate-950 hover:bg-emerald-500 disabled:opacity-60"
-              disabled={loading}
+              className="px-4 py-1.5 rounded bg-blue-600 text-sm text-white font-medium hover:bg-blue-700 disabled:opacity-60"
+              disabled={submitting}
             >
-              {loading ? "Assigning..." : "Assign room"}
+              {submitting ? "Assigning..." : "Assign Room"}
             </button>
           </div>
         </form>
@@ -79,5 +136,3 @@ const AssignRoomModal: React.FC<AssignRoomModalProps> = ({
     </div>
   );
 };
-
-export default AssignRoomModal;

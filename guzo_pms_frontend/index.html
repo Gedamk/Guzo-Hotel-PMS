@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Guzo Guest Assist – PMS Front Desk</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <header class="top-bar">
+      <div class="top-bar-left">
+        <div class="logo-circle">G</div>
+        <div>
+          <div class="app-title">Guzo Guest Assist</div>
+          <div class="app-subtitle">Property Management Console</div>
+        </div>
+      </div>
+
+      <div class="top-bar-right">
+        <span class="badge badge-success">Online</span>
+        <span class="env-label">LOCAL DEMO</span>
+      </div>
+    </header>
+
+    <main class="layout">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-title">Modules</div>
+          <button class="sidebar-item sidebar-item-active">Front Desk</button>
+          <button class="sidebar-item" disabled>Housekeeping</button>
+          <button class="sidebar-item" disabled>Reports</button>
+          <button class="sidebar-item" disabled>Reservations</button>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-title">Business Date</div>
+          <input
+            type="date"
+            id="businessDateInput"
+            class="date-input"
+          />
+          <button id="refreshButton" class="btn btn-secondary btn-block">
+            Refresh
+          </button>
+        </div>
+
+        <div class="sidebar-section">
+          <div class="sidebar-title">Property Filter</div>
+          <select id="propertyFilter" class="select-input">
+            <option value="ALL">All Properties</option>
+          </select>
+        </div>
+      </aside>
+
+      <!-- Main content -->
+      <section class="content">
+        <!-- Front Desk header -->
+        <div class="fd-header">
+          <h1>🛎 Front Desk – Room Division Console</h1>
+          <div class="fd-header-meta">
+            <span id="businessDateLabel">Today: –</span>
+            <span id="viewScopeLabel">Scope: Today (touches today)</span>
+            <span id="propertyLabel">Property: All Properties</span>
+          </div>
+        </div>
+
+        <!-- KPI summary row -->
+        <section class="kpi-row" id="kpiRow">
+          <div class="kpi-card">
+            <div class="kpi-label">Arrivals Today</div>
+            <div class="kpi-value" id="kpiArrivals">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">In-House Rooms</div>
+            <div class="kpi-value" id="kpiInHouse">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Departures Today</div>
+            <div class="kpi-value" id="kpiDepartures">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Cancelled / No-Show</div>
+            <div class="kpi-value" id="kpiCancelled">0</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Occupancy (Rooms)</div>
+            <div class="kpi-value" id="kpiOccupancy">0.0%</div>
+          </div>
+        </section>
+
+        <!-- House Count panel -->
+        <section class="panel">
+          <div class="panel-header">
+            <h2>House Count &amp; Occupancy</h2>
+          </div>
+          <div class="housecount-grid">
+            <div class="housecount-item">
+              <div class="hc-label">Total Rooms</div>
+              <div class="hc-value" id="hcTotalRooms">0</div>
+            </div>
+            <div class="housecount-item">
+              <div class="hc-label">Occupied</div>
+              <div class="hc-value" id="hcOccupiedRooms">0</div>
+            </div>
+            <div class="housecount-item">
+              <div class="hc-label">Vacant</div>
+              <div class="hc-value" id="hcVacantRooms">0</div>
+            </div>
+            <div class="housecount-item">
+              <div class="hc-label">Occupancy %</div>
+              <div class="hc-value" id="hcOccupancyPct">0.0%</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Error bar -->
+        <div id="errorBar" class="error-bar" hidden></div>
+
+        <!-- Buckets -->
+        <section class="panel-grid">
+          <section class="panel panel-full">
+            <div class="panel-header panel-header-green">
+              <h2>🟢 Arrivals Today</h2>
+              <span id="countArrivals" class="pill pill-green">0</span>
+            </div>
+            <div class="panel-body">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Guest</th>
+                    <th>Hotel</th>
+                    <th>Property</th>
+                    <th>Room</th>
+                    <th>Check-In</th>
+                    <th>Check-Out</th>
+                    <th>Nights</th>
+                    <th>Status</th>
+                    <th>Channel</th>
+                    <th>Total (ETB)</th>
+                    <th>Note</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyArrivals">
+                  <tr>
+                    <td colspan="12" class="empty-cell">
+                      No bookings in this category.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel panel-full">
+            <div class="panel-header panel-header-amber">
+              <h2>🟡 In-House</h2>
+              <span id="countInHouse" class="pill pill-amber">0</span>
+            </div>
+            <div class="panel-body">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Guest</th>
+                    <th>Hotel</th>
+                    <th>Property</th>
+                    <th>Room</th>
+                    <th>Check-In</th>
+                    <th>Check-Out</th>
+                    <th>Nights</th>
+                    <th>Status</th>
+                    <th>Channel</th>
+                    <th>Total (ETB)</th>
+                    <th>Note</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyInHouse">
+                  <tr>
+                    <td colspan="12" class="empty-cell">
+                      No bookings in this category.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel panel-full">
+            <div class="panel-header panel-header-blue">
+              <h2>🔵 Departures Today</h2>
+              <span id="countDepartures" class="pill pill-blue">0</span>
+            </div>
+            <div class="panel-body">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Guest</th>
+                    <th>Hotel</th>
+                    <th>Property</th>
+                    <th>Room</th>
+                    <th>Check-In</th>
+                    <th>Check-Out</th>
+                    <th>Nights</th>
+                    <th>Status</th>
+                    <th>Channel</th>
+                    <th>Total (ETB)</th>
+                    <th>Note</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyDepartures">
+                  <tr>
+                    <td colspan="12" class="empty-cell">
+                      No bookings in this category.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel panel-full">
+            <div class="panel-header">
+              <h2>📆 Upcoming Bookings</h2>
+              <span id="countUpcoming" class="pill">0</span>
+            </div>
+            <div class="panel-body">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Guest</th>
+                    <th>Hotel</th>
+                    <th>Property</th>
+                    <th>Room</th>
+                    <th>Check-In</th>
+                    <th>Check-Out</th>
+                    <th>Nights</th>
+                    <th>Status</th>
+                    <th>Channel</th>
+                    <th>Total (ETB)</th>
+                    <th>Note</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyUpcoming">
+                  <tr>
+                    <td colspan="12" class="empty-cell">
+                      No bookings in this category.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel panel-full">
+            <div class="panel-header panel-header-red">
+              <h2>❌ Cancelled / No-Show</h2>
+              <span id="countCancelled" class="pill pill-red">0</span>
+            </div>
+            <div class="panel-body">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Guest</th>
+                    <th>Hotel</th>
+                    <th>Property</th>
+                    <th>Room</th>
+                    <th>Check-In</th>
+                    <th>Check-Out</th>
+                    <th>Nights</th>
+                    <th>Status</th>
+                    <th>Channel</th>
+                    <th>Total (ETB)</th>
+                    <th>Note</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="tbodyCancelled">
+                  <tr>
+                    <td colspan="12" class="empty-cell">
+                      No bookings in this category.
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <script src="js/app.js"></script>
+  </body>
+</html>

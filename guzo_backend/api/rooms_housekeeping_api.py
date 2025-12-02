@@ -1,215 +1,398 @@
-# guzo_backend/api/rooms_housekeeping_api.py
-#
-# Housekeeping view for Ethiopian mid-scale hotels:
-# - GET  /housekeeping/rooms      → list rooms + FO/HK status for a given date
-# - POST /housekeeping/update     → update housekeeping status of a room
-#
-# Uses the same Postgres connection helper as other APIs.
+# -*- coding: utf-8 -*-
+"""
+guzo_backend.api.rooms_housekeeping_api
 
-from __future__ import annotations
+Housekeeping Board API for Guzo Guest Assist.
+
+This version:
+- Derives occupancy from the `bookings` table (stays overlapping business_date)
+- Stores HK status per room/date/property in `housekeeping_status`
+- Uses get_db_connection() and SQLAlchemy text() (no .cursor())
+- If housekeeping_status table does NOT exist, we treat it as empty
+  (no 500 error for GET /rooms/status-board).
+- Exposes:
+    GET  /rooms/housekeeping        -> list housekeeping rooms for a date
+    GET  /rooms/status-board        -> same payload, used by dashboard UI
+    POST /rooms/housekeeping/mark-clean
+    POST /rooms/housekeeping/mark-dirty
+    POST /rooms/housekeeping/mark-out-of-order
+    POST /rooms/housekeeping/mark-in-service
+"""
 
 from datetime import date
-from typing import List, Optional
+from typing import List, Optional, Dict, Tuple
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
+from sqlalchemy import text
 
-from guzo_backend.core.postgres_db import get_connection  # <-- same helper as others
-
+from guzo_backend.core.postgres_db import get_db_connection
 
 router = APIRouter(
-    prefix="/housekeeping",
-    tags=["housekeeping"],
+    prefix="/rooms",
+    tags=["rooms", "housekeeping"],
 )
 
 
-# -------------------------------------------------------------------
+# ----------------------------------------------------------------------
 # Pydantic models
-# -------------------------------------------------------------------
+# ----------------------------------------------------------------------
 
 
 class HousekeepingRoom(BaseModel):
-    property_code: str
+    """
+    Shape returned to the frontend HousekeepingBoard.tsx.
+    """
     room_number: str
-    room_type: Optional[str] = None
+    property_code: str
     floor: Optional[int] = None
+    hk_status: str              # e.g. "occupied_clean", "vacant_clean"
+    business_date: date
+    is_occupied: bool
 
-    # FO view of the room (what rooms/status API already uses)
-    fo_status: str
-
-    # HK status (for now we keep in the same "status" column)
-    hk_status: str
-
-    current_booking_id: Optional[int] = None
-    current_guest_name: Optional[str] = None
-    check_in: Optional[date] = None
-    check_out: Optional[date] = None
-
-    # Simple front-office flags for the board
-    is_arrival: bool = False
-    is_departure: bool = False
-    is_stayover: bool = False
+    # Optional live guest info from bookings
+    guest_name: Optional[str] = None
+    check_in_date: Optional[date] = None
+    check_out_date: Optional[date] = None
 
 
-class HousekeepingUpdate(BaseModel):
-    property_code: str
+class HKActionPayload(BaseModel):
+    """
+    Body for Mark Clean / Dirty / OOO / In Service endpoints.
+    business_date is optional – defaults to 'today' if not provided.
+    """
     room_number: str
-    hk_status: str  # e.g. "vacant_clean", "vacant_dirty", "inspected", "ooo"
-    # You can add hk_note: Optional[str] later if you want
+    property_code: str
+    business_date: Optional[date] = None
 
 
-# -------------------------------------------------------------------
-# GET /housekeeping/rooms
-# -------------------------------------------------------------------
+# ----------------------------------------------------------------------
+# Helpers
+# ----------------------------------------------------------------------
 
 
-@router.get("/rooms", response_model=List[HousekeepingRoom])
-def get_housekeeping_rooms(
-    property_code: str = Query(..., min_length=1),
-    business_date: date = Query(...),
-):
+def _normalize_status(hk_status: str, is_occupied: bool) -> str:
     """
-    One line per room for the housekeeping board.
+    Ensure hk_status is one of our known values.
+    If unknown, use a sensible default based on occupancy.
+    """
+    allowed = {
+        "vacant_clean",
+        "vacant_dirty",
+        "occupied_clean",
+        "occupied_dirty",
+        "out_of_order",
+        "in_service",
+    }
+    if hk_status in allowed:
+        return hk_status
 
-    business_date = Ethiopian hotel "business day" (same as front desk).
+    # Fallbacks
+    if is_occupied:
+        return "occupied_clean"
+    return "vacant_clean"
+
+
+def _load_housekeeping_rooms_for_date(
+    business_date: date,
+    property_code: str,
+) -> List[HousekeepingRoom]:
+    """
+    Core logic (no .cursor(), using get_db_connection):
+
+    1) Load occupancy from bookings:
+         - check_in_date <= business_date < check_out_date
+         - room_number IS NOT NULL
+    2) Try to load housekeeping_status rows for that business_date.
+         - If the housekeeping_status table does NOT exist,
+           treat it as empty (no rows) instead of raising 500.
+    3) For each (property_code, room_number) seen in either:
+         - Determine is_occupied + guest info from bookings.
+         - Determine hk_status from housekeeping_status if present,
+           else derive default from occupancy.
     """
 
-    conn = get_connection()
+    # Key type: (property_code, room_number)
+    OccKey = Tuple[str, str]
+
+    occupancy: Dict[OccKey, Dict] = {}
+    hk_map: Dict[OccKey, str] = {}
+
     try:
-        with conn.cursor() as cur:
-            # We reuse the same "rooms" + "bookings" structure you already have.
-            # We DO NOT change how occupancy is calculated – this is only a view.
-            cur.execute(
-                """
-                SELECT
-                    r.property_code,
-                    r.room_number,
-                    r.room_type,
-                    -- floor column is VARCHAR in your DB, cast if numeric
-                    CASE
-                        WHEN r.floor ~ '^[0-9]+$' THEN r.floor::int
-                        ELSE NULL
-                    END AS floor,
-                    COALESCE(r.status, 'available') AS fo_status,
-                    -- For now HK status = same column; front desk + HK see the same
-                    COALESCE(r.status, 'available') AS hk_status,
-                    b.id          AS current_booking_id,
-                    b.guest_name  AS current_guest_name,
-                    b.check_in_date   AS check_in,
-                    b.check_out_date  AS check_out,
-                    CASE WHEN b.check_in_date = %s THEN TRUE ELSE FALSE END AS is_arrival,
-                    CASE WHEN b.check_out_date = %s THEN TRUE ELSE FALSE END AS is_departure,
-                    CASE
-                        WHEN b.check_in_date < %s
-                         AND b.check_out_date > %s
-                        THEN TRUE
-                        ELSE FALSE
-                    END AS is_stayover
-                FROM rooms r
-                LEFT JOIN bookings b
-                    ON b.id = r.booking_id
-                WHERE r.property_code = %s
-                ORDER BY floor NULLS LAST, r.room_number;
-                """,
-                (
-                    business_date,
-                    business_date,
-                    business_date,
-                    business_date,
-                    property_code,
-                ),
-            )
+        # --------------------------------------------------------------
+        # 1) Load occupancy from bookings
+        # --------------------------------------------------------------
+        bookings_sql = """
+            SELECT
+                room_number,
+                property_code,
+                guest_name,
+                check_in_date,
+                check_out_date
+            FROM bookings
+            WHERE
+                room_number IS NOT NULL
+                AND check_in_date <= :business_date
+                AND check_out_date > :business_date
+        """
+        bookings_params = {"business_date": business_date}
 
-            rows = cur.fetchall()
+        if property_code != "all":
+            bookings_sql += " AND property_code = :property_code"
+            bookings_params["property_code"] = property_code
 
-    finally:
-        conn.close()
+        with get_db_connection() as conn:
+            bookings_result = conn.execute(text(bookings_sql), bookings_params)
+            booking_rows = bookings_result.fetchall()
 
-    result: List[HousekeepingRoom] = []
-    for row in rows:
-        (
-            prop_code,
+        for (
             room_number,
-            room_type,
-            floor,
-            fo_status,
-            hk_status,
-            booking_id,
+            property_code_db,
             guest_name,
-            check_in,
-            check_out,
-            is_arrival,
-            is_departure,
-            is_stayover,
-        ) = row
+            check_in_date,
+            check_out_date,
+        ) in booking_rows:
+            key: OccKey = (property_code_db, room_number)
+            occupancy[key] = {
+                "guest_name": guest_name,
+                "check_in_date": check_in_date,
+                "check_out_date": check_out_date,
+                "is_occupied": True,
+            }
 
-        result.append(
+        # --------------------------------------------------------------
+        # 2) Try to load housekeeping_status overrides
+        # --------------------------------------------------------------
+        hk_sql = """
+            SELECT
+                property_code,
+                room_number,
+                hk_status
+            FROM housekeeping_status
+            WHERE business_date = :business_date
+        """
+        hk_params = {"business_date": business_date}
+
+        if property_code != "all":
+            hk_sql += " AND property_code = :property_code"
+            hk_params["property_code"] = property_code
+
+        hk_rows = []
+        try:
+            with get_db_connection() as conn:
+                hk_result = conn.execute(text(hk_sql), hk_params)
+                hk_rows = hk_result.fetchall()
+        except Exception as e:
+            # If the error is that the table doesn't exist, treat as empty
+            msg = repr(e)
+            if "UndefinedTable" in msg or 'relation "housekeeping_status"' in msg:
+                hk_rows = []
+            else:
+                raise
+
+        for (prop_code, room_number, hk_status) in hk_rows:
+            key: OccKey = (prop_code, room_number)
+            hk_map[key] = hk_status
+
+    except HTTPException:
+        # Pass through our own HTTPExceptions
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error loading housekeeping rooms: {e}",
+        )
+
+    # ----------------------------------------------------------
+    # 3) Merge occupancy + housekeeping_status
+    # ----------------------------------------------------------
+
+    rooms: List[HousekeepingRoom] = []
+    all_keys = set(occupancy.keys()) | set(hk_map.keys())
+
+    for (prop_code, room_number) in sorted(all_keys):
+        occ = occupancy.get((prop_code, room_number))
+        hk_status_raw = hk_map.get((prop_code, room_number))
+
+        is_occupied = bool(occ and occ.get("is_occupied", False))
+        guest_name = occ.get("guest_name") if occ else None
+        check_in_date = occ.get("check_in_date") if occ else None
+        check_out_date = occ.get("check_out_date") if occ else None
+
+        # If we have an explicit hk_status row, use it; otherwise derive
+        if hk_status_raw is not None:
+            hk_status = _normalize_status(hk_status_raw, is_occupied)
+        else:
+            hk_status = "occupied_clean" if is_occupied else "vacant_clean"
+
+        # Simple floor inference: "305" -> 3
+        floor: Optional[int]
+        if room_number and room_number[0].isdigit():
+            floor = int(room_number[0])
+        else:
+            floor = None
+
+        rooms.append(
             HousekeepingRoom(
-                property_code=prop_code,
                 room_number=room_number,
-                room_type=room_type,
+                property_code=prop_code,
                 floor=floor,
-                fo_status=fo_status,
                 hk_status=hk_status,
-                current_booking_id=booking_id,
-                current_guest_name=guest_name,
-                check_in=check_in,
-                check_out=check_out,
-                is_arrival=is_arrival or False,
-                is_departure=is_departure or False,
-                is_stayover=is_stayover or False,
+                business_date=business_date,
+                is_occupied=is_occupied,
+                guest_name=guest_name,
+                check_in_date=check_in_date,
+                check_out_date=check_out_date,
             )
         )
 
-    return result
+    return rooms
 
 
-# -------------------------------------------------------------------
-# POST /housekeeping/update
-# -------------------------------------------------------------------
-
-
-@router.post("/update")
-def update_housekeeping_status(payload: HousekeepingUpdate):
+def _set_housekeeping_status(
+    business_date: date,
+    property_code: str,
+    room_number: str,
+    hk_status: str,
+) -> None:
     """
-    Update the housekeeping status of a single room.
+    Insert or update a housekeeping_status record
+    using get_db_connection and SQLAlchemy text().
 
-    For now, we simply write into rooms.status – the same field used by:
-      - /rooms/status-list
-      - /rooms/availability  (only cares about 'ooo' for out-of-order)
+    NOTE: If the table does not exist, this may raise an error when
+    you first try to mark clean/dirty; that can be handled separately.
+    For now, the goal is that GET /rooms/status-board never 500s.
+    """
+    hk_status = _normalize_status(hk_status, is_occupied=False)
+
+    upsert_sql = """
+        INSERT INTO housekeeping_status (
+            business_date,
+            property_code,
+            room_number,
+            hk_status
+        )
+        VALUES (:business_date, :property_code, :room_number, :hk_status)
+        ON CONFLICT (business_date, property_code, room_number)
+        DO UPDATE SET
+            hk_status = EXCLUDED.hk_status,
+            updated_at = now()
     """
 
-    conn = get_connection()
+    params = {
+        "business_date": business_date,
+        "property_code": property_code,
+        "room_number": room_number,
+        "hk_status": hk_status,
+    }
+
     try:
-        with conn.cursor() as cur:
-            cur.execute(
-                """
-                UPDATE rooms
-                SET
-                    status = %s,
-                    updated_at = now()
-                WHERE property_code = %s
-                  AND room_number = %s
-                RETURNING property_code, room_number, status;
-                """,
-                (
-                    payload.hk_status,
-                    payload.property_code,
-                    payload.room_number,
-                ),
-            )
-            row = cur.fetchone()
+        with get_db_connection() as conn:
+            conn.execute(text(upsert_sql), params)
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error saving housekeeping status: {e}",
+        )
 
-            if not row:
-                raise HTTPException(status_code=404, detail="Room not found")
 
-        conn.commit()
+# ----------------------------------------------------------------------
+# Public endpoints
+# ----------------------------------------------------------------------
 
-        return {
-            "property_code": row[0],
-            "room_number": row[1],
-            "hk_status": row[2],
-        }
 
-    finally:
-        conn.close()
+@router.get("/housekeeping", response_model=List[HousekeepingRoom])
+def list_housekeeping_rooms(
+    date_str: str = Query(..., alias="date"),
+    property_code: str = Query("all"),
+):
+    """
+    Return housekeeping status for rooms for a given business date.
+    Used as base endpoint; dashboard uses /rooms/status-board, but both
+    share the same logic.
+    """
+    try:
+        business_date = date.fromisoformat(date_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid 'date' format. Expected YYYY-MM-DD.",
+        )
+
+    return _load_housekeeping_rooms_for_date(business_date, property_code)
+
+
+@router.get("/status-board", response_model=List[HousekeepingRoom])
+def rooms_status_board(
+    date_str: str = Query(..., alias="date"),
+    property_code: str = Query("all"),
+):
+    """
+    Main endpoint consumed by HousekeepingBoard.tsx.
+    """
+    try:
+        business_date = date.fromisoformat(date_str)
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid 'date' format. Expected YYYY-MM-DD.",
+        )
+
+    return _load_housekeeping_rooms_for_date(business_date, property_code)
+
+
+# ----------------------------------------------------------------------
+# Housekeeping action endpoints
+# ----------------------------------------------------------------------
+
+
+@router.post("/housekeeping/mark-clean")
+def mark_room_clean(payload: HKActionPayload):
+    """
+    Mark a room as Vacant / Clean (or stay as 'occupied_clean' if we later
+    decide to tie it to occupancy).
+    """
+    business_date = payload.business_date or date.today()
+    _set_housekeeping_status(
+        business_date=business_date,
+        property_code=payload.property_code,
+        room_number=payload.room_number,
+        hk_status="vacant_clean",
+    )
+    return {"status": "ok", "hk_status": "vacant_clean"}
+
+
+@router.post("/housekeeping/mark-dirty")
+def mark_room_dirty(payload: HKActionPayload):
+    business_date = payload.business_date or date.today()
+    _set_housekeeping_status(
+        business_date=business_date,
+        property_code=payload.property_code,
+        room_number=payload.room_number,
+        hk_status="vacant_dirty",
+    )
+    return {"status": "ok", "hk_status": "vacant_dirty"}
+
+
+@router.post("/housekeeping/mark-out-of-order")
+def mark_room_out_of_order(payload: HKActionPayload):
+    business_date = payload.business_date or date.today()
+    _set_housekeeping_status(
+        business_date=business_date,
+        property_code=payload.property_code,
+        room_number=payload.room_number,
+        hk_status="out_of_order",
+    )
+    return {"status": "ok", "hk_status": "out_of_order"}
+
+
+@router.post("/housekeeping/mark-in-service")
+def mark_room_in_service(payload: HKActionPayload):
+    business_date = payload.business_date or date.today()
+    _set_housekeeping_status(
+        business_date=business_date,
+        property_code=payload.property_code,
+        room_number=payload.room_number,
+        hk_status="in_service",
+    )
+    return {"status": "ok", "hk_status": "in_service"}

@@ -2,27 +2,35 @@
 #
 # Shared FastAPI dependencies:
 #   - get_db_connection()  → PostgreSQL connection using GUZO_DB_* env vars
+#   - get_db()             → SQLAlchemy Session (for ORM-style access)
 #   - verify_admin_token() → protects admin/API endpoints
 #
 # Used by:
 #   - guzo_backend.api.bookings_list_api
-#   - (you can reuse it in other routers)
+#   - guzo_backend.api.frontdesk_walkin_api
+#   - guzo_backend.api.frontdesk_assign_api
+#   - (and can be reused in other routers)
 
 from __future__ import annotations
 
 import logging
 import os
-from typing import Optional
+from typing import Optional, Generator
 
 import psycopg2
 from fastapi import Header, HTTPException, status
+from sqlalchemy.orm import Session
+
+from .core.postgres_db import SessionLocal
 
 logger = logging.getLogger(__name__)
 
 
 # ------------------------------------------------------------
-# Database connection helper
+# Raw psycopg2 database connection helper
 # ------------------------------------------------------------
+
+
 def get_db_connection():
     """
     Open a new PostgreSQL connection using GUZO_DB_* env vars.
@@ -60,8 +68,43 @@ def get_db_connection():
 
 
 # ------------------------------------------------------------
+# SQLAlchemy Session dependency (ORM-style)
+# ------------------------------------------------------------
+
+
+def get_db() -> Generator[Session, None, None]:
+    """
+    FastAPI dependency that provides a SQLAlchemy Session.
+
+    Used by:
+      - frontdesk_walkin_api
+      - frontdesk_assign_api
+      - any other ORM-based endpoints
+
+    Example in a router:
+
+        from fastapi import Depends, APIRouter
+        from sqlalchemy.orm import Session
+        from guzo_backend.dependencies import get_db
+
+        router = APIRouter()
+
+        @router.get("/something")
+        def list_items(db: Session = Depends(get_db)):
+            ...
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+# ------------------------------------------------------------
 # Admin token verification
 # ------------------------------------------------------------
+
+
 def _extract_token(
     x_admin_token: Optional[str],
     authorization: Optional[str],
@@ -90,12 +133,12 @@ def verify_admin_token(
     x_admin_token: Optional[str] = Header(
         default=None,
         alias="X-Admin-Token",
-        description="Optional admin token header."
+        description="Optional admin token header.",
     ),
     authorization: Optional[str] = Header(
         default=None,
         alias="Authorization",
-        description="Optional Authorization: Bearer <token> header."
+        description="Optional Authorization: Bearer <token> header.",
     ),
 ) -> None:
     """
