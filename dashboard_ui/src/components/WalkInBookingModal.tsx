@@ -24,9 +24,10 @@ type PaymentMethod =
 
 interface WalkInFormState {
   property_code: string;
+  room_number: string;
   room_type: string;
-  check_in: string; // ISO date
-  check_out: string; // ISO date
+  check_in_date: string; // ISO date
+  check_out_date: string; // ISO date
   guest_name: string;
   rate_per_night_etb: string;
   nights: string;
@@ -38,9 +39,10 @@ interface WalkInFormState {
 
 const DEFAULT_FORM: WalkInFormState = {
   property_code: "",
+  room_number: "",
   room_type: "Single",
-  check_in: "",
-  check_out: "",
+  check_in_date: "",
+  check_out_date: "",
   guest_name: "",
   rate_per_night_etb: "",
   nights: "1",
@@ -70,8 +72,8 @@ export const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
   const [form, setForm] = useState<WalkInFormState>({
     ...DEFAULT_FORM,
     property_code: defaultPropertyCode,
-    check_in: formatDateForInput(businessDate),
-    check_out: formatDateForInput(businessDate),
+    check_in_date: formatDateForInput(businessDate),
+    check_out_date: formatDateForInput(businessDate),
   });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,15 +87,17 @@ export const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
       setForm({
         ...DEFAULT_FORM,
         property_code: defaultPropertyCode,
-        check_in: formatDateForInput(businessDate),
-        check_out: formatDateForInput(businessDate),
+        check_in_date: formatDateForInput(businessDate),
+        check_out_date: formatDateForInput(businessDate),
         nights: "1",
       });
     }
   }, [isOpen, defaultPropertyCode, businessDate]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
+    >
   ) => {
     const { name, value } = e.target;
     setForm((prev) => {
@@ -151,12 +155,12 @@ export const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
 
     const payload = {
       property_code: form.property_code,
+      room_number: form.room_number || null,
       room_type: form.room_type,
-      check_in: form.check_in,
-      check_out: form.check_out,
       guest_name: form.guest_name.trim(),
+      check_in_date: form.check_in_date,
+      check_out_date: form.check_out_date,
       rate_per_night_etb: rate,
-      nights: nightsNum,
       total_amount_etb: total,
       payment_method: form.payment_method,
       amount_paid_now_etb: paidNow,
@@ -171,9 +175,11 @@ export const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
         },
       });
 
-      setSuccessMessage("Walk-in booking created and checked-in successfully.");
+      setSuccessMessage(
+        "Walk-in booking created and checked-in successfully."
+      );
       onCreated();
-      // You can auto-close after a short delay if you prefer
+      // (You can auto-close after a delay if you want)
       // setTimeout(onClose, 800);
     } catch (err: any) {
       console.error("Error creating walk-in booking", err);
@@ -189,7 +195,9 @@ export const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
   if (!isOpen) return null;
 
   const propertyLabel =
-    HOTEL_NAME_BY_PROPERTY[form.property_code] || form.property_code || "Unknown";
+    HOTEL_NAME_BY_PROPERTY[form.property_code] ||
+    form.property_code ||
+    "Unknown";
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
@@ -200,7 +208,8 @@ export const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
               New Walk-In Booking (Front Desk)
             </h2>
             <p className="text-sm text-gray-600">
-              Use this when a guest arrives without a reservation and books at the desk.
+              Use this when a guest arrives without a reservation and books at
+              the desk.
             </p>
           </div>
           <button
@@ -233,7 +242,7 @@ export const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
 
         <form onSubmit={handleSubmit} className="space-y-4 text-sm">
           {/* Row 1: Property & Room Type */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div>
               <label className="block font-medium mb-1">Property</label>
               <select
@@ -245,6 +254,17 @@ export const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
                 <option value="DRE001">Dream Big Hotel (DRE001)</option>
                 <option value="N&N002">N&N Luxury Hotel (N&N002)</option>
               </select>
+            </div>
+            <div>
+              <label className="block font-medium mb-1">Room Number</label>
+              <input
+                type="text"
+                name="room_number"
+                value={form.room_number}
+                onChange={handleChange}
+                placeholder="e.g. 200 (optional)"
+                className="w-full border rounded px-2 py-1"
+              />
             </div>
             <div>
               <label className="block font-medium mb-1">Room Type</label>
@@ -270,8 +290,8 @@ export const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
               <label className="block font-medium mb-1">Check-In</label>
               <input
                 type="date"
-                name="check_in"
-                value={form.check_in}
+                name="check_in_date"
+                value={form.check_in_date}
                 onChange={handleChange}
                 className="w-full border rounded px-2 py-1"
               />
@@ -280,8 +300,8 @@ export const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
               <label className="block font-medium mb-1">Check-Out</label>
               <input
                 type="date"
-                name="check_out"
-                value={form.check_out}
+                name="check_out_date"
+                value={form.check_out_date}
                 onChange={handleChange}
                 className="w-full border rounded px-2 py-1"
               />
@@ -350,12 +370,16 @@ export const WalkInBookingModal: React.FC<WalkInBookingModalProps> = ({
                 <option value="card">Credit / Debit Card</option>
                 <option value="mobile_money">Mobile Money / Transfer</option>
                 <option value="bank_transfer">Bank Transfer</option>
-                <option value="ota_collect">OTA Collect (Booking.com, etc.)</option>
+                <option value="ota_collect">
+                  OTA Collect (Booking.com, etc.)
+                </option>
                 <option value="other">Other</option>
               </select>
             </div>
             <div>
-              <label className="block font-medium mb-1">Amount Paid Now (ETB)</label>
+              <label className="block font-medium mb-1">
+                Amount Paid Now (ETB)
+              </label>
               <input
                 type="number"
                 name="amount_paid_now_etb"

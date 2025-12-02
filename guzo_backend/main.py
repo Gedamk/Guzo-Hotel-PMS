@@ -5,6 +5,9 @@ guzo_backend.main – FastAPI app for Guzo Guest Assist backend
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+import os
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 
 # -------------------------------------------------
 # Telegram / Bot routers (existing project pieces)
@@ -120,3 +123,24 @@ app.include_router(reports_owner_router)               # multi-property owner vi
 # Rooms status / housekeeping
 app.include_router(rooms_status_router)
 app.include_router(housekeeping_router)
+
+# -------------------------------------------------------------------
+# Serve React production build (dashboard_ui/build) via FastAPI
+# -------------------------------------------------------------------
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # .../guzo_backend
+PROJECT_ROOT = os.path.dirname(BASE_DIR)               # .../Guzo
+REACT_BUILD_DIR = os.path.join(PROJECT_ROOT, "dashboard_ui", "build")
+
+if os.path.exists(REACT_BUILD_DIR):
+    app.mount(
+        "/static",
+        StaticFiles(directory=os.path.join(REACT_BUILD_DIR, "static")),
+        name="static",
+    )
+
+    @app.get("/", include_in_schema=False)
+    async def serve_react_app():
+        index_path = os.path.join(REACT_BUILD_DIR, "index.html")
+        return FileResponse(index_path)
+
