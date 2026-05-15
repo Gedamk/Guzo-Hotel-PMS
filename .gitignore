@@ -57,3 +57,11 @@ bot_log.txt
 # Auto-generated daily/weekly reports
 *.pdf
 *.xlsx
+
+# Local secrets and credentials
+.env
+.env.*
+!.env.example
+guzo_backend/credentials/
+*service_account*.json
+*credentials*.json
