@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import PmsShell from "./layout/PmsShell";
 import LoginPage from "./auth/LoginPage";
 import DashboardPage from "./modules/dashboard/DashboardPage";
@@ -8,13 +8,24 @@ import HousekeepingPage from "./modules/housekeeping/HousekeepingPage";
 import FinanceDashboard from "./modules/finance/FinanceDashboard";
 import ReportsPage from "./modules/reports/ReportsPage";
 import AdminPage from "./modules/admin/AdminPage";
+import type { UserSession } from "./types/pms";
+
+function LoginRoute() {
+  const navigate = useNavigate();
+
+  function handleLogin(_session: UserSession) {
+    navigate("/dashboard", { replace: true });
+  }
+
+  return <LoginPage onLogin={handleLogin} />;
+}
 
 export default function App() {
   return (
     <PmsShell>
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/login" element={<LoginPage />} />
+        <Route path="/login" element={<LoginRoute />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/reservations" element={<ReservationsPage />} />
         <Route path="/frontdesk" element={<FrontDeskPage />} />
