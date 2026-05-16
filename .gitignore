@@ -57,3 +57,5 @@ bot_log.txt
 # Auto-generated daily/weekly reports
 *.pdf
 *.xlsx
+dist/
+guzo_pms_frontend/dist/
