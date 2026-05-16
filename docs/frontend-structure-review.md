@@ -45,6 +45,14 @@ Current module folders under `src/modules/`:
 
 The current `finance` module includes folio-style workflows such as folio lookup, charges, payments, transaction history, and checkout validation.
 
+## Finance, Folio, And Cashier Naming
+
+`finance` is the current technical frontend route and module name. Keep `/finance` unchanged for now because the existing route, navigation item, module import, and service calls are already wired around that name.
+
+`folio` or `cashier` is the future PMS naming direction. A future `/folio` or `/cashier` route can be added as an alias to the existing finance screen before any folder or component rename is attempted.
+
+Backend endpoints currently use `/finance/*`, including folio, charge, payment, and checkout validation calls. Route and API naming should not be changed in this PR. Any future rename should be phased and verified with `npm run build`.
+
 ## Missing Future Modules
 
 Based on the Guzo PMS mission, these modules should be planned before major frontend refactors:
