@@ -54,11 +54,11 @@ export type NavItem = {
 };
 
 export const NAV_ITEMS: NavItem[] = [
-  { path: "/", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { path: "/frontdesk", label: "Front Desk", icon: MonitorSmartphone },
   { path: "/reservations", label: "Reservations", icon: BookOpen },
   { path: "/housekeeping", label: "Housekeeping", icon: BedDouble },
   { path: "/finance", label: "Finance", icon: Receipt },
   { path: "/reports", label: "Reports", icon: BarChart3 },
   { path: "/admin", label: "Admin", icon: ShieldCheck },
-];
+];
