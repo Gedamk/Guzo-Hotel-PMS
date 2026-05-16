@@ -22,6 +22,7 @@ export default function App() {
         <Route path="/finance" element={<FinanceDashboard />} />
         <Route path="/reports" element={<ReportsPage />} />
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </PmsShell>
   );
