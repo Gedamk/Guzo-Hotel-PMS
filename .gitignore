@@ -59,3 +59,4 @@ bot_log.txt
 *.xlsx
 dist/
 guzo_pms_frontend/dist/
+_local_backup/
