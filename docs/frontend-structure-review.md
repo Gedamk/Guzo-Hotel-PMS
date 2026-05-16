@@ -134,3 +134,35 @@ npm run lint
 ```
 
 There is no dedicated `typecheck` script in `guzo_pms_frontend/package.json` at the time of this review. Adding one would be a separate package-file change.
+
+## Backup File Cleanup Plan
+
+The following `.bak` files were found under `guzo_pms_frontend/src`:
+
+- `src/App.tsx.bak`
+- `src/config/pms.ts.bak`
+- `src/layout/PmsShell.tsx.bak`
+- `src/services/financeService.ts.rolefix.bak`
+- `src/styles.css.before_login_luxury_upgrade.bak`
+- `src/styles.css.before_premium_upgrade.bak`
+- `src/modules/admin/AdminPage.tsx.bak`
+- `src/modules/finance/FinanceDashboard.tsx.bak`
+- `src/modules/frontdesk/FrontDeskPage.tsx.bak`
+- `src/modules/housekeeping/HousekeepingPage.tsx.bak`
+- `src/modules/reports/ReportsPage.tsx.bak`
+- `src/modules/reservations/ReservationsPage.tsx.bak`
+
+Based on review, these backup files were not referenced by active code. Do not delete them immediately. Archive or remove them only in a separate cleanup PR.
+
+Recommended cleanup order:
+
+1. Archive style and service backups first.
+2. Archive module page backups next.
+3. Archive `App.tsx.bak`, `PmsShell.tsx.bak`, and `config/pms.ts.bak` last because they preserve routing, navigation, and layout history.
+
+After any cleanup, run:
+
+```bash
+cd guzo_pms_frontend
+npm run build
+```
