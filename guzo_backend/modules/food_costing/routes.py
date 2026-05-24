@@ -54,8 +54,13 @@ def list_goods_received(property_code: str, db: Session = Depends(get_db)):
 
 
 @router.post("/inventory-movements")
-def create_inventory_movement(data: InventoryMovementCreate, PosSaleCreate, db: Session = Depends(get_db)):
+def create_inventory_movement_api(
+    data: InventoryMovementCreate,
+    db: Session = Depends(get_db),
+):
     return services.create_inventory_movement(db, data)
+
+
 
 
 @router.get("/inventory-movements")
