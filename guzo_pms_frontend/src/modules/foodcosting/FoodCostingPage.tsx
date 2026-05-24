@@ -1,4 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 import { API_BASE_URL, DEFAULT_PROPERTY_CODE } from "../../config/pms";
 
 type Ingredient = { id: number; name: string; unit: string; cost_per_unit: string | number; supplier_name?: string | null };
@@ -113,6 +117,83 @@ export default function FoodCostingPage() {
     loadData();
   }
 
+  function exportExecutivePdf() {
+    const doc = new jsPDF();
+
+    doc.setFontSize(18);
+    doc.text("Guzo F&B Executive Report", 14, 20);
+
+    doc.setFontSize(11);
+    doc.text(`Property: ${DEFAULT_PROPERTY_CODE}`, 14, 30);
+    doc.text(`Daily Food Revenue: $${totalPosRevenue.toFixed(2)}`, 14, 40);
+    doc.text(`Average Food Cost: ${avgFoodCost.toFixed(2)}%`, 14, 48);
+    doc.text(`Total Wastage Cost: $${totalWastageCost.toFixed(2)}`, 14, 56);
+    doc.text(`High Food Cost Alerts: ${alerts.length}`, 14, 64);
+
+    autoTable(doc, {
+      startY: 75,
+      head: [["Menu Item", "Qty Sold", "Revenue", "Expected Cost", "Gross Profit", "Food Cost %"]],
+      body: posProfitSummary.map((item) => [
+        item.menuItem,
+        item.quantitySold,
+        `$${item.revenue.toFixed(2)}`,
+        `$${item.expectedCost.toFixed(2)}`,
+        `$${item.grossProfit.toFixed(2)}`,
+        `${item.foodCostPercent.toFixed(2)}%`,
+      ]),
+    });
+
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 12,
+      head: [["Ingredient", "Received", "Issued", "Wastage", "Closing"]],
+      body: stockBalances.map((item) => [
+        item.ingredient,
+        `${item.received.toFixed(3)} ${item.unit}`,
+        `${item.issued.toFixed(3)} ${item.unit}`,
+        `${item.wastage.toFixed(3)} ${item.unit}`,
+        `${item.closing.toFixed(3)} ${item.unit}`,
+      ]),
+    });
+
+    doc.save("guzo-fnb-executive-report.pdf");
+  }
+
+  function exportExecutiveExcel() {
+    const summaryRows = [
+      { Metric: "Property", Value: DEFAULT_PROPERTY_CODE },
+      { Metric: "Daily Food Revenue", Value: totalPosRevenue },
+      { Metric: "Average Food Cost %", Value: avgFoodCost },
+      { Metric: "Total Wastage Cost", Value: totalWastageCost },
+      { Metric: "High Food Cost Alerts", Value: alerts.length },
+    ];
+
+    const posRows = posProfitSummary.map((item) => ({
+      MenuItem: item.menuItem,
+      QuantitySold: item.quantitySold,
+      Revenue: item.revenue,
+      ExpectedCost: item.expectedCost,
+      GrossProfit: item.grossProfit,
+      FoodCostPercent: item.foodCostPercent,
+    }));
+
+    const stockRows = stockBalances.map((item) => ({
+      Ingredient: item.ingredient,
+      Received: item.received,
+      Issued: item.issued,
+      Wastage: item.wastage,
+      Adjustment: item.adjustment,
+      Closing: item.closing,
+      Unit: item.unit,
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(summaryRows), "Summary");
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(posRows), "POS Profitability");
+    XLSX.utils.book_append_sheet(workbook, XLSX.utils.json_to_sheet(stockRows), "Stock Balance");
+
+    XLSX.writeFile(workbook, "guzo-fnb-executive-report.xlsx");
+  }
+
   const avgFoodCost = useMemo(() => recipes.length ? recipes.reduce((s, r) => s + Number(r.food_cost_percentage || 0), 0) / recipes.length : 0, [recipes]);
   const totalPosRevenue = useMemo(() => posSales.reduce((s, x) => s + Number(x.total_revenue || 0), 0), [posSales]);
 
@@ -152,10 +233,12 @@ export default function FoodCostingPage() {
         <p className="text-sm font-semibold uppercase tracking-wide text-amber-700">Guzo F&B Cost Control AI</p>
         <h1 className="mt-2 text-3xl font-bold text-slate-900">Food & Beverage Cost Control</h1>
         <p className="mt-2 text-sm text-slate-600">Recipe costing, inventory control, purchasing, goods receiving, POS analysis, finance reporting, and AI food-cost alerts.</p>
-        <div className="mt-4 flex flex-wrap items-center gap-6">
+        <div className="mt-4 flex flex-wrap items-center gap-4 print:hidden">
           <button onClick={loadData} className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white">{loading ? "Refreshing..." : "Refresh"}</button>
           <button onClick={() => setReportMode(!reportMode)} className="rounded-xl bg-blue-700 px-4 py-2 text-sm font-semibold text-white">{reportMode ? "Show Entry Forms" : "Manager Report View"}</button>
           <button onClick={() => window.print()} className="rounded-xl bg-amber-700 px-4 py-2 text-sm font-semibold text-white">Print Executive Report</button>
+          <button onClick={exportExecutivePdf} className="rounded-xl bg-red-700 px-4 py-2 text-sm font-semibold text-white">Export PDF</button>
+          <button onClick={exportExecutiveExcel} className="rounded-xl bg-emerald-700 px-4 py-2 text-sm font-semibold text-white">Export Excel</button>
         </div>
       </section>
 
