@@ -213,6 +213,32 @@ export default function FoodCostingPage() {
 
   const totalWastageCost = useMemo(() => wastageSummary.reduce((s, x) => s + x.totalCost, 0), [wastageSummary]);
 
+  const theoreticalFoodCost = useMemo(() => {
+    return posProfitSummary.reduce((sum, item) => sum + item.expectedCost, 0);
+  }, [posProfitSummary]);
+
+  const actualFoodCost = useMemo(() => {
+    return inventoryMovements
+      .filter((movement) =>
+        movement.movement_type === "KITCHEN_ISSUE" ||
+        movement.movement_type === "WASTAGE"
+      )
+      .reduce((sum, movement) => {
+        const ingredient = ingredients.find((item) => item.name === movement.ingredient_name);
+        const costPerUnit = Number(ingredient?.cost_per_unit || 0);
+        return sum + Number(movement.quantity || 0) * costPerUnit;
+      }, 0);
+  }, [inventoryMovements, ingredients]);
+
+  const foodCostVariance = useMemo(() => {
+    return actualFoodCost - theoreticalFoodCost;
+  }, [actualFoodCost, theoreticalFoodCost]);
+
+  const variancePercentage = useMemo(() => {
+    if (!theoreticalFoodCost) return 0;
+    return (foodCostVariance / theoreticalFoodCost) * 100;
+  }, [foodCostVariance, theoreticalFoodCost]);
+
   const stockBalances = useMemo(() => {
     const b: Record<string, { ingredient: string; received: number; issued: number; wastage: number; adjustment: number; closing: number; unit: string }> = {};
     inventoryMovements.forEach((m) => {
@@ -327,7 +353,44 @@ export default function FoodCostingPage() {
         {posProfitSummary.map((x) => <div key={x.id} className="mt-2 rounded-xl border p-3">{x.menuItem} — {x.quantitySold} sold<br />Revenue ${x.revenue.toFixed(2)} | Expected Cost ${x.expectedCost.toFixed(2)} | Gross Profit ${x.grossProfit.toFixed(2)} | Food Cost {x.foodCostPercent.toFixed(2)}%</div>)}
       </section>
 
-      <section className="rounded-2xl border bg-white p-5">
+            <section className="rounded-2xl border bg-white p-5">
+        <h2 className="text-xl font-bold">Actual vs Theoretical Food Cost</h2>
+        <p className="mt-1 text-sm text-slate-500">
+          Compares expected recipe cost from POS sales with actual kitchen issue and wastage cost.
+        </p>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-4">
+          <div className="rounded-xl border p-4">
+            <p className="text-xs text-slate-500">Theoretical Food Cost</p>
+            <p className="text-2xl font-bold">${theoreticalFoodCost.toFixed(2)}</p>
+          </div>
+
+          <div className="rounded-xl border p-4">
+            <p className="text-xs text-slate-500">Actual Food Cost</p>
+            <p className="text-2xl font-bold">${actualFoodCost.toFixed(2)}</p>
+          </div>
+
+          <div className="rounded-xl border p-4">
+            <p className="text-xs text-slate-500">Variance</p>
+            <p className="text-2xl font-bold">${foodCostVariance.toFixed(2)}</p>
+          </div>
+
+          <div className="rounded-xl border p-4">
+            <p className="text-xs text-slate-500">Variance %</p>
+            <p className="text-2xl font-bold">{variancePercentage.toFixed(2)}%</p>
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-xl bg-slate-50 p-4 text-sm text-slate-700">
+          {foodCostVariance > 0
+            ? "Actual food cost is higher than theoretical cost. Review portion control, wastage, or unrecorded sales."
+            : foodCostVariance < 0
+            ? "Actual food cost is lower than theoretical cost. Review stock movement accuracy or recipe costing."
+            : "Actual and theoretical food cost are matching."}
+        </div>
+      </section>
+
+<section className="rounded-2xl border bg-white p-5">
         <h2 className="text-xl font-bold">Menu Engineering Analysis</h2>
         {posProfitSummary.map((item) => {
           const category = item.foodCostPercent <= 30 && item.quantitySold >= 10 ? "⭐ STAR" : item.foodCostPercent > 30 && item.quantitySold >= 10 ? "🐎 PLOW HORSE" : item.foodCostPercent <= 30 ? "🧩 PUZZLE" : "🐶 DOG";
