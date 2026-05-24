@@ -6,6 +6,8 @@ import {
   Receipt,
   BarChart3,
   ShieldCheck,
+  ClipboardCheck,
+  Bot,
   type LucideIcon,
 } from "lucide-react";
 
@@ -59,6 +61,9 @@ export const NAV_ITEMS: NavItem[] = [
   { path: "/reservations", label: "Reservations", icon: BookOpen },
   { path: "/housekeeping", label: "Housekeeping", icon: BedDouble },
   { path: "/finance", label: "Finance", icon: Receipt },
+  { path: "/food-costing", label: "F&B Cost Control", icon: Receipt },
   { path: "/reports", label: "Reports", icon: BarChart3 },
+  { path: "/night-audit", label: "Night Audit", icon: ClipboardCheck },
+  { path: "/booking-assistant", label: "Booking Assistant", icon: Bot },
   { path: "/admin", label: "Admin", icon: ShieldCheck },
 ];
