@@ -130,6 +130,19 @@ def create_goods_received(db: Session, data):
         po.status = "RECEIVED"
 
     db.add(grn)
+
+    inventory_movement = InventoryMovement(
+        property_code=data.property_code,
+        ingredient_name=data.ingredient_name,
+        movement_type="PURCHASE_RECEIVED",
+        quantity=data.quantity_received,
+        unit="kg",
+        reference=f"GRN #{data.purchase_order_id}",
+        notes=f"Auto-created from goods received invoice {data.invoice_number or ''}".strip(),
+        created_by=data.received_by,
+    )
+    db.add(inventory_movement)
+
     db.commit()
     db.refresh(grn)
     return grn
@@ -145,7 +158,7 @@ def list_goods_received(db: Session, property_code: str):
 
 
 def create_inventory_movement(db: Session, data):
-    movement = InventoryMovement, PosSale(**data.model_dump())
+    movement = InventoryMovement(**data.model_dump())
     db.add(movement)
     db.commit()
     db.refresh(movement)
