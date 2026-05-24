@@ -190,6 +190,43 @@ def create_pos_sale(db: Session, data):
     )
 
     db.add(sale)
+
+    recipe = (
+        db.query(Recipe)
+        .filter(
+            Recipe.property_code == data.property_code,
+            Recipe.name == data.menu_item_name,
+        )
+        .first()
+    )
+
+    if recipe:
+        recipe_lines = (
+            db.query(RecipeIngredient)
+            .filter(RecipeIngredient.recipe_id == recipe.id)
+            .all()
+        )
+
+        for line in recipe_lines:
+            ingredient = (
+                db.query(Ingredient)
+                .filter(Ingredient.id == line.ingredient_id)
+                .first()
+            )
+
+            if ingredient:
+                movement = InventoryMovement(
+                    property_code=data.property_code,
+                    ingredient_name=ingredient.name,
+                    movement_type="KITCHEN_ISSUE",
+                    quantity=(getattr(line, 'quantity', None) or getattr(line, 'quantity_used', 0)) * data.quantity_sold,
+                    unit=ingredient.unit,
+                    reference=f"POS Sale: {data.menu_item_name}",
+                    notes=f"Auto-deducted from POS sale quantity {data.quantity_sold}",
+                    created_by="POS Auto Deduction",
+                )
+                db.add(movement)
+
     db.commit()
     db.refresh(sale)
     return sale
