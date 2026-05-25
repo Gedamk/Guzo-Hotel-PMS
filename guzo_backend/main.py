@@ -10,7 +10,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from guzo_backend.modules.food_costing.routes import router as food_costing_router
 # -------------------------------------------------
 # Environment
 # -------------------------------------------------
@@ -20,6 +19,8 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # .../guzo_backend
 PROJECT_ROOT = os.path.dirname(BASE_DIR)               # .../Guzo
 ENV_PATH = os.path.join(PROJECT_ROOT, ".env")
 load_dotenv(dotenv_path=ENV_PATH, override=True)
+
+from guzo_backend.modules.food_costing.routes import router as food_costing_router
 
 # -------------------------------------------------
 # Telegram / Bot routers (existing project pieces)

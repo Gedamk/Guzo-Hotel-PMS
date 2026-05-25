@@ -88,8 +88,6 @@ type RecipeIngredientLine = {
 
 const money = (value: number) => `$${value.toFixed(2)}`;
 
-const chartPalette = ["#5b1f2a", "#c7a66a", "#2f6b52", "#9b6a20", "#2a1d18"];
-
 export default function FoodCostingPage() {
   const [role, setRole] = useState("fb_controller");
   const [activeWorkflow, setActiveWorkflow] = useState("dashboard");
@@ -443,8 +441,8 @@ export default function FoodCostingPage() {
 
 
   return (
-    <div className="fb-control-module min-h-screen bg-slate-50 p-6 text-slate-900">
-      <div className="fb-control-hero mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="min-h-screen bg-slate-50 p-6 text-slate-900">
+      <div className="mb-6 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.25em] text-amber-700">
@@ -491,7 +489,7 @@ export default function FoodCostingPage() {
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-        <aside className="fb-control-nav rounded-3xl border border-slate-200 bg-white p-4 shadow-sm print:hidden">
+        <aside className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm print:hidden">
           <p className="mb-3 px-2 text-xs font-bold uppercase tracking-wide text-slate-400">
             Workflow Navigation
           </p>
@@ -519,7 +517,7 @@ export default function FoodCostingPage() {
           </div>
         </aside>
 
-        <main className="fb-control-workspace space-y-6">
+        <main className="space-y-6">
           <section className="grid gap-4 md:grid-cols-5">
             <KpiCard label="POS Revenue" value={money(totalRevenue)} tone="dark" />
             <KpiCard label="Avg Food Cost" value={`${avgFoodCost.toFixed(2)}%`} tone={avgFoodCost > 35 ? "danger" : "success"} />
@@ -534,12 +532,12 @@ export default function FoodCostingPage() {
                 <div className="h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={posProfitability}>
-                      <CartesianGrid stroke="#e6dcc8" strokeDasharray="3 3" />
+                      <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" hide />
-                      <YAxis tick={{ fill: "#6f665d", fontSize: 12 }} />
+                      <YAxis />
                       <Tooltip />
-                      <Bar dataKey="revenue" name="Revenue" fill="#5b1f2a" radius={[6, 6, 0, 0]} />
-                      <Bar dataKey="grossProfit" name="Gross Profit" fill="#c7a66a" radius={[6, 6, 0, 0]} />
+                      <Bar dataKey="revenue" name="Revenue" />
+                      <Bar dataKey="grossProfit" name="Gross Profit" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -551,7 +549,7 @@ export default function FoodCostingPage() {
                     <PieChart>
                       <Pie data={stockHealthData} dataKey="value" nameKey="name" outerRadius={90} label>
                         {stockHealthData.map((_, index) => (
-                          <Cell key={index} fill={chartPalette[index % chartPalette.length]} />
+                          <Cell key={index} />
                         ))}
                       </Pie>
                       <Tooltip />
@@ -1043,11 +1041,11 @@ function KpiCard({
   tone: "dark" | "danger" | "success" | "warning" | "neutral";
 }) {
   const toneMap = {
-    dark: "fb-kpi-card fb-kpi-dark",
-    danger: "fb-kpi-card fb-kpi-danger",
-    success: "fb-kpi-card fb-kpi-success",
-    warning: "fb-kpi-card fb-kpi-warning",
-    neutral: "fb-kpi-card fb-kpi-neutral",
+    dark: "bg-slate-900 text-white",
+    danger: "bg-red-50 text-red-900 border-red-200",
+    success: "bg-emerald-50 text-emerald-900 border-emerald-200",
+    warning: "bg-amber-50 text-amber-900 border-amber-200",
+    neutral: "bg-white text-slate-900 border-slate-200",
   };
 
   return (
@@ -1060,7 +1058,7 @@ function KpiCard({
 
 function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <section className="fb-control-panel rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
       <h2 className="text-lg font-black text-slate-900">{title}</h2>
       <div className="mt-4">{children}</div>
     </section>
@@ -1069,7 +1067,7 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
 
 function RiskItem({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="fb-risk-item rounded-2xl border border-slate-200 bg-slate-50 p-4">
+    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
       <p className="text-xs font-bold uppercase text-slate-500">{label}</p>
       <p className="mt-2 text-2xl font-black text-slate-900">{value}</p>
     </div>
@@ -1078,7 +1076,7 @@ function RiskItem({ label, value }: { label: string; value: string | number }) {
 
 function DataTable({ columns, rows }: { columns: string[]; rows: (string | number)[][] }) {
   return (
-    <div className="fb-data-table overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
       <div className="overflow-x-auto">
         <table className="min-w-full border-separate border-spacing-0 text-left text-sm">
           <thead>

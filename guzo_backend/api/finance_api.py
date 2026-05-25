@@ -231,6 +231,140 @@ def refresh_folio_totals(db: Session, folio_id: int) -> None:
     )
 
 
+@router.get("/folio/summary")
+def get_folio_summary(
+    property_code: str,
+    booking_id: int,
+    db: Session = Depends(get_db),
+):
+    try:
+        folio_id = _get_or_create_folio(db, property_code.strip(), int(booking_id))
+        refresh_folio_totals(db, folio_id)
+        db.commit()
+
+        row = db.execute(
+            text(
+                """
+                SELECT
+                  f.booking_id,
+                  f.property_code,
+                  f.guest_name,
+                  f.currency,
+                  COALESCE(f.total_charges, 0) AS charges_total,
+                  COALESCE(f.total_payments, 0) AS payments_total,
+                  COALESCE(f.balance, 0) AS balance,
+                  b.room_number,
+                  b.booking_status
+                FROM folios f
+                LEFT JOIN bookings b
+                  ON b.id = f.booking_id
+                 AND b.property_code = f.property_code
+                WHERE f.id = :folio_id
+                """
+            ),
+            {"folio_id": folio_id},
+        ).mappings().first()
+
+        if not row:
+            raise HTTPException(status_code=404, detail="Folio not found")
+
+        return {
+            "booking_id": row["booking_id"],
+            "property_code": row["property_code"],
+            "guest_name": row["guest_name"],
+            "room_number": row["room_number"],
+            "currency": row["currency"],
+            "charges_total": float(row["charges_total"] or 0),
+            "payments_total": float(row["payments_total"] or 0),
+            "balance": float(row["balance"] or 0),
+            "booking_status": row["booking_status"],
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Load folio summary failed: {e}")
+
+
+@router.get("/folio/transactions")
+def get_folio_transactions(
+    property_code: str,
+    booking_id: int,
+    db: Session = Depends(get_db),
+):
+    try:
+        folio_id = _get_or_create_folio(db, property_code.strip(), int(booking_id))
+        db.commit()
+
+        rows = db.execute(
+            text(
+                """
+                SELECT
+                  id,
+                  txn_type,
+                  business_date AS posting_date,
+                  description,
+                  category,
+                  amount,
+                  currency
+                FROM folio_transactions
+                WHERE folio_id = :folio_id
+                ORDER BY id DESC
+                """
+            ),
+            {"folio_id": folio_id},
+        ).mappings().all()
+
+        return [
+            {
+                "id": row["id"],
+                "txn_type": row["txn_type"],
+                "posting_date": row["posting_date"],
+                "description": row["description"],
+                "reference": None,
+                "category": row["category"],
+                "payment_method": row["category"] if row["txn_type"] == "payment" else None,
+                "amount": float(row["amount"] or 0),
+                "currency": row["currency"],
+                "created_at": None,
+            }
+            for row in rows
+        ]
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Load folio transactions failed: {e}")
+
+
+@router.post("/charges")
+def post_charge_alias(payload: dict[str, Any], db: Session = Depends(get_db)):
+    charge = PostChargeIn(
+        property_code=payload.get("property_code", ""),
+        booking_id=int(payload.get("booking_id", 0)),
+        business_date=date.today(),
+        category=payload.get("category") or "misc",
+        description=payload.get("description") or payload.get("reference") or "Charge",
+        amount=payload.get("amount", 0),
+        currency=payload.get("currency") or "ETB",
+    )
+    return post_charge(charge, db)
+
+
+@router.post("/payments")
+def post_payment_alias(payload: dict[str, Any], db: Session = Depends(get_db)):
+    payment = PostPaymentIn(
+        property_code=payload.get("property_code", ""),
+        booking_id=int(payload.get("booking_id", 0)),
+        business_date=date.today(),
+        method=payload.get("payment_method") or payload.get("method") or "cash",
+        description=payload.get("description") or payload.get("reference") or "Payment",
+        amount=payload.get("amount", 0),
+        currency=payload.get("currency") or "ETB",
+    )
+    return post_payment(payment, db)
+
+
 @router.post("/folio/post-charge")
 def post_charge(payload: PostChargeIn, db: Session = Depends(get_db)):
     property_code = payload.property_code.strip()

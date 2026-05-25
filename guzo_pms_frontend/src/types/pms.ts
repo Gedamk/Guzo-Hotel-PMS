@@ -19,6 +19,10 @@ export type FrontdeskBooking = {
   check_out_date: string;
   booking_status: string;
   property_code: string;
+  room_number?: string | null;
+  total_amount?: number | null;
+  source?: string | null;
+  channel?: string | null;
 };
 
 export type RoomStatusItem = {

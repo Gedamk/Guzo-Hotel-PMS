@@ -10,10 +10,12 @@ Simplified PostgreSQL / SQLAlchemy configuration for local Guzo development.
     - `get_db_connection()` -> context manager for old-style raw connections
 """
 
-from typing import Generator
 from contextlib import contextmanager
+import os
+from typing import Generator
 
 from sqlalchemy import create_engine
+from sqlalchemy.engine import URL
 from sqlalchemy.orm import sessionmaker
 
 # -------------------------------------------------------------------
@@ -24,23 +26,27 @@ from sqlalchemy.orm import sessionmaker
 #   psql "postgresql://guzo_user@localhost:5432/guzo_db"
 #   Password for user guzo_user:  <--- THAT password goes below
 #
-DB_USER = "guzo_user"
-DB_NAME = "guzo_db"
-DB_HOST = "localhost"
-DB_PORT = 5432
+DB_USER = os.getenv("GUZO_DB_USER") or os.getenv("POSTGRES_USER", "guzo_user")
+DB_NAME = os.getenv("GUZO_DB_NAME") or os.getenv("POSTGRES_DB", "guzo_db")
+DB_HOST = os.getenv("GUZO_DB_HOST") or os.getenv("POSTGRES_HOST", "localhost")
+DB_PORT = int(os.getenv("GUZO_DB_PORT") or os.getenv("POSTGRES_PORT", "5432"))
 
 # ⛔ IMPORTANT:
 # This MUST be the same password you type when psql prompts:
 #   Password for user guzo_user:
-DB_PASSWORD = "Guzo2025!"
+DB_PASSWORD = os.getenv("GUZO_DB_PASSWORD") or os.getenv("POSTGRES_PASSWORD", "")
 
 
 # -------------------------------------------------------------------
 # Build SQLAlchemy URL
 # -------------------------------------------------------------------
-SQLALCHEMY_DATABASE_URL: str = (
-    f"postgresql+psycopg2://{DB_USER}:{DB_PASSWORD}"
-    f"@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+SQLALCHEMY_DATABASE_URL = URL.create(
+    "postgresql+psycopg2",
+    username=DB_USER,
+    password=DB_PASSWORD,
+    host=DB_HOST,
+    port=DB_PORT,
+    database=DB_NAME,
 )
 
 # Engine with basic health-checking
