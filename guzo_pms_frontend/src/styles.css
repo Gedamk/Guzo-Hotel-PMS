@@ -925,3 +925,2786 @@ input {
     color: #111827 !important;
   }
 }
+
+/* =====================================================
+   Guzo PMS Luxury Enterprise UI Upgrade
+   ===================================================== */
+
+:root {
+  --guzo-bg: #f8fafc;
+  --guzo-card: #ffffff;
+  --guzo-border: #e2e8f0;
+  --guzo-text: #0f172a;
+  --guzo-muted: #64748b;
+  --guzo-gold: #b7791f;
+  --guzo-success: #047857;
+  --guzo-danger: #b91c1c;
+}
+
+body {
+  background: var(--guzo-bg);
+  color: var(--guzo-text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+button,
+select,
+input,
+textarea {
+  font: inherit;
+}
+
+button {
+  transition: all 0.18s ease;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+input,
+select,
+textarea {
+  outline: none;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--guzo-gold);
+  box-shadow: 0 0 0 3px rgba(183, 121, 31, 0.15);
+}
+
+/* Better enterprise table readability */
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+th {
+  letter-spacing: 0.04em;
+}
+
+td,
+th {
+  vertical-align: middle;
+}
+
+/* Better card rhythm */
+section {
+  scroll-margin-top: 90px;
+}
+
+/* Print manager report cleanly */
+@media print {
+  body {
+    background: white;
+  }
+
+  .print\:hidden,
+  aside,
+  button,
+  input,
+  select,
+  textarea {
+    display: none !important;
+  }
+
+  main {
+    width: 100% !important;
+  }
+
+  section,
+  table {
+    break-inside: avoid;
+  }
+}
+
+/* =====================================================
+   Guzo PMS Readability / Contrast Fix
+   ===================================================== */
+
+/* Strong readable text */
+body {
+  color: #0f172a !important;
+}
+
+p,
+span,
+label,
+td,
+th,
+h1,
+h2,
+h3,
+h4 {
+  color: inherit;
+}
+
+/* Inputs and dropdowns */
+input,
+select,
+textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Primary dark buttons */
+button.bg-slate-900,
+.bg-slate-900 {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+}
+
+/* Gold buttons */
+button.bg-amber-700,
+.bg-amber-700 {
+  background-color: #b45309 !important;
+  color: #ffffff !important;
+}
+
+/* Green buttons */
+button.bg-emerald-700,
+.bg-emerald-700 {
+  background-color: #047857 !important;
+  color: #ffffff !important;
+}
+
+/* Red action buttons */
+button.bg-red-50 {
+  background-color: #fef2f2 !important;
+  color: #991b1b !important;
+  border-color: #fecaca !important;
+}
+
+/* Disabled buttons must look disabled */
+button:disabled {
+  background-color: #cbd5e1 !important;
+  color: #475569 !important;
+  opacity: 1 !important;
+}
+
+/* Sidebar active state */
+aside button.bg-slate-900 {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+}
+
+/* Sidebar inactive state */
+aside button.bg-slate-50 {
+  background-color: #f8fafc !important;
+  color: #334155 !important;
+}
+
+/* KPI/card contrast */
+.bg-emerald-50 {
+  background-color: #ecfdf5 !important;
+  color: #064e3b !important;
+}
+
+.bg-amber-50 {
+  background-color: #fffbeb !important;
+  color: #78350f !important;
+}
+
+.bg-red-50 {
+  background-color: #fef2f2 !important;
+  color: #7f1d1d !important;
+}
+
+.bg-slate-50 {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+.bg-white {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Table readability */
+thead,
+thead tr,
+thead th {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+tbody td {
+  color: #1e293b !important;
+}
+
+tr:hover td {
+  background-color: #f1f5f9 !important;
+}
+
+/* Small muted text still readable */
+.text-slate-400,
+.text-slate-500,
+.text-slate-600 {
+  color: #475569 !important;
+}
+
+/* Important colored text */
+.text-amber-700 {
+  color: #92400e !important;
+}
+
+.text-emerald-700,
+.text-emerald-900,
+.text-emerald-950 {
+  color: #064e3b !important;
+}
+
+.text-red-700,
+.text-red-900 {
+  color: #7f1d1d !important;
+}
+
+/* Border clarity */
+.border,
+.border-slate-200 {
+  border-color: #cbd5e1 !important;
+}
+
+/* Links/buttons cursor */
+button,
+select {
+  cursor: pointer;
+}
+
+/* =====================================================
+   Guzo PMS Readability / Contrast Fix
+   ===================================================== */
+
+/* Strong readable text */
+body {
+  color: #0f172a !important;
+}
+
+p,
+span,
+label,
+td,
+th,
+h1,
+h2,
+h3,
+h4 {
+  color: inherit;
+}
+
+/* Inputs and dropdowns */
+input,
+select,
+textarea {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* Primary dark buttons */
+button.bg-slate-900,
+.bg-slate-900 {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+}
+
+/* Gold buttons */
+button.bg-amber-700,
+.bg-amber-700 {
+  background-color: #b45309 !important;
+  color: #ffffff !important;
+}
+
+/* Green buttons */
+button.bg-emerald-700,
+.bg-emerald-700 {
+  background-color: #047857 !important;
+  color: #ffffff !important;
+}
+
+/* Red action buttons */
+button.bg-red-50 {
+  background-color: #fef2f2 !important;
+  color: #991b1b !important;
+  border-color: #fecaca !important;
+}
+
+/* Disabled buttons must look disabled */
+button:disabled {
+  background-color: #cbd5e1 !important;
+  color: #475569 !important;
+  opacity: 1 !important;
+}
+
+/* Sidebar active state */
+aside button.bg-slate-900 {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+}
+
+/* Sidebar inactive state */
+aside button.bg-slate-50 {
+  background-color: #f8fafc !important;
+  color: #334155 !important;
+}
+
+/* KPI/card contrast */
+.bg-emerald-50 {
+  background-color: #ecfdf5 !important;
+  color: #064e3b !important;
+}
+
+.bg-amber-50 {
+  background-color: #fffbeb !important;
+  color: #78350f !important;
+}
+
+.bg-red-50 {
+  background-color: #fef2f2 !important;
+  color: #7f1d1d !important;
+}
+
+.bg-slate-50 {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+.bg-white {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* Table readability */
+thead,
+thead tr,
+thead th {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+tbody td {
+  color: #1e293b !important;
+}
+
+tr:hover td {
+  background-color: #f1f5f9 !important;
+}
+
+/* Small muted text still readable */
+.text-slate-400,
+.text-slate-500,
+.text-slate-600 {
+  color: #475569 !important;
+}
+
+/* Important colored text */
+.text-amber-700 {
+  color: #92400e !important;
+}
+
+.text-emerald-700,
+.text-emerald-900,
+.text-emerald-950 {
+  color: #064e3b !important;
+}
+
+.text-red-700,
+.text-red-900 {
+  color: #7f1d1d !important;
+}
+
+/* Border clarity */
+.border,
+.border-slate-200 {
+  border-color: #cbd5e1 !important;
+}
+
+/* Links/buttons cursor */
+button,
+select {
+  cursor: pointer;
+}
+
+/* =====================================================
+   Guzo PMS OPERA-Style Uniform Enterprise Theme
+   ===================================================== */
+
+:root {
+  --opera-navy: #0f172a;
+  --opera-blue: #1e3a8a;
+  --opera-gold: #b7791f;
+  --opera-bg: #f4f6f8;
+  --opera-card: #ffffff;
+  --opera-border: #d8dee6;
+  --opera-text: #111827;
+  --opera-muted: #4b5563;
+  --opera-soft: #f8fafc;
+  --opera-success: #047857;
+  --opera-warning: #b45309;
+  --opera-danger: #b91c1c;
+}
+
+/* Page foundation */
+body {
+  background: var(--opera-bg) !important;
+  color: var(--opera-text) !important;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+}
+
+/* Remove rainbow effect from cards */
+.bg-white,
+.bg-slate-50,
+.bg-amber-50,
+.bg-emerald-50,
+.bg-red-50 {
+  background-color: var(--opera-card) !important;
+  color: var(--opera-text) !important;
+}
+
+/* Main cards / panels */
+section,
+.rounded-3xl,
+.rounded-2xl {
+  border-color: var(--opera-border) !important;
+}
+
+/* Card title hierarchy */
+h1 {
+  color: var(--opera-navy) !important;
+  letter-spacing: -0.03em;
+}
+
+h2,
+h3,
+h4 {
+  color: var(--opera-navy) !important;
+}
+
+/* Muted text */
+.text-slate-400,
+.text-slate-500,
+.text-slate-600,
+.text-slate-700 {
+  color: var(--opera-muted) !important;
+}
+
+/* Top module label / gold accent */
+.text-amber-700,
+.text-amber-900 {
+  color: var(--opera-gold) !important;
+}
+
+/* Inputs */
+input,
+select,
+textarea {
+  background: #ffffff !important;
+  color: var(--opera-text) !important;
+  border: 1px solid var(--opera-border) !important;
+  border-radius: 12px !important;
+  box-shadow: none !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #6b7280 !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--opera-blue) !important;
+  box-shadow: 0 0 0 3px rgba(30, 58, 138, 0.12) !important;
+}
+
+/* Buttons: one clear standard */
+button {
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+button:hover {
+  transform: none !important;
+  filter: brightness(0.96);
+}
+
+/* Primary buttons */
+button.bg-slate-900,
+.bg-slate-900 {
+  background-color: var(--opera-navy) !important;
+  color: #ffffff !important;
+}
+
+/* Secondary / gold buttons */
+button.bg-amber-700,
+.bg-amber-700 {
+  background-color: var(--opera-gold) !important;
+  color: #ffffff !important;
+}
+
+/* Success buttons */
+button.bg-emerald-700,
+.bg-emerald-700 {
+  background-color: var(--opera-blue) !important;
+  color: #ffffff !important;
+}
+
+/* Delete buttons */
+button.bg-red-50 {
+  background-color: #ffffff !important;
+  color: var(--opera-danger) !important;
+  border: 1px solid #f1b6b6 !important;
+}
+
+/* Disabled buttons */
+button:disabled {
+  background-color: #e5e7eb !important;
+  color: #6b7280 !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+}
+
+/* Sidebar OPERA style */
+aside {
+  background: #ffffff !important;
+  border-color: var(--opera-border) !important;
+}
+
+aside button {
+  background: #ffffff !important;
+  color: var(--opera-navy) !important;
+  border: 1px solid transparent !important;
+}
+
+aside button:hover {
+  background: var(--opera-soft) !important;
+  border-color: var(--opera-border) !important;
+}
+
+aside button.bg-slate-900 {
+  background: var(--opera-navy) !important;
+  color: #ffffff !important;
+}
+
+/* KPI cards: uniform */
+section.grid > div {
+  border-color: var(--opera-border) !important;
+}
+
+/* Tables OPERA style */
+table {
+  width: 100%;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  background: #ffffff !important;
+}
+
+thead,
+thead tr,
+thead th {
+  background: #eef2f7 !important;
+  color: var(--opera-navy) !important;
+  border-bottom: 1px solid var(--opera-border) !important;
+}
+
+th {
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 14px 18px !important;
+}
+
+td {
+  color: var(--opera-text) !important;
+  padding: 14px 18px !important;
+  border-bottom: 1px solid #edf2f7 !important;
+}
+
+tbody tr:hover td {
+  background: #f8fafc !important;
+}
+
+/* Badges / alert cards should be clean */
+.rounded-full {
+  background: #eef2f7 !important;
+  color: var(--opera-navy) !important;
+}
+
+/* Delete/action card consistency */
+.text-red-700,
+.text-red-900 {
+  color: var(--opera-danger) !important;
+}
+
+.text-emerald-700,
+.text-emerald-900,
+.text-emerald-950 {
+  color: var(--opera-success) !important;
+}
+
+/* Prevent module color confusion */
+.border-amber-200,
+.border-emerald-200,
+.border-red-200,
+.border-slate-200 {
+  border-color: var(--opera-border) !important;
+}
+
+/* Print */
+@media print {
+  body {
+    background: #ffffff !important;
+  }
+
+  aside,
+  button,
+  input,
+  select,
+  textarea,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  section {
+    break-inside: avoid;
+  }
+}
+
+/* =====================================================
+   Ethiopian-Inspired PMS Sidebar Theme
+   Green • Gold • Red
+   ===================================================== */
+
+aside {
+  background: linear-gradient(180deg, #065f46 0%, #064e3b 45%, #7f1d1d 100%) !important;
+  color: #ffffff !important;
+  border-color: #facc15 !important;
+}
+
+aside p,
+aside span,
+aside div {
+  color: #ffffff !important;
+}
+
+aside .text-slate-400,
+aside .text-slate-500,
+aside .text-slate-600 {
+  color: #fde68a !important;
+}
+
+/* Sidebar inactive buttons */
+aside button {
+  background: rgba(255, 255, 255, 0.10) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(250, 204, 21, 0.30) !important;
+}
+
+/* Sidebar hover */
+aside button:hover {
+  background: rgba(250, 204, 21, 0.22) !important;
+  color: #ffffff !important;
+}
+
+/* Sidebar active button */
+aside button.bg-slate-900 {
+  background: #facc15 !important;
+  color: #111827 !important;
+  border-color: #facc15 !important;
+}
+
+/* Current role box */
+aside .bg-amber-50 {
+  background: rgba(250, 204, 21, 0.18) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(250, 204, 21, 0.45) !important;
+}
+
+/* =====================================================
+   Ethiopian-Inspired Module Body Theme
+   Green • Gold • Red subtle enterprise background
+   ===================================================== */
+
+body {
+  background:
+    linear-gradient(135deg, rgba(6, 95, 70, 0.10), rgba(250, 204, 21, 0.10), rgba(127, 29, 29, 0.08)),
+    #f8fafc !important;
+}
+
+/* Main module canvas */
+main {
+  background:
+    linear-gradient(135deg, rgba(6, 95, 70, 0.04), rgba(250, 204, 21, 0.05), rgba(127, 29, 29, 0.04)) !important;
+  border-radius: 24px !important;
+}
+
+/* Module cards */
+main section,
+main .rounded-3xl,
+main .rounded-2xl {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-color: rgba(250, 204, 21, 0.35) !important;
+}
+
+/* KPI cards with subtle Ethiopian accent */
+main section.grid > div {
+  border-top: 4px solid #facc15 !important;
+}
+
+/* Table headers */
+thead,
+thead tr,
+thead th {
+  background: linear-gradient(90deg, #065f46, #facc15, #7f1d1d) !important;
+  color: #ffffff !important;
+}
+
+/* Forms inside body */
+main input,
+main select,
+main textarea {
+  border-color: rgba(6, 95, 70, 0.35) !important;
+}
+
+/* Primary module buttons */
+main button.bg-slate-900 {
+  background: #065f46 !important;
+  color: #ffffff !important;
+}
+
+main button.bg-amber-700 {
+  background: #facc15 !important;
+  color: #111827 !important;
+}
+
+main button.bg-emerald-700 {
+  background: #7f1d1d !important;
+  color: #ffffff !important;
+}
+
+/* =====================================================
+   Guzo PMS Luxury Hotel Enterprise Theme
+   Marriott / Opera Inspired
+   ===================================================== */
+
+:root {
+  --lux-bg: #f3f5f8;
+  --lux-card: rgba(255,255,255,0.96);
+  --lux-border: #dde3ea;
+
+  --lux-navy: #0f172a;
+  --lux-navy-soft: #1e293b;
+
+  --lux-gold: #c6a769;
+  --lux-gold-soft: #f4e7c8;
+
+  --lux-text: #111827;
+  --lux-muted: #5b6475;
+
+  --lux-shadow:
+    0 10px 25px rgba(15, 23, 42, 0.05),
+    0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+/* Global body */
+body {
+  background:
+    radial-gradient(circle at top left, rgba(198,167,105,0.10), transparent 25%),
+    radial-gradient(circle at bottom right, rgba(15,23,42,0.08), transparent 28%),
+    var(--lux-bg) !important;
+
+  color: var(--lux-text) !important;
+}
+
+/* Main app canvas */
+main {
+  background: transparent !important;
+}
+
+/* Enterprise cards */
+main section,
+main .rounded-3xl,
+main .rounded-2xl {
+  background: var(--lux-card) !important;
+  border: 1px solid var(--lux-border) !important;
+  box-shadow: var(--lux-shadow) !important;
+  backdrop-filter: blur(8px);
+}
+
+/* Card headers */
+h1,
+h2,
+h3,
+h4 {
+  color: var(--lux-navy) !important;
+  letter-spacing: -0.02em;
+}
+
+/* Muted descriptions */
+.text-slate-400,
+.text-slate-500,
+.text-slate-600,
+.text-slate-700 {
+  color: var(--lux-muted) !important;
+}
+
+/* KPI cards */
+main section.grid > div {
+  position: relative;
+  overflow: hidden;
+}
+
+main section.grid > div::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(
+    90deg,
+    #0f172a,
+    #c6a769,
+    #1e293b
+  );
+}
+
+/* Inputs */
+input,
+select,
+textarea {
+  background: #ffffff !important;
+  color: var(--lux-text) !important;
+
+  border: 1px solid #d6dde7 !important;
+  border-radius: 14px !important;
+
+  padding-top: 12px !important;
+  padding-bottom: 12px !important;
+
+  box-shadow: none !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--lux-gold) !important;
+  box-shadow:
+    0 0 0 4px rgba(198,167,105,0.15) !important;
+}
+
+/* Buttons */
+button {
+  border-radius: 14px !important;
+  font-weight: 800 !important;
+  transition: all 0.18s ease !important;
+}
+
+button:hover {
+  transform: translateY(-1px);
+}
+
+/* Primary */
+button.bg-slate-900,
+.bg-slate-900 {
+  background: linear-gradient(
+    135deg,
+    #0f172a,
+    #1e293b
+  ) !important;
+
+  color: #ffffff !important;
+}
+
+/* Gold */
+button.bg-amber-700,
+.bg-amber-700 {
+  background: linear-gradient(
+    135deg,
+    #c6a769,
+    #b89458
+  ) !important;
+
+  color: #111827 !important;
+}
+
+/* Green */
+button.bg-emerald-700,
+.bg-emerald-700 {
+  background: linear-gradient(
+    135deg,
+    #0f172a,
+    #334155
+  ) !important;
+
+  color: #ffffff !important;
+}
+
+/* Tables */
+table {
+  background: transparent !important;
+}
+
+thead th {
+  background:
+    linear-gradient(
+      135deg,
+      #0f172a,
+      #1e293b
+    ) !important;
+
+  color: #ffffff !important;
+
+  border-bottom: none !important;
+}
+
+tbody tr {
+  transition: background 0.15s ease;
+}
+
+tbody tr:hover td {
+  background: rgba(198,167,105,0.08) !important;
+}
+
+td {
+  color: var(--lux-text) !important;
+  border-bottom: 1px solid #edf1f5 !important;
+}
+
+/* Sidebar stays Ethiopian luxury */
+aside {
+  box-shadow:
+    inset -1px 0 0 rgba(255,255,255,0.08),
+    6px 0 24px rgba(15,23,42,0.12);
+}
+
+/* Luxury badges */
+.rounded-full {
+  background: var(--lux-gold-soft) !important;
+  color: var(--lux-navy) !important;
+  border: 1px solid rgba(198,167,105,0.25);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(198,167,105,0.45);
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(15,23,42,0.04);
+}
+
+/* =========================================================
+   GUZO PMS - Luxury Hotel Main Sidebar / Navigation Sidebar
+   ========================================================= */
+
+aside,
+.sidebar,
+.pms-sidebar,
+.app-sidebar,
+.main-sidebar,
+.side-navigation,
+.navigation-sidebar,
+nav[aria-label="Main navigation"] {
+  background:
+    linear-gradient(180deg, #07111f 0%, #0f172a 45%, #111827 100%);
+  color: #f8fafc;
+  border-right: 1px solid rgba(198, 167, 105, 0.28);
+  box-shadow: 18px 0 45px rgba(15, 23, 42, 0.28);
+}
+
+/* Sidebar brand / hotel name area */
+aside header,
+.sidebar header,
+.pms-sidebar header,
+.app-sidebar header {
+  border-bottom: 1px solid rgba(198, 167, 105, 0.28);
+  background:
+    linear-gradient(135deg, rgba(198, 167, 105, 0.18), rgba(15, 23, 42, 0.2));
+}
+
+/* Sidebar text */
+aside h1,
+aside h2,
+aside h3,
+.sidebar h1,
+.sidebar h2,
+.sidebar h3,
+.pms-sidebar h1,
+.pms-sidebar h2,
+.pms-sidebar h3 {
+  color: #ffffff;
+  letter-spacing: 0.02em;
+}
+
+/* Muted sidebar text */
+aside p,
+aside span,
+.sidebar p,
+.sidebar span,
+.pms-sidebar p,
+.pms-sidebar span {
+  color: rgba(248, 250, 252, 0.78);
+}
+
+/* Sidebar menu links/buttons */
+aside a,
+aside button,
+.sidebar a,
+.sidebar button,
+.pms-sidebar a,
+.pms-sidebar button,
+.app-sidebar a,
+.app-sidebar button {
+  color: rgba(248, 250, 252, 0.86);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+/* Hover effect */
+aside a:hover,
+aside button:hover,
+.sidebar a:hover,
+.sidebar button:hover,
+.pms-sidebar a:hover,
+.pms-sidebar button:hover,
+.app-sidebar a:hover,
+.app-sidebar button:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(198, 167, 105, 0.32);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.18);
+  transform: translateX(2px);
+}
+
+/* Active selected sidebar item */
+aside a.active,
+aside button.active,
+.sidebar a.active,
+.sidebar button.active,
+.pms-sidebar a.active,
+.pms-sidebar button.active,
+.app-sidebar a.active,
+.app-sidebar button.active,
+aside [aria-current="page"],
+.sidebar [aria-current="page"],
+.pms-sidebar [aria-current="page"],
+.app-sidebar [aria-current="page"] {
+  color: #111827;
+  background:
+    linear-gradient(135deg, #f6e7bd 0%, #c6a769 48%, #b08a3c 100%);
+  border-color: rgba(255, 255, 255, 0.24);
+  box-shadow:
+    0 14px 30px rgba(198, 167, 105, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.38);
+  font-weight: 700;
+}
+
+/* Sidebar icons */
+aside svg,
+.sidebar svg,
+.pms-sidebar svg,
+.app-sidebar svg {
+  color: currentColor;
+}
+
+/* Small section labels inside sidebar */
+aside .section-label,
+.sidebar .section-label,
+.pms-sidebar .section-label,
+.app-sidebar .section-label {
+  color: rgba(198, 167, 105, 0.95);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+}
+
+/* Property / business date box inside sidebar */
+aside .property-card,
+.sidebar .property-card,
+.pms-sidebar .property-card,
+.app-sidebar .property-card {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(198, 167, 105, 0.26);
+  border-radius: 18px;
+  color: #f8fafc;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Luxury scrollbar */
+aside::-webkit-scrollbar,
+.sidebar::-webkit-scrollbar,
+.pms-sidebar::-webkit-scrollbar,
+.app-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+aside::-webkit-scrollbar-thumb,
+.sidebar::-webkit-scrollbar-thumb,
+.pms-sidebar::-webkit-scrollbar-thumb,
+.app-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(198, 167, 105, 0.5);
+  border-radius: 999px;
+}
+
+aside::-webkit-scrollbar-track,
+.sidebar::-webkit-scrollbar-track,
+.pms-sidebar::-webkit-scrollbar-track,
+.app-sidebar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+
+/* =========================================================
+   GUZO PMS - Luxury Hotel Main Body / Content Area
+   ========================================================= */
+
+/* Main page background */
+main,
+.pms-main,
+.app-main,
+.main-content,
+.page-content,
+.content-area {
+  background:
+    radial-gradient(circle at top left, rgba(198, 167, 105, 0.16), transparent 28rem),
+    radial-gradient(circle at top right, rgba(30, 58, 138, 0.12), transparent 30rem),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 48%, #e5eaf2 100%);
+  color: #111827;
+}
+
+/* Main body wrapper */
+main {
+  min-height: 100vh;
+}
+
+/* Top page header area */
+main header,
+.pms-main header,
+.page-header,
+.content-header {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.86));
+  border: 1px solid rgba(216, 222, 232, 0.9);
+  border-radius: 22px;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
+}
+
+/* Main cards / KPI boxes / panels */
+main section,
+main article,
+main .card,
+main .panel,
+main .pms-card,
+main .kpi-card,
+main .stat-card,
+main .dashboard-card,
+main .module-card {
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  border: 1px solid rgba(216, 222, 232, 0.95);
+  border-radius: 22px;
+  box-shadow:
+    0 20px 45px rgba(15, 23, 42, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86);
+}
+
+/* Card hover luxury effect */
+main .card:hover,
+main .panel:hover,
+main .pms-card:hover,
+main .kpi-card:hover,
+main .stat-card:hover,
+main .dashboard-card:hover,
+main .module-card:hover {
+  border-color: rgba(198, 167, 105, 0.48);
+  box-shadow:
+    0 24px 60px rgba(15, 23, 42, 0.12),
+    0 0 0 1px rgba(198, 167, 105, 0.12);
+}
+
+/* Main page headings */
+main h1,
+main h2,
+main h3 {
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+/* Subtext */
+main p,
+main span,
+main small {
+  color: #64748b;
+}
+
+/* Strong numbers in KPI cards */
+main strong,
+main .metric-value,
+main .kpi-value,
+main .stat-value {
+  color: #0f172a;
+  font-weight: 800;
+}
+
+/* Luxury gold labels */
+main .label,
+main .section-label,
+main .eyebrow,
+main .badge-gold {
+  color: #9a6f22;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* Main action buttons */
+main button,
+main .btn,
+main .pms-btn {
+  border-radius: 14px;
+  border: 1px solid rgba(216, 222, 232, 0.95);
+  background:
+    linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+  color: #0f172a;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+}
+
+/* Main button hover */
+main button:hover,
+main .btn:hover,
+main .pms-btn:hover {
+  border-color: rgba(198, 167, 105, 0.55);
+  background:
+    linear-gradient(180deg, #fffaf0 0%, #ffffff 100%);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.1);
+}
+
+/* Primary luxury action */
+main .primary,
+main .btn-primary,
+main .pms-btn-primary,
+main button[type="submit"] {
+  background:
+    linear-gradient(135deg, #0f172a 0%, #1e3a8a 55%, #0f172a 100%);
+  color: #ffffff;
+  border-color: rgba(30, 58, 138, 0.9);
+}
+
+/* Gold action button */
+main .btn-gold,
+main .pms-btn-gold {
+  background:
+    linear-gradient(135deg, #f6e7bd 0%, #c6a769 50%, #a87925 100%);
+  color: #111827;
+  border-color: rgba(198, 167, 105, 0.9);
+  font-weight: 700;
+}
+
+/* Form fields */
+main input,
+main select,
+main textarea {
+  background: #ffffff;
+  border: 1px solid rgba(203, 213, 225, 0.95);
+  border-radius: 13px;
+  color: #111827;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+/* Form focus */
+main input:focus,
+main select:focus,
+main textarea:focus {
+  outline: none;
+  border-color: rgba(198, 167, 105, 0.9);
+  box-shadow:
+    0 0 0 3px rgba(198, 167, 105, 0.18),
+    inset 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+/* Tables */
+main table {
+  background: #ffffff;
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+main thead {
+  background:
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+}
+
+main th {
+  color: #475569;
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+}
+
+main td {
+  color: #111827;
+}
+
+main tr:hover td {
+  background: #fffaf0;
+}
+
+/* Status badges */
+main .badge,
+main .status,
+main .pill {
+  border-radius: 999px;
+  font-weight: 700;
+  border: 1px solid rgba(216, 222, 232, 0.9);
+}
+
+/* Soft divider lines */
+main hr {
+  border: 0;
+  border-top: 1px solid rgba(216, 222, 232, 0.95);
+}
+
+/* Scrollbar for main body */
+main::-webkit-scrollbar,
+.pms-main::-webkit-scrollbar,
+.main-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+main::-webkit-scrollbar-thumb,
+.pms-main::-webkit-scrollbar-thumb,
+.main-content::-webkit-scrollbar-thumb {
+  background: rgba(198, 167, 105, 0.55);
+  border-radius: 999px;
+}
+
+main::-webkit-scrollbar-track,
+.pms-main::-webkit-scrollbar-track,
+.main-content::-webkit-scrollbar-track {
+  background: rgba(226, 232, 240, 0.75);
+}
+
+
+/* =========================================================
+   GUZO PMS - Ethiopian Luxury Hotel Color Upgrade
+   Green + Gold + Red + Navy
+   ========================================================= */
+
+:root {
+  --eth-green: #078930;
+  --eth-yellow: #fcd116;
+  --eth-red: #da121a;
+
+  --eth-green-dark: #046c26;
+  --eth-yellow-soft: #fff4b8;
+  --eth-red-dark: #a60f16;
+
+  --luxury-navy: #07111f;
+  --luxury-gold: #c6a769;
+}
+
+/* Main body with subtle Ethiopian color identity */
+main,
+.pms-main,
+.app-main,
+.main-content,
+.page-content,
+.content-area {
+  background:
+    radial-gradient(circle at top left, rgba(7, 137, 48, 0.14), transparent 28rem),
+    radial-gradient(circle at top right, rgba(252, 209, 22, 0.18), transparent 30rem),
+    radial-gradient(circle at bottom right, rgba(218, 18, 26, 0.08), transparent 34rem),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 48%, #e8edf5 100%);
+}
+
+/* Ethiopian luxury top accent line */
+main::before,
+.pms-main::before,
+.app-main::before,
+.main-content::before {
+  content: "";
+  display: block;
+  height: 5px;
+  width: 100%;
+  background: linear-gradient(
+    90deg,
+    var(--eth-green) 0%,
+    var(--eth-green) 33%,
+    var(--eth-yellow) 33%,
+    var(--eth-yellow) 66%,
+    var(--eth-red) 66%,
+    var(--eth-red) 100%
+  );
+  border-radius: 999px;
+  margin-bottom: 1rem;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+}
+
+/* Page headers with Ethiopian luxury detail */
+main header,
+.pms-main header,
+.page-header,
+.content-header {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(255, 250, 240, 0.9)),
+    linear-gradient(90deg, rgba(7, 137, 48, 0.08), rgba(252, 209, 22, 0.12), rgba(218, 18, 26, 0.06));
+  border: 1px solid rgba(198, 167, 105, 0.32);
+  border-top: 4px solid var(--eth-green);
+}
+
+/* Card Ethiopian accent */
+main section,
+main article,
+main .card,
+main .panel,
+main .pms-card,
+main .kpi-card,
+main .stat-card,
+main .dashboard-card,
+main .module-card {
+  background:
+    linear-gradient(180deg, #ffffff 0%, #fffdf7 100%);
+  border: 1px solid rgba(216, 222, 232, 0.95);
+  border-top: 3px solid rgba(198, 167, 105, 0.65);
+}
+
+/* Alternate card accents if classes exist */
+main .kpi-card:nth-child(3n + 1),
+main .stat-card:nth-child(3n + 1),
+main .dashboard-card:nth-child(3n + 1),
+main .module-card:nth-child(3n + 1) {
+  border-top-color: var(--eth-green);
+}
+
+main .kpi-card:nth-child(3n + 2),
+main .stat-card:nth-child(3n + 2),
+main .dashboard-card:nth-child(3n + 2),
+main .module-card:nth-child(3n + 2) {
+  border-top-color: var(--eth-yellow);
+}
+
+main .kpi-card:nth-child(3n + 3),
+main .stat-card:nth-child(3n + 3),
+main .dashboard-card:nth-child(3n + 3),
+main .module-card:nth-child(3n + 3) {
+  border-top-color: var(--eth-red);
+}
+
+/* Card hover with Ethiopian gold glow */
+main .card:hover,
+main .panel:hover,
+main .pms-card:hover,
+main .kpi-card:hover,
+main .stat-card:hover,
+main .dashboard-card:hover,
+main .module-card:hover {
+  border-color: rgba(198, 167, 105, 0.6);
+  box-shadow:
+    0 26px 64px rgba(15, 23, 42, 0.13),
+    0 0 0 1px rgba(252, 209, 22, 0.18);
+}
+
+/* Main headings */
+main h1,
+main h2,
+main h3 {
+  color: #07111f;
+}
+
+/* Ethiopian gold small labels */
+main .label,
+main .section-label,
+main .eyebrow,
+main .badge-gold {
+  color: #9a6f22;
+}
+
+/* =========================================================
+   Buttons - Ethiopian Luxury Style
+   ========================================================= */
+
+/* Default button */
+main button,
+main .btn,
+main .pms-btn {
+  background:
+    linear-gradient(180deg, #ffffff 0%, #fffdf7 100%);
+  color: #07111f;
+  border: 1px solid rgba(198, 167, 105, 0.45);
+  border-radius: 14px;
+  box-shadow:
+    0 9px 20px rgba(15, 23, 42, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+
+/* Default button hover */
+main button:hover,
+main .btn:hover,
+main .pms-btn:hover {
+  background:
+    linear-gradient(135deg, rgba(255, 244, 184, 0.95), #ffffff);
+  border-color: rgba(252, 209, 22, 0.9);
+  box-shadow:
+    0 14px 32px rgba(15, 23, 42, 0.12),
+    0 0 0 3px rgba(252, 209, 22, 0.14);
+}
+
+/* Primary button - luxury navy with Ethiopian gold */
+main .primary,
+main .btn-primary,
+main .pms-btn-primary,
+main button[type="submit"] {
+  background:
+    linear-gradient(135deg, #07111f 0%, #0f172a 48%, #1e3a8a 100%);
+  color: #ffffff;
+  border-color: rgba(252, 209, 22, 0.55);
+  box-shadow:
+    0 14px 34px rgba(15, 23, 42, 0.22),
+    inset 0 1px 0 rgba(252, 209, 22, 0.22);
+}
+
+/* Primary button hover */
+main .primary:hover,
+main .btn-primary:hover,
+main .pms-btn-primary:hover,
+main button[type="submit"]:hover {
+  background:
+    linear-gradient(135deg, #0f172a 0%, #1e3a8a 55%, #07111f 100%);
+  border-color: var(--eth-yellow);
+  color: #ffffff;
+}
+
+/* Green button - check in / confirm / success */
+main .btn-green,
+main .pms-btn-green,
+main .success,
+main .confirm,
+main button[data-action="check-in"],
+main button[data-action="confirm"] {
+  background:
+    linear-gradient(135deg, #046c26 0%, #078930 55%, #0a9f3a 100%);
+  color: #ffffff;
+  border-color: rgba(7, 137, 48, 0.95);
+  font-weight: 700;
+}
+
+/* Gold button - assign room / premium action */
+main .btn-gold,
+main .pms-btn-gold,
+main .assign-room,
+main button[data-action="assign-room"] {
+  background:
+    linear-gradient(135deg, #fff4b8 0%, #fcd116 45%, #c6a769 100%);
+  color: #111827;
+  border-color: rgba(198, 167, 105, 0.95);
+  font-weight: 800;
+}
+
+/* Red button - no-show / cancel / danger */
+main .btn-red,
+main .pms-btn-red,
+main .danger,
+main .cancel,
+main .no-show,
+main button[data-action="no-show"],
+main button[data-action="cancel"],
+main button[data-action="delete"] {
+  background:
+    linear-gradient(135deg, #a60f16 0%, #da121a 55%, #ef4444 100%);
+  color: #ffffff;
+  border-color: rgba(218, 18, 26, 0.95);
+  font-weight: 700;
+}
+
+/* Green, gold, red hover */
+main .btn-green:hover,
+main .pms-btn-green:hover,
+main .success:hover,
+main .confirm:hover,
+main button[data-action="check-in"]:hover,
+main button[data-action="confirm"]:hover {
+  background:
+    linear-gradient(135deg, #078930 0%, #0a9f3a 100%);
+  color: #ffffff;
+  box-shadow: 0 16px 34px rgba(7, 137, 48, 0.22);
+}
+
+main .btn-gold:hover,
+main .pms-btn-gold:hover,
+main .assign-room:hover,
+main button[data-action="assign-room"]:hover {
+  background:
+    linear-gradient(135deg, #fcd116 0%, #c6a769 100%);
+  color: #111827;
+  box-shadow: 0 16px 34px rgba(198, 167, 105, 0.28);
+}
+
+main .btn-red:hover,
+main .pms-btn-red:hover,
+main .danger:hover,
+main .cancel:hover,
+main .no-show:hover,
+main button[data-action="no-show"]:hover,
+main button[data-action="cancel"]:hover,
+main button[data-action="delete"]:hover {
+  background:
+    linear-gradient(135deg, #da121a 0%, #a60f16 100%);
+  color: #ffffff;
+  box-shadow: 0 16px 34px rgba(218, 18, 26, 0.2);
+}
+
+/* Refresh / neutral operations button */
+main .refresh,
+main button[data-action="refresh"] {
+  background:
+    linear-gradient(135deg, #ffffff 0%, #eef2f7 100%);
+  color: #0f172a;
+  border-color: rgba(7, 137, 48, 0.35);
+}
+
+/* Table header with subtle Ethiopian line */
+main thead {
+  background:
+    linear-gradient(90deg, rgba(7, 137, 48, 0.08), rgba(252, 209, 22, 0.12), rgba(218, 18, 26, 0.06)),
+    linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+}
+
+main tr:hover td {
+  background: #fffbea;
+}
+
+/* Form focus Ethiopian gold */
+main input:focus,
+main select:focus,
+main textarea:focus {
+  border-color: var(--eth-yellow);
+  box-shadow:
+    0 0 0 3px rgba(252, 209, 22, 0.22),
+    inset 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+/* Status badge colors */
+main .status.confirmed,
+main .badge.confirmed,
+main .pill.confirmed,
+main .status.in-house,
+main .badge.in-house,
+main .pill.in-house {
+  background: rgba(7, 137, 48, 0.12);
+  color: #046c26;
+  border-color: rgba(7, 137, 48, 0.28);
+}
+
+main .status.pending,
+main .badge.pending,
+main .pill.pending {
+  background: rgba(252, 209, 22, 0.18);
+  color: #7a5700;
+  border-color: rgba(252, 209, 22, 0.45);
+}
+
+main .status.no-show,
+main .badge.no-show,
+main .pill.no-show,
+main .status.cancelled,
+main .badge.cancelled,
+main .pill.cancelled {
+  background: rgba(218, 18, 26, 0.1);
+  color: #a60f16;
+  border-color: rgba(218, 18, 26, 0.28);
+}
+
+
+/* =========================================================
+   GUZO PMS - Remove Blue/Navy and Replace with Ethiopian Theme
+   Ethiopian Green + Gold + Red + Coffee Brown
+   ========================================================= */
+
+:root {
+  --eth-green: #078930;
+  --eth-green-dark: #035c24;
+  --eth-green-deep: #023d1b;
+
+  --eth-yellow: #fcd116;
+  --eth-gold: #c6a769;
+  --eth-gold-dark: #9a6f22;
+
+  --eth-red: #da121a;
+  --eth-red-dark: #9f0f16;
+
+  --eth-coffee: #2b1b12;
+  --eth-coffee-soft: #4a2f1f;
+  --eth-cream: #fffaf0;
+
+  --pms-navy: #2b1b12;
+  --pms-blue: #078930;
+  --luxury-navy: #2b1b12;
+}
+
+/* Replace dark blue body accents with Ethiopian green/gold/red/coffee */
+body {
+  background:
+    radial-gradient(circle at top left, rgba(7, 137, 48, 0.16), transparent 30rem),
+    radial-gradient(circle at top right, rgba(252, 209, 22, 0.18), transparent 32rem),
+    radial-gradient(circle at bottom right, rgba(218, 18, 26, 0.08), transparent 34rem),
+    linear-gradient(180deg, #fffaf0 0%, #f8fafc 48%, #eef2e8 100%);
+  color: var(--eth-coffee);
+}
+
+/* Sidebar: remove blue/navy and use deep Ethiopian green + coffee */
+aside,
+.sidebar,
+.pms-sidebar,
+.app-sidebar,
+.main-sidebar,
+.side-navigation,
+.navigation-sidebar,
+nav[aria-label="Main navigation"] {
+  background:
+    linear-gradient(180deg, #023d1b 0%, #035c24 48%, #2b1b12 100%) !important;
+  color: #fffaf0 !important;
+  border-right: 1px solid rgba(252, 209, 22, 0.38) !important;
+  box-shadow: 18px 0 45px rgba(43, 27, 18, 0.32) !important;
+}
+
+/* Sidebar brand/header */
+aside header,
+.sidebar header,
+.pms-sidebar header,
+.app-sidebar header {
+  background:
+    linear-gradient(135deg, rgba(252, 209, 22, 0.18), rgba(7, 137, 48, 0.18)) !important;
+  border-bottom: 1px solid rgba(252, 209, 22, 0.35) !important;
+}
+
+/* Sidebar active selected item: Ethiopian gold */
+aside a.active,
+aside button.active,
+.sidebar a.active,
+.sidebar button.active,
+.pms-sidebar a.active,
+.pms-sidebar button.active,
+.app-sidebar a.active,
+.app-sidebar button.active,
+aside [aria-current="page"],
+.sidebar [aria-current="page"],
+.pms-sidebar [aria-current="page"],
+.app-sidebar [aria-current="page"] {
+  background:
+    linear-gradient(135deg, #fff4b8 0%, #fcd116 45%, #c6a769 100%) !important;
+  color: #2b1b12 !important;
+  border-color: rgba(255, 250, 240, 0.35) !important;
+  box-shadow:
+    0 14px 30px rgba(252, 209, 22, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42) !important;
+}
+
+/* Sidebar hover */
+aside a:hover,
+aside button:hover,
+.sidebar a:hover,
+.sidebar button:hover,
+.pms-sidebar a:hover,
+.pms-sidebar button:hover,
+.app-sidebar a:hover,
+.app-sidebar button:hover {
+  background: rgba(252, 209, 22, 0.12) !important;
+  border-color: rgba(252, 209, 22, 0.42) !important;
+  color: #ffffff !important;
+}
+
+/* Main body: remove blue glow */
+main,
+.pms-main,
+.app-main,
+.main-content,
+.page-content,
+.content-area {
+  background:
+    radial-gradient(circle at top left, rgba(7, 137, 48, 0.14), transparent 28rem),
+    radial-gradient(circle at top right, rgba(252, 209, 22, 0.18), transparent 30rem),
+    radial-gradient(circle at bottom right, rgba(218, 18, 26, 0.08), transparent 34rem),
+    linear-gradient(180deg, #fffaf0 0%, #f8fafc 50%, #eef2e8 100%) !important;
+  color: #2b1b12 !important;
+}
+
+/* Headers: coffee + green instead of navy/blue */
+main header,
+.pms-main header,
+.page-header,
+.content-header {
+  background:
+    linear-gradient(135deg, rgba(255, 250, 240, 0.98), rgba(255, 255, 255, 0.92)),
+    linear-gradient(90deg, rgba(7, 137, 48, 0.1), rgba(252, 209, 22, 0.13), rgba(218, 18, 26, 0.06)) !important;
+  border: 1px solid rgba(198, 167, 105, 0.38) !important;
+  border-top: 4px solid #078930 !important;
+}
+
+/* Main headings */
+main h1,
+main h2,
+main h3,
+main h4,
+main h5,
+main h6 {
+  color: #2b1b12 !important;
+}
+
+/* Important numbers and strong text */
+main strong,
+main .metric-value,
+main .kpi-value,
+main .stat-value {
+  color: #023d1b !important;
+}
+
+/* Remove navy primary button and replace with Ethiopian green */
+main .primary,
+main .btn-primary,
+main .pms-btn-primary,
+main button[type="submit"] {
+  background:
+    linear-gradient(135deg, #023d1b 0%, #035c24 45%, #078930 100%) !important;
+  color: #ffffff !important;
+  border-color: rgba(252, 209, 22, 0.6) !important;
+  box-shadow:
+    0 14px 34px rgba(7, 137, 48, 0.24),
+    inset 0 1px 0 rgba(252, 209, 22, 0.25) !important;
+}
+
+/* Primary hover */
+main .primary:hover,
+main .btn-primary:hover,
+main .pms-btn-primary:hover,
+main button[type="submit"]:hover {
+  background:
+    linear-gradient(135deg, #035c24 0%, #078930 55%, #023d1b 100%) !important;
+  border-color: #fcd116 !important;
+  color: #ffffff !important;
+}
+
+/* Default buttons: cream/gold/coffee instead of blue */
+main button,
+main .btn,
+main .pms-btn {
+  background:
+    linear-gradient(180deg, #ffffff 0%, #fffaf0 100%) !important;
+  color: #2b1b12 !important;
+  border: 1px solid rgba(198, 167, 105, 0.48) !important;
+}
+
+/* Default button hover */
+main button:hover,
+main .btn:hover,
+main .pms-btn:hover {
+  background:
+    linear-gradient(135deg, #fff4b8 0%, #ffffff 100%) !important;
+  border-color: rgba(252, 209, 22, 0.95) !important;
+  color: #2b1b12 !important;
+}
+
+/* Green action buttons */
+main .btn-green,
+main .pms-btn-green,
+main .success,
+main .confirm,
+main button[data-action="check-in"],
+main button[data-action="confirm"] {
+  background:
+    linear-gradient(135deg, #023d1b 0%, #078930 100%) !important;
+  color: #ffffff !important;
+  border-color: #078930 !important;
+}
+
+/* Gold action buttons */
+main .btn-gold,
+main .pms-btn-gold,
+main .assign-room,
+main button[data-action="assign-room"] {
+  background:
+    linear-gradient(135deg, #fff4b8 0%, #fcd116 48%, #c6a769 100%) !important;
+  color: #2b1b12 !important;
+  border-color: #c6a769 !important;
+}
+
+/* Red action buttons */
+main .btn-red,
+main .pms-btn-red,
+main .danger,
+main .cancel,
+main .no-show,
+main button[data-action="no-show"],
+main button[data-action="cancel"],
+main button[data-action="delete"] {
+  background:
+    linear-gradient(135deg, #9f0f16 0%, #da121a 60%, #ef4444 100%) !important;
+  color: #ffffff !important;
+  border-color: #da121a !important;
+}
+
+/* Replace blue links with green */
+main a,
+.content-area a,
+.page-content a {
+  color: #046c26;
+}
+
+main a:hover,
+.content-area a:hover,
+.page-content a:hover {
+  color: #9a6f22;
+}
+
+/* Inputs focus: gold/green instead of blue */
+main input:focus,
+main select:focus,
+main textarea:focus {
+  border-color: #fcd116 !important;
+  box-shadow:
+    0 0 0 3px rgba(252, 209, 22, 0.22),
+    0 0 0 1px rgba(7, 137, 48, 0.18),
+    inset 0 1px 2px rgba(43, 27, 18, 0.04) !important;
+}
+
+/* Tables */
+main thead {
+  background:
+    linear-gradient(90deg, rgba(7, 137, 48, 0.1), rgba(252, 209, 22, 0.14), rgba(218, 18, 26, 0.06)),
+    linear-gradient(180deg, #fffaf0 0%, #f8fafc 100%) !important;
+}
+
+main th {
+  color: #4a2f1f !important;
+}
+
+main td {
+  color: #2b1b12 !important;
+}
+
+main tr:hover td {
+  background: #fffbea !important;
+}
+
+/* Scrollbars */
+main::-webkit-scrollbar-thumb,
+.pms-main::-webkit-scrollbar-thumb,
+.main-content::-webkit-scrollbar-thumb,
+aside::-webkit-scrollbar-thumb,
+.sidebar::-webkit-scrollbar-thumb,
+.pms-sidebar::-webkit-scrollbar-thumb,
+.app-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(252, 209, 22, 0.62) !important;
+}
+
+main::-webkit-scrollbar-track,
+.pms-main::-webkit-scrollbar-track,
+.main-content::-webkit-scrollbar-track,
+aside::-webkit-scrollbar-track,
+.sidebar::-webkit-scrollbar-track,
+.pms-sidebar::-webkit-scrollbar-track,
+.app-sidebar::-webkit-scrollbar-track {
+  background: rgba(7, 137, 48, 0.12) !important;
+}
+
+/* Any remaining common blue utility-like classes */
+.text-blue,
+.text-navy,
+.bg-blue,
+.bg-navy,
+.border-blue,
+.border-navy {
+  color: #046c26 !important;
+  background-color: transparent !important;
+  border-color: #078930 !important;
+}
+
+/* =========================================================
+   GUZO PMS - Real Luxury Hotel Theme
+   ========================================================= */
+
+:root {
+  --hotel-ink: #17120f;
+  --hotel-coffee: #2a1d18;
+  --hotel-burgundy: #5b1f2a;
+  --hotel-burgundy-soft: #7a2d3a;
+  --hotel-champagne: #c7a66a;
+  --hotel-champagne-light: #f1dfb7;
+  --hotel-ivory: #fbf8f1;
+  --hotel-cream: #f4efe5;
+  --hotel-linen: #eee7da;
+  --hotel-paper: #fffdf8;
+  --hotel-muted: #6f665d;
+  --hotel-border: rgba(154, 124, 78, 0.26);
+  --hotel-border-strong: rgba(154, 124, 78, 0.44);
+  --hotel-success: #2f6b52;
+  --hotel-warning: #9b6a20;
+  --hotel-danger: #9c2f3f;
+  --hotel-shadow: 0 18px 48px rgba(42, 29, 24, 0.1);
+  --hotel-font-body: "Aptos", "Segoe UI", Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --hotel-font-display: Georgia, "Times New Roman", serif;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background:
+    radial-gradient(circle at 14% 8%, rgba(199, 166, 106, 0.18), transparent 28rem),
+    radial-gradient(circle at 88% 12%, rgba(91, 31, 42, 0.12), transparent 30rem),
+    linear-gradient(180deg, var(--hotel-ivory) 0%, var(--hotel-cream) 54%, var(--hotel-linen) 100%) !important;
+  color: var(--hotel-ink) !important;
+  font-family: var(--hotel-font-body) !important;
+  font-size: 15px;
+  line-height: 1.5;
+  letter-spacing: 0;
+}
+
+.app-shell {
+  background: transparent !important;
+}
+
+.sidebar,
+aside,
+.pms-sidebar,
+.app-sidebar,
+.main-sidebar,
+.side-navigation,
+.navigation-sidebar,
+nav[aria-label="Main navigation"] {
+  background:
+    linear-gradient(180deg, #1d1310 0%, #2a1d18 44%, #4b1f29 100%) !important;
+  color: var(--hotel-ivory) !important;
+  border-right: 1px solid rgba(241, 223, 183, 0.24) !important;
+  box-shadow: 18px 0 52px rgba(42, 29, 24, 0.24) !important;
+}
+
+.brand-block {
+  border-bottom: 1px solid rgba(241, 223, 183, 0.22);
+  padding-bottom: 18px;
+}
+
+.brand-title {
+  color: #fffdf8 !important;
+  font-family: var(--hotel-font-display);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1.05;
+}
+
+.brand-subtitle,
+.brand-property,
+.sidebar p,
+.sidebar span,
+aside p,
+aside span,
+aside div {
+  color: rgba(251, 248, 241, 0.76) !important;
+}
+
+.nav-btn,
+aside a,
+aside button,
+.sidebar a,
+.sidebar button {
+  border-radius: 8px !important;
+  border: 1px solid transparent !important;
+  color: rgba(251, 248, 241, 0.86) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0;
+}
+
+.nav-btn:hover,
+aside a:hover,
+aside button:hover,
+.sidebar a:hover,
+.sidebar button:hover {
+  background: rgba(241, 223, 183, 0.11) !important;
+  border-color: rgba(241, 223, 183, 0.28) !important;
+  color: #fffdf8 !important;
+  box-shadow: none !important;
+  transform: none !important;
+}
+
+.nav-btn.active,
+aside a.active,
+aside button.active,
+.sidebar a.active,
+.sidebar button.active,
+aside [aria-current="page"],
+.sidebar [aria-current="page"] {
+  background:
+    linear-gradient(135deg, #f7edcf 0%, var(--hotel-champagne) 56%, #a87a35 100%) !important;
+  color: #241713 !important;
+  border-color: rgba(255, 253, 248, 0.4) !important;
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 253, 248, 0.54) !important;
+}
+
+.logout-btn {
+  margin-top: auto;
+}
+
+.main-panel,
+.main-content,
+.page-content,
+.content-area,
+main,
+.pms-main,
+.app-main {
+  background:
+    radial-gradient(circle at top left, rgba(199, 166, 106, 0.18), transparent 28rem),
+    radial-gradient(circle at top right, rgba(91, 31, 42, 0.08), transparent 30rem),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.88) 0%, rgba(244, 239, 229, 0.92) 100%) !important;
+  color: var(--hotel-ink) !important;
+}
+
+.page-content {
+  min-height: 100vh;
+}
+
+.topbar,
+.page-header,
+.content-header,
+main header {
+  background:
+    linear-gradient(135deg, rgba(255, 253, 248, 0.98), rgba(249, 244, 234, 0.94)) !important;
+  border: 1px solid var(--hotel-border) !important;
+  border-top: 4px solid var(--hotel-champagne) !important;
+  border-radius: 8px !important;
+  box-shadow: var(--hotel-shadow) !important;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.page-heading,
+.card h2 {
+  color: var(--hotel-coffee) !important;
+  font-family: var(--hotel-font-display);
+  font-weight: 700;
+  letter-spacing: 0 !important;
+}
+
+.page-heading {
+  font-size: clamp(30px, 3vw, 42px);
+  line-height: 1.08;
+}
+
+.page-subheading,
+.muted,
+.kpi-hint,
+.kpi-subtitle,
+.brand-property,
+.text-slate-400,
+.text-slate-500,
+.text-slate-600,
+.text-slate-700 {
+  color: var(--hotel-muted) !important;
+}
+
+.card,
+.kpi-card,
+.table-wrap,
+section,
+article,
+.panel,
+.pms-card,
+.stat-card,
+.dashboard-card,
+.module-card,
+.rounded-3xl,
+.rounded-2xl,
+.rounded-xl,
+.bg-white,
+.bg-slate-50,
+.bg-amber-50,
+.bg-emerald-50,
+.bg-red-50 {
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.98) 0%, rgba(248, 243, 233, 0.98) 100%) !important;
+  border-color: var(--hotel-border) !important;
+  color: var(--hotel-ink) !important;
+  box-shadow: 0 14px 36px rgba(42, 29, 24, 0.08) !important;
+}
+
+.card,
+.kpi-card,
+.table-wrap,
+.rounded-3xl,
+.rounded-2xl,
+.rounded-xl {
+  border-radius: 8px !important;
+}
+
+.card:hover,
+.kpi-card:hover,
+.panel:hover,
+.pms-card:hover,
+.dashboard-card:hover,
+.module-card:hover {
+  border-color: var(--hotel-border-strong) !important;
+  box-shadow: 0 20px 48px rgba(42, 29, 24, 0.12) !important;
+}
+
+.kpi-value,
+.metric-value,
+.stat-value,
+strong {
+  color: var(--hotel-coffee) !important;
+  font-weight: 800;
+}
+
+.kpi-title,
+.ops-label,
+.eyebrow,
+.label,
+.section-label,
+.text-amber-700,
+.text-amber-800,
+.text-amber-900 {
+  color: #8a6429 !important;
+  font-weight: 800;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase;
+}
+
+button,
+.btn,
+.pms-btn,
+.primary-btn,
+.small-btn,
+.tab-btn {
+  border-radius: 8px !important;
+  border: 1px solid var(--hotel-border-strong) !important;
+  background:
+    linear-gradient(180deg, #fffdf8 0%, #f2eadb 100%) !important;
+  color: var(--hotel-coffee) !important;
+  box-shadow: 0 8px 18px rgba(42, 29, 24, 0.08) !important;
+  font-family: var(--hotel-font-body) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0 !important;
+  transform: none !important;
+}
+
+button:hover,
+.btn:hover,
+.pms-btn:hover,
+.primary-btn:hover,
+.small-btn:hover,
+.tab-btn:hover {
+  border-color: rgba(199, 166, 106, 0.7) !important;
+  background:
+    linear-gradient(180deg, #fffaf0 0%, #eadcc3 100%) !important;
+  color: var(--hotel-coffee) !important;
+  transform: none !important;
+  filter: none !important;
+}
+
+button[type="submit"],
+.primary,
+.btn-primary,
+.pms-btn-primary,
+.primary-btn,
+.bg-slate-900,
+button.bg-slate-900 {
+  background:
+    linear-gradient(135deg, var(--hotel-coffee) 0%, var(--hotel-burgundy) 100%) !important;
+  color: #fffdf8 !important;
+  border-color: rgba(241, 223, 183, 0.42) !important;
+  box-shadow:
+    0 14px 32px rgba(91, 31, 42, 0.22),
+    inset 0 1px 0 rgba(255, 253, 248, 0.18) !important;
+}
+
+.bg-amber-700,
+button.bg-amber-700,
+.btn-gold,
+.pms-btn-gold,
+.assign-room,
+button[data-action="assign-room"] {
+  background:
+    linear-gradient(135deg, #f6ebcf 0%, var(--hotel-champagne) 54%, #a87a35 100%) !important;
+  color: #241713 !important;
+  border-color: rgba(168, 122, 53, 0.7) !important;
+}
+
+.bg-emerald-700,
+button.bg-emerald-700,
+.success,
+.confirm,
+.btn-green,
+.pms-btn-green,
+button[data-action="check-in"],
+button[data-action="confirm"] {
+  background:
+    linear-gradient(135deg, #244f3f 0%, var(--hotel-success) 100%) !important;
+  color: #fffdf8 !important;
+  border-color: rgba(47, 107, 82, 0.72) !important;
+}
+
+.danger,
+.cancel,
+.no-show,
+.btn-red,
+.pms-btn-red,
+button[data-action="no-show"],
+button[data-action="cancel"],
+button[data-action="delete"] {
+  background:
+    linear-gradient(135deg, #6c2430 0%, var(--hotel-danger) 100%) !important;
+  color: #fffdf8 !important;
+  border-color: rgba(156, 47, 63, 0.72) !important;
+}
+
+button:disabled {
+  background: #e6dfd2 !important;
+  border-color: rgba(154, 124, 78, 0.2) !important;
+  color: #8a8176 !important;
+  opacity: 1 !important;
+}
+
+input,
+select,
+textarea,
+.field input,
+.field select,
+.field textarea,
+.chat-form input {
+  background: #fffdf8 !important;
+  border: 1px solid rgba(154, 124, 78, 0.32) !important;
+  border-radius: 8px !important;
+  color: var(--hotel-ink) !important;
+  box-shadow: inset 0 1px 2px rgba(42, 29, 24, 0.05) !important;
+  font-family: var(--hotel-font-body) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #8a8176 !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  border-color: var(--hotel-champagne) !important;
+  box-shadow:
+    0 0 0 3px rgba(199, 166, 106, 0.22),
+    inset 0 1px 2px rgba(42, 29, 24, 0.04) !important;
+  outline: none !important;
+}
+
+.data-table,
+.table,
+table {
+  background: #fffdf8 !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+  color: var(--hotel-ink) !important;
+}
+
+.data-table th,
+.table th,
+th,
+thead,
+thead tr,
+thead th {
+  background:
+    linear-gradient(180deg, #2a1d18 0%, #4b1f29 100%) !important;
+  color: #fffdf8 !important;
+  border-bottom: 1px solid rgba(241, 223, 183, 0.22) !important;
+  font-family: var(--hotel-font-body) !important;
+  font-size: 12px !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase;
+}
+
+.data-table td,
+.table td,
+td {
+  color: var(--hotel-ink) !important;
+  border-bottom: 1px solid rgba(154, 124, 78, 0.16) !important;
+}
+
+tbody tr:hover td,
+.data-table tr:hover td,
+.table tr:hover td {
+  background: rgba(199, 166, 106, 0.11) !important;
+}
+
+.pill,
+.rounded-full,
+.badge,
+.status {
+  background: rgba(241, 223, 183, 0.62) !important;
+  border: 1px solid rgba(199, 166, 106, 0.36) !important;
+  color: var(--hotel-coffee) !important;
+  border-radius: 999px !important;
+}
+
+.pill-success,
+.text-emerald-700,
+.text-emerald-900,
+.text-emerald-950 {
+  color: var(--hotel-success) !important;
+}
+
+.pill-warning,
+.text-yellow-700,
+.text-amber-700,
+.text-amber-800,
+.text-amber-900 {
+  color: var(--hotel-warning) !important;
+}
+
+.pill-danger,
+.text-red-700,
+.text-red-800,
+.text-red-900 {
+  color: var(--hotel-danger) !important;
+}
+
+a,
+main a,
+.page-content a,
+.content-area a {
+  color: #7a4e18 !important;
+}
+
+a:hover,
+main a:hover,
+.page-content a:hover,
+.content-area a:hover {
+  color: var(--hotel-burgundy) !important;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(154, 124, 78, 0.48) !important;
+  border-radius: 999px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(244, 239, 229, 0.72) !important;
+}
+
+@media (max-width: 980px) {
+  .brand-title {
+    font-size: 23px;
+  }
+
+  .page-heading {
+    font-size: 30px;
+  }
+}
+
+/* =========================================================
+   F&B Control Module - Luxury Hotel Operations Theme
+   ========================================================= */
+
+.fb-control-module {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(199, 166, 106, 0.22), transparent 24rem),
+    radial-gradient(circle at 88% 4%, rgba(91, 31, 42, 0.12), transparent 28rem),
+    linear-gradient(180deg, #fffdf8 0%, #f4efe5 54%, #eee4d4 100%) !important;
+  color: var(--hotel-ink) !important;
+  font-family: var(--hotel-font-body) !important;
+}
+
+.fb-control-hero {
+  position: relative;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(255, 253, 248, 0.98), rgba(244, 239, 229, 0.94)) !important;
+  border: 1px solid rgba(154, 124, 78, 0.32) !important;
+  border-top: 4px solid var(--hotel-burgundy) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 18px 48px rgba(42, 29, 24, 0.11) !important;
+}
+
+.fb-control-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--hotel-burgundy), var(--hotel-champagne), var(--hotel-success));
+}
+
+.fb-control-module h1,
+.fb-control-module h2,
+.fb-control-module h3,
+.fb-control-module h4 {
+  color: var(--hotel-coffee) !important;
+  font-family: var(--hotel-font-display);
+  letter-spacing: 0 !important;
+}
+
+.fb-control-module p,
+.fb-control-module span,
+.fb-control-module label {
+  color: inherit;
+}
+
+.fb-control-module .text-slate-400,
+.fb-control-module .text-slate-500,
+.fb-control-module .text-slate-600,
+.fb-control-module .text-slate-700 {
+  color: var(--hotel-muted) !important;
+}
+
+.fb-control-module .text-amber-700,
+.fb-control-module .text-amber-800,
+.fb-control-module .text-amber-900,
+.fb-control-module .text-emerald-700,
+.fb-control-module .text-emerald-900,
+.fb-control-module .text-emerald-950 {
+  color: #8a6429 !important;
+}
+
+.fb-control-nav {
+  background:
+    linear-gradient(180deg, #fffdf8 0%, #f5eddd 100%) !important;
+  border: 1px solid rgba(154, 124, 78, 0.3) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 16px 40px rgba(42, 29, 24, 0.09) !important;
+}
+
+.fb-control-nav p,
+.fb-control-nav span,
+.fb-control-nav div,
+.fb-control-nav label {
+  color: var(--hotel-muted) !important;
+}
+
+.fb-control-nav button {
+  background: rgba(255, 253, 248, 0.86) !important;
+  border: 1px solid rgba(154, 124, 78, 0.22) !important;
+  border-radius: 8px !important;
+  color: var(--hotel-coffee) !important;
+  box-shadow: none !important;
+}
+
+.fb-control-nav button:hover {
+  background: rgba(241, 223, 183, 0.52) !important;
+  border-color: rgba(199, 166, 106, 0.48) !important;
+  color: var(--hotel-coffee) !important;
+}
+
+.fb-control-nav button.bg-slate-900,
+.fb-control-nav button.text-white {
+  background:
+    linear-gradient(135deg, var(--hotel-coffee) 0%, var(--hotel-burgundy) 100%) !important;
+  color: #fffdf8 !important;
+  border-color: rgba(241, 223, 183, 0.36) !important;
+}
+
+.fb-control-workspace {
+  background: transparent !important;
+}
+
+.fb-control-panel,
+.fb-control-module section,
+.fb-control-module .rounded-3xl,
+.fb-control-module .rounded-2xl,
+.fb-control-module .rounded-xl,
+.fb-control-module .bg-white,
+.fb-control-module .bg-slate-50,
+.fb-control-module .bg-amber-50,
+.fb-control-module .bg-emerald-50,
+.fb-control-module .bg-red-50 {
+  background:
+    linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(247, 240, 228, 0.98)) !important;
+  border-color: rgba(154, 124, 78, 0.28) !important;
+  border-radius: 8px !important;
+  color: var(--hotel-ink) !important;
+  box-shadow: 0 14px 36px rgba(42, 29, 24, 0.08) !important;
+}
+
+.fb-control-panel {
+  border-top: 3px solid rgba(199, 166, 106, 0.82) !important;
+}
+
+.fb-control-panel > h2 {
+  border-bottom: 1px solid rgba(154, 124, 78, 0.2);
+  padding-bottom: 12px;
+}
+
+.fb-kpi-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 8px !important;
+}
+
+.fb-kpi-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  background: var(--hotel-champagne);
+}
+
+.fb-kpi-dark {
+  background:
+    linear-gradient(135deg, var(--hotel-coffee) 0%, var(--hotel-burgundy) 100%) !important;
+  border-color: rgba(241, 223, 183, 0.32) !important;
+  color: #fffdf8 !important;
+}
+
+.fb-kpi-dark p,
+.fb-kpi-dark span,
+.fb-kpi-dark strong {
+  color: #fffdf8 !important;
+}
+
+.fb-kpi-success {
+  background:
+    linear-gradient(135deg, rgba(47, 107, 82, 0.12), rgba(255, 253, 248, 0.98)) !important;
+  border-color: rgba(47, 107, 82, 0.34) !important;
+}
+
+.fb-kpi-success::before {
+  background: var(--hotel-success);
+}
+
+.fb-kpi-danger {
+  background:
+    linear-gradient(135deg, rgba(156, 47, 63, 0.12), rgba(255, 253, 248, 0.98)) !important;
+  border-color: rgba(156, 47, 63, 0.34) !important;
+}
+
+.fb-kpi-danger::before {
+  background: var(--hotel-danger);
+}
+
+.fb-kpi-warning {
+  background:
+    linear-gradient(135deg, rgba(199, 166, 106, 0.2), rgba(255, 253, 248, 0.98)) !important;
+  border-color: rgba(199, 166, 106, 0.42) !important;
+}
+
+.fb-kpi-neutral {
+  background:
+    linear-gradient(180deg, #fffdf8 0%, #f5eddd 100%) !important;
+}
+
+.fb-kpi-card p:first-child,
+.fb-risk-item p:first-child {
+  color: #8a6429 !important;
+  letter-spacing: 0.04em !important;
+}
+
+.fb-kpi-card p:last-child,
+.fb-risk-item p:last-child {
+  color: var(--hotel-coffee) !important;
+  font-family: var(--hotel-font-display);
+}
+
+.fb-risk-item {
+  background:
+    linear-gradient(180deg, #fffdf8 0%, #f5eddd 100%) !important;
+}
+
+.fb-data-table {
+  border-radius: 8px !important;
+  border-color: rgba(154, 124, 78, 0.28) !important;
+}
+
+.fb-data-table table {
+  background: #fffdf8 !important;
+}
+
+.fb-data-table th {
+  background:
+    linear-gradient(180deg, var(--hotel-coffee) 0%, var(--hotel-burgundy) 100%) !important;
+  color: #fffdf8 !important;
+  border-color: rgba(241, 223, 183, 0.18) !important;
+}
+
+.fb-data-table td {
+  background: rgba(255, 253, 248, 0.76) !important;
+  color: var(--hotel-ink) !important;
+  border-color: rgba(154, 124, 78, 0.16) !important;
+}
+
+.fb-data-table tr:hover td {
+  background: rgba(241, 223, 183, 0.36) !important;
+}
+
+.fb-control-module input,
+.fb-control-module select,
+.fb-control-module textarea {
+  background: #fffdf8 !important;
+  border: 1px solid rgba(154, 124, 78, 0.32) !important;
+  border-radius: 8px !important;
+  color: var(--hotel-ink) !important;
+}
+
+.fb-control-module input:focus,
+.fb-control-module select:focus,
+.fb-control-module textarea:focus {
+  border-color: var(--hotel-champagne) !important;
+  box-shadow: 0 0 0 3px rgba(199, 166, 106, 0.22) !important;
+}
+
+.fb-control-module button {
+  border-radius: 8px !important;
+}
+
+.fb-control-module .rounded-full {
+  background: rgba(241, 223, 183, 0.68) !important;
+  border-color: rgba(199, 166, 106, 0.34) !important;
+  color: var(--hotel-coffee) !important;
+}
+
+@media (max-width: 700px) {
+  .fb-control-module {
+    padding: 16px !important;
+  }
+}
