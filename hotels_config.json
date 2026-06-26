@@ -1,40 +1,28 @@
 [
   {
     "id": "H001",
-
     "property_code": "DRE001",
     "hotel_name": "Dream Big Hotel",
     "name": "Dream Big Hotel",
     "city": "Addis Ababa",
-
-    "email": "gedam_ka@yahoo.com",
-    "reservation_email": "gedam_ka@yahoo.com",
-
-    "telegram_chat_id": "16177750613",
-
-    "sheet_id": "1bbzO2nRk_IMqYIJRK20Yn7DNHpbQjfrm8uhQAcEwTFI",
-
-    "phone": "251911000003",
-
-    "telegram_bot_token": "8500430488:AAGSaONn1bYAGrkosZzN3UvZz531ijycUUo"
+    "email": "reservations@example.com",
+    "reservation_email": "reservations@example.com",
+    "telegram_chat_id": "${DRE001_TELEGRAM_CHAT_ID}",
+    "sheet_id": "${DRE001_GOOGLE_SHEET_ID}",
+    "phone": "+10000000000",
+    "telegram_bot_token": "${DRE001_TELEGRAM_BOT_TOKEN}"
   },
   {
     "id": "H002",
-
-    "property_code": "N&N002",
-    "hotel_name": "N&N Luxury Hotel",
-    "name": "N&N Luxury Hotel",
+    "property_code": "NN002",
+    "hotel_name": "N&N Hotel",
+    "name": "N&N Hotel",
     "city": "Addis Ababa",
-
-    "email": "gedam_ka@yahoo.com",
-    "reservation_email": "gedam_ka@yahoo.com",
-
-    "telegram_chat_id": "16177750614",
-
-    "sheet_id": "1QtWahorCuUidkh6qFBPxeDHMqb1gTijiEc8S07_be4Y",
-
-    "phone": "251911000004",
-
-    "telegram_bot_token": "7868901186:AAEHFTXJt37LkSDCB6-5gueP3Iw2txODNMQ"
+    "email": "reservations@example.com",
+    "reservation_email": "reservations@example.com",
+    "telegram_chat_id": "${NN002_TELEGRAM_CHAT_ID}",
+    "sheet_id": "${NN002_GOOGLE_SHEET_ID}",
+    "phone": "+10000000001",
+    "telegram_bot_token": "${NN002_TELEGRAM_BOT_TOKEN}"
   }
 ]

@@ -25,6 +25,7 @@ Thumbs.db
 *.lock
 *.csv
 backup/
+backups/
 analytics/
 automation/
 storage/
@@ -43,6 +44,8 @@ requirements_backup.txt
 credentials_*.json
 service_account.json
 guzo_service.json
+guzo_backend/credentials/
+creds/
 # Cache and compiled files
 *.pyo
 .streamlit/
@@ -59,4 +62,5 @@ bot_log.txt
 *.xlsx
 dist/
 guzo_pms_frontend/dist/
+guzo_pms_frontend/screenshots/
 _local_backup/
