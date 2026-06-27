@@ -19,7 +19,6 @@ import os
 import re
 import random
 from difflib import get_close_matches
-from guzo_backend.modules import google_sheets
 from guzo_booking_bot.modules import telegram_notifier, sentiment_analyzer, sustainability_tips
 
 # ---------------------------------------------------------------------
@@ -51,23 +50,26 @@ AMHARIC_DEFAULTS = {
 # HELPER FUNCTIONS
 # ---------------------------------------------------------------------
 def fetch_hotel_custom_responses(sheet_id: str):
-    """Load custom Q&A for hotel from Google Sheet (optional)."""
-    try:
-        client = google_sheets.init_client()
-        ws = client.open_by_key(sheet_id).worksheet("Hotel_Marketing_profile")
-        data = ws.get_all_records()
-        if not data:
-            return {}
-        record = data[0]
-        return {
-            "wifi": {"en": record.get("WiFi Info", ""), "am": record.get("WiFi Info (Amharic)", "")},
-            "breakfast": {"en": record.get("Breakfast Info", ""), "am": record.get("Breakfast Info (Amharic)", "")},
-            "transport": {"en": record.get("Transport Info", ""), "am": record.get("Transport Info (Amharic)", "")},
-            "restaurant": {"en": record.get("Restaurant Info", ""), "am": record.get("Restaurant Info (Amharic)", "")},
-        }
-    except Exception as e:
-        print(f"[Concierge] ⚠️ Failed to fetch hotel profile: {e}")
-        return {}
+    """Google Sheets disabled; return no custom sheet overrides."""
+    return {}
+
+
+def get_hotel_marketing_profile(property_code: str = "DRE001"):
+    """Static fallback until marketing profiles are exposed by the backend."""
+    return {
+        "property_code": property_code,
+        "hotel_name": "Dream Big Hotel",
+        "description": "A luxury hospitality property managed through Guzo PMS.",
+        "amenities": [
+            "Front desk support",
+            "Room booking support",
+            "Housekeeping request",
+            "Maintenance request",
+            "Restaurant and local information",
+        ],
+        "phone": "",
+        "website": "",
+    }
 
 # ---------------------------------------------------------------------
 # MAIN CONCIERGE LOGIC
@@ -126,17 +128,11 @@ def get_concierge_reply(hotel_name: str, user_message: str, lang: str = "en", sh
         else:
             reply = defaults["default"]
 
-        # --- If still no data, pull hotel contact info ---
-        try:
-            if sheet_id:
-                client = google_sheets.init_client()
-                ws = client.open_by_key(sheet_id).worksheet("Hotel_Marketing_profile")
-                row = ws.get_all_records()[0]
-                contact = row.get("Website", "") or row.get("Contact", "")
-                phone = row.get("Phone", "")
-                reply += f"\n\n📞 For more assistance, please contact us at {phone} or visit {contact}."
-        except Exception:
-            pass
+        profile = get_hotel_marketing_profile()
+        contact = profile.get("website", "")
+        phone = profile.get("phone", "")
+        if phone or contact:
+            reply += f"\n\n📞 For more assistance, please contact us at {phone} or visit {contact}."
 
     eco_tip = sustainability_tips.random_tip(lang)
     return f"{apology}\n{reply}\n\n{eco_tip}"

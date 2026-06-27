@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Guzo PMS | AI Hotel Agent and Guest Platform</title>
+  <meta
+    name="description"
+    content="Guzo PMS is a hotel property management platform with a public landing page, guest social connection layer, and AI hotel agent connected to PMS workflows."
+  />
+  <style>
+    :root {
+      --ink: #101820;
+      --muted: #5b6675;
+      --line: #d8dee7;
+      --paper: #f7f9fb;
+      --white: #ffffff;
+      --teal: #0f766e;
+      --teal-dark: #0b4f4a;
+      --amber: #d5962c;
+      --coral: #c75b4f;
+      --blue: #2d6cdf;
+      --shadow: 0 22px 60px rgba(16, 24, 32, 0.16);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .shell {
+      min-height: 100vh;
+      background: #eef3f5;
+    }
+
+    .hero {
+      position: relative;
+      min-height: 92vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      color: var(--white);
+      background:
+        linear-gradient(90deg, rgba(8, 18, 24, 0.92) 0%, rgba(8, 18, 24, 0.76) 38%, rgba(8, 18, 24, 0.16) 78%),
+        url("assets/guzo-ai-hotel-ops.png"),
+        linear-gradient(135deg, #102027 0%, #254047 45%, #b9c8c6 100%);
+      background-size: cover;
+      background-position: center;
+    }
+
+    .nav {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 22px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+
+    .mark {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: var(--teal);
+      color: var(--white);
+      box-shadow: 0 10px 30px rgba(15, 118, 110, 0.28);
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 22px;
+      color: rgba(255, 255, 255, 0.84);
+      font-size: 14px;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .button {
+      min-height: 42px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 0 16px;
+      font-weight: 750;
+      font-size: 14px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .button.primary {
+      background: var(--amber);
+      color: #15110a;
+    }
+
+    .button.secondary {
+      color: var(--white);
+      border-color: rgba(255, 255, 255, 0.32);
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(12px);
+    }
+
+    .hero-grid {
+      width: min(1180px, calc(100% - 40px));
+      margin: auto;
+      padding: 46px 0 76px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(340px, 430px);
+      align-items: center;
+      gap: 48px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      color: #e7f4f1;
+      background: rgba(15, 118, 110, 0.32);
+      border: 1px solid rgba(255, 255, 255, 0.16);
+      border-radius: 999px;
+      padding: 8px 12px;
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .hero h1 {
+      max-width: 760px;
+      margin: 22px 0 18px;
+      font-size: clamp(42px, 6vw, 78px);
+      line-height: 0.96;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 640px;
+      margin: 0 0 28px;
+      color: rgba(255, 255, 255, 0.82);
+      font-size: 19px;
+      line-height: 1.6;
+    }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 34px;
+    }
+
+    .metric-row {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 640px;
+    }
+
+    .metric {
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(14px);
+    }
+
+    .metric strong {
+      display: block;
+      font-size: 26px;
+      line-height: 1;
+    }
+
+    .metric span {
+      display: block;
+      margin-top: 8px;
+      color: rgba(255, 255, 255, 0.72);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .agent-panel {
+      color: var(--ink);
+      background: rgba(255, 255, 255, 0.94);
+      border: 1px solid rgba(255, 255, 255, 0.68);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .agent-head {
+      padding: 18px 18px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .agent-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 850;
+    }
+
+    .pulse {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #18a058;
+      box-shadow: 0 0 0 6px rgba(24, 160, 88, 0.14);
+    }
+
+    .agent-state {
+      color: var(--teal);
+      font-size: 12px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+
+    .messages {
+      display: grid;
+      gap: 12px;
+      padding: 18px;
+      background: #f8fafb;
+    }
+
+    .message {
+      max-width: 86%;
+      padding: 12px 14px;
+      border-radius: 8px;
+      line-height: 1.45;
+      font-size: 14px;
+    }
+
+    .message.agent {
+      background: var(--white);
+      border: 1px solid var(--line);
+    }
+
+    .message.user {
+      justify-self: end;
+      color: var(--white);
+      background: var(--teal-dark);
+    }
+
+    .agent-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      padding: 0 18px 18px;
+      background: #f8fafb;
+    }
+
+    .chip {
+      min-height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--white);
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 750;
+    }
+
+    .section {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+      padding: 74px 0;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 28px;
+      margin-bottom: 28px;
+    }
+
+    .section h2 {
+      max-width: 720px;
+      margin: 0;
+      font-size: clamp(30px, 4vw, 48px);
+      line-height: 1.06;
+      letter-spacing: 0;
+    }
+
+    .section-copy {
+      max-width: 430px;
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .modules {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .module {
+      min-height: 162px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--white);
+    }
+
+    .module-icon {
+      width: 38px;
+      height: 38px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      margin-bottom: 18px;
+      background: #e8f4f2;
+      color: var(--teal-dark);
+      font-weight: 900;
+    }
+
+    .module h3 {
+      margin: 0 0 8px;
+      font-size: 17px;
+    }
+
+    .module p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .bridge {
+      background: #ffffff;
+      border-top: 1px solid var(--line);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .bridge-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .bridge-card {
+      padding: 22px;
+      border-radius: 8px;
+      background: #f7f9fb;
+      border: 1px solid var(--line);
+    }
+
+    .bridge-card b {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--teal-dark);
+      font-size: 18px;
+    }
+
+    .bridge-card p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.58;
+    }
+
+    .platform {
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      gap: 28px;
+      align-items: start;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 14px;
+    }
+
+    .step {
+      display: grid;
+      grid-template-columns: 42px 1fr;
+      gap: 14px;
+      padding: 18px;
+      background: var(--white);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .step-number {
+      width: 42px;
+      height: 42px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      color: var(--white);
+      background: var(--teal);
+      font-weight: 850;
+    }
+
+    .step h3 {
+      margin: 0 0 7px;
+      font-size: 18px;
+    }
+
+    .step p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .social-board {
+      padding: 22px;
+      border-radius: 8px;
+      background: #111b22;
+      color: var(--white);
+      box-shadow: var(--shadow);
+    }
+
+    .social-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .social-top h3 {
+      margin: 0;
+      font-size: 22px;
+    }
+
+    .status {
+      align-self: start;
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: #14351f;
+      background: #bff3cc;
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .feed {
+      display: grid;
+      gap: 10px;
+    }
+
+    .feed-item {
+      display: grid;
+      grid-template-columns: 44px 1fr auto;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .avatar {
+      width: 44px;
+      height: 44px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      font-weight: 900;
+    }
+
+    .avatar.teal {
+      background: var(--teal);
+    }
+
+    .avatar.amber {
+      background: var(--amber);
+      color: #21180a;
+    }
+
+    .avatar.coral {
+      background: var(--coral);
+    }
+
+    .feed-item strong,
+    .feed-item span {
+      display: block;
+    }
+
+    .feed-item span {
+      margin-top: 3px;
+      color: rgba(255, 255, 255, 0.66);
+      font-size: 13px;
+    }
+
+    .tag {
+      color: #d9e9ff;
+      background: rgba(45, 108, 223, 0.22);
+      border: 1px solid rgba(108, 158, 255, 0.28);
+      border-radius: 999px;
+      padding: 6px 9px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .cta {
+      background: #0f1a20;
+      color: var(--white);
+    }
+
+    .cta .section {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+      padding: 58px 0;
+    }
+
+    .cta h2 {
+      max-width: 760px;
+      margin: 0 0 12px;
+      font-size: clamp(30px, 4vw, 46px);
+      line-height: 1.08;
+    }
+
+    .cta p {
+      max-width: 640px;
+      margin: 0;
+      color: rgba(255, 255, 255, 0.72);
+      line-height: 1.62;
+    }
+
+    footer {
+      padding: 24px 0;
+      background: #0f1a20;
+      color: rgba(255, 255, 255, 0.62);
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .footer-inner {
+      width: min(1180px, calc(100% - 40px));
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      font-size: 13px;
+    }
+
+    @media (max-width: 920px) {
+      .nav-links {
+        display: none;
+      }
+
+      .hero {
+        min-height: auto;
+      }
+
+      .hero-grid,
+      .platform {
+        grid-template-columns: 1fr;
+      }
+
+      .agent-panel {
+        max-width: 560px;
+      }
+
+      .modules {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .bridge-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head,
+      .cta .section,
+      .footer-inner {
+        align-items: start;
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .nav {
+        width: min(100% - 28px, 1180px);
+      }
+
+      .nav-actions .secondary {
+        display: none;
+      }
+
+      .hero-grid,
+      .section,
+      .footer-inner {
+        width: min(100% - 28px, 1180px);
+      }
+
+      .hero h1 {
+        font-size: 42px;
+      }
+
+      .lead {
+        font-size: 17px;
+      }
+
+      .metric-row,
+      .modules,
+      .agent-actions {
+        grid-template-columns: 1fr;
+      }
+
+      .feed-item {
+        grid-template-columns: 44px 1fr;
+      }
+
+      .tag {
+        grid-column: 2;
+        width: fit-content;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <section class="hero" id="top">
+      <nav class="nav" aria-label="Primary navigation">
+        <a class="brand" href="#top" aria-label="Guzo PMS home">
+          <span class="mark">G</span>
+          <span>Guzo PMS</span>
+        </a>
+        <div class="nav-links" aria-label="Website sections">
+          <a href="#modules">Modules</a>
+          <a href="#agent">AI Agent</a>
+          <a href="#guest-platform">Guest Platform</a>
+          <a href="#demo">Demo</a>
+        </div>
+        <div class="nav-actions">
+          <a class="button secondary" href="/login">Log in</a>
+          <a class="button primary" href="#demo">Request demo</a>
+        </div>
+      </nav>
+
+      <div class="hero-grid">
+        <div>
+          <span class="eyebrow">AI Agent + Landing Page + Secure PMS Dashboard</span>
+          <h1>Guzo PMS</h1>
+          <p class="lead">
+            A hotel operating platform where guests, staff, owners, and social channels connect through one AI-powered property management workflow.
+          </p>
+          <div class="hero-actions">
+            <a class="button primary" href="#agent">Chat with Guzo AI</a>
+            <a class="button secondary" href="#modules">Explore PMS modules</a>
+          </div>
+          <div class="metric-row" aria-label="Guzo platform priorities">
+            <div class="metric">
+              <strong>3-way</strong>
+              <span>Guest, staff, and owner connection</span>
+            </div>
+            <div class="metric">
+              <strong>24/7</strong>
+              <span>AI hotel assistant readiness</span>
+            </div>
+            <div class="metric">
+              <strong>PMS</strong>
+              <span>Reservations, rooms, folios, reports</span>
+            </div>
+          </div>
+        </div>
+
+        <aside class="agent-panel" id="agent" aria-label="Guzo AI Hotel Agent preview">
+          <div class="agent-head">
+            <div class="agent-title"><span class="pulse"></span>Guzo AI Hotel Agent</div>
+            <span class="agent-state">Connected</span>
+          </div>
+          <div class="messages">
+            <div class="message user">Do we have standard rooms for July 18 to 20?</div>
+            <div class="message agent">
+              I checked the PMS. Standard rooms are available. I can create a pending booking request and notify the front desk.
+            </div>
+            <div class="message user">Also summarize today for the manager.</div>
+            <div class="message agent">
+              Arrivals, departures, in-house guests, housekeeping status, and night audit warnings are ready for review.
+            </div>
+          </div>
+          <div class="agent-actions" aria-label="AI agent sample actions">
+            <span class="chip">Check availability</span>
+            <span class="chip">Create request</span>
+            <span class="chip">Show arrivals</span>
+            <span class="chip">Summarize reports</span>
+          </div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section" id="modules">
+      <div class="section-head">
+        <h2>Global-standard PMS workflows for modern hotels.</h2>
+        <p class="section-copy">
+          Guzo starts with the operational work hotels run every day, then adds an AI agent that can explain, summarize, and eventually perform secure PMS actions.
+        </p>
+      </div>
+      <div class="modules">
+        <article class="module">
+          <div class="module-icon">FD</div>
+          <h3>Front Desk</h3>
+          <p>Arrivals, departures, in-house guests, check-in, check-out, and room assignment.</p>
+        </article>
+        <article class="module">
+          <div class="module-icon">RS</div>
+          <h3>Reservations</h3>
+          <p>Booking requests, room availability, no-shows, guest details, and reservation support.</p>
+        </article>
+        <article class="module">
+          <div class="module-icon">HK</div>
+          <h3>Housekeeping</h3>
+          <p>Room status, task suggestions, cleaning priorities, maintenance flags, and staff coordination.</p>
+        </article>
+        <article class="module">
+          <div class="module-icon">FO</div>
+          <h3>Folio & Cashier</h3>
+          <p>Charges, payments, balances, cashier controls, and guest account visibility.</p>
+        </article>
+        <article class="module">
+          <div class="module-icon">NA</div>
+          <h3>Night Audit</h3>
+          <p>Warnings, open balances, pending arrivals, no-shows, and daily close readiness.</p>
+        </article>
+        <article class="module">
+          <div class="module-icon">RP</div>
+          <h3>Reports</h3>
+          <p>Daily manager summaries, occupancy, revenue, operational exceptions, and performance trends.</p>
+        </article>
+        <article class="module">
+          <div class="module-icon">FB</div>
+          <h3>F&B Cost Control</h3>
+          <p>Food and beverage cost awareness connected to hotel finance and management reporting.</p>
+        </article>
+        <article class="module">
+          <div class="module-icon">AD</div>
+          <h3>Admin & Roles</h3>
+          <p>Property-aware configuration, staff roles, secure access, and hotel owner controls.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="bridge" aria-label="Guzo bridge model">
+      <div class="section">
+        <div class="section-head">
+          <h2>The bridge between guests, hotel teams, and PMS data.</h2>
+          <p class="section-copy">
+            The landing page is the front door, the chat box is the conversation, and the AI agent is the smart worker connected to Guzo PMS.
+          </p>
+        </div>
+        <div class="bridge-grid">
+          <article class="bridge-card">
+            <b>Guest ↔ AI Agent ↔ Guzo PMS</b>
+            <p>Answer guest questions, collect booking requests, check room availability, and keep front desk teams informed.</p>
+          </article>
+          <article class="bridge-card">
+            <b>Staff ↔ AI Agent ↔ PMS Data</b>
+            <p>Support reservations, housekeeping, front desk, folio, reports, and night audit workflows from one interface.</p>
+          </article>
+          <article class="bridge-card">
+            <b>Owner ↔ Website ↔ Demo Contact</b>
+            <p>Present the business value of Guzo PMS, route demo interest, and support hotel decision makers.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section platform" id="guest-platform">
+      <div>
+        <h2>Built for social media and guest connection.</h2>
+        <p class="section-copy">
+          Guzo can become the public guest platform for hotel questions, demo requests, booking intent, and staff follow-up across web and social channels.
+        </p>
+        <div class="timeline">
+          <article class="step">
+            <div class="step-number">1</div>
+            <div>
+              <h3>Landing page first</h3>
+              <p>Show Guzo PMS features, modules, hotel value, demo request, and PMS login.</p>
+            </div>
+          </article>
+          <article class="step">
+            <div class="step-number">2</div>
+            <div>
+              <h3>Chatbot second</h3>
+              <p>Answer what Guzo PMS is, pricing questions, demo questions, and module explanations.</p>
+            </div>
+          </article>
+          <article class="step">
+            <div class="step-number">3</div>
+            <div>
+              <h3>AI agent third</h3>
+              <p>Connect to backend APIs for availability, pending bookings, arrivals, room status, reports, and audit alerts.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <aside class="social-board" aria-label="Guest and social platform preview">
+        <div class="social-top">
+          <h3>Guest connection inbox</h3>
+          <span class="status">Live-ready</span>
+        </div>
+        <div class="feed">
+          <div class="feed-item">
+            <div class="avatar teal">WA</div>
+            <div>
+              <strong>Guest booking request</strong>
+              <span>AI prepares dates, room type, guest count, and PMS note.</span>
+            </div>
+            <span class="tag">Booking</span>
+          </div>
+          <div class="feed-item">
+            <div class="avatar amber">IG</div>
+            <div>
+              <strong>Social media question</strong>
+              <span>AI answers hotel and PMS questions, then routes demo interest.</span>
+            </div>
+            <span class="tag">Social</span>
+          </div>
+          <div class="feed-item">
+            <div class="avatar coral">FD</div>
+            <div>
+              <strong>Front desk support</strong>
+              <span>AI summarizes arrivals, departures, room status, and no-shows.</span>
+            </div>
+            <span class="tag">Staff</span>
+          </div>
+          <div class="feed-item">
+            <div class="avatar teal">NA</div>
+            <div>
+              <strong>Night audit warning</strong>
+              <span>AI flags pending balances and exceptions before daily close.</span>
+            </div>
+            <span class="tag">Audit</span>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section class="cta" id="demo">
+      <div class="section">
+        <div>
+          <h2>Launch Guzo as a landing page now, then grow it into the hotel AI agent.</h2>
+          <p>
+            Start with demo capture, PMS module storytelling, guest questions, and staff login. Then connect secure backend actions when the APIs are ready.
+          </p>
+        </div>
+        <a class="button primary" href="mailto:demo@guzopms.com?subject=Guzo%20PMS%20Demo%20Request">Request demo</a>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+      <span>Guzo PMS</span>
+      <span>Landing Page + Chatbot + AI Hotel Agent</span>
+    </div>
+  </footer>
+</body>
+</html>
