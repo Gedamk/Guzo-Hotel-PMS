@@ -1,0 +1,11 @@
+{
+  "installCommand": "cd guzo_pms_frontend && npm install",
+  "buildCommand": "cd guzo_pms_frontend && npm run build",
+  "outputDirectory": "guzo_pms_frontend/dist",
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
