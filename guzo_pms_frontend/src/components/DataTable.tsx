@@ -16,8 +16,8 @@ export default function DataTable<T>({
   emptyMessage = "No records found.",
 }: DataTableProps<T>) {
   return (
-    <div className="table-wrap">
-      <table className="data-table">
+    <div className="table-wrap pms-table-wrap">
+      <table className="data-table pms-table">
         <thead>
           <tr>
             {columns.map((column) => (
@@ -28,13 +28,15 @@ export default function DataTable<T>({
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={columns.length}>{emptyMessage}</td>
+              <td className="pms-empty-row" colSpan={columns.length}>{emptyMessage}</td>
             </tr>
           ) : (
             rows.map((row, rowIndex) => (
               <tr key={rowIndex}>
                 {columns.map((column) => (
-                  <td key={column.key}>{column.render(row)}</td>
+                  <td key={column.key} data-label={column.header}>
+                    {column.render(row)}
+                  </td>
                 ))}
               </tr>
             ))

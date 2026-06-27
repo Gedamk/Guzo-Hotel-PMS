@@ -6,7 +6,7 @@ type KpiCardProps = {
 
 export default function KpiCard({ label, value, helpText }: KpiCardProps) {
   return (
-    <div className="card">
+    <div className="card pms-kpi-card">
       <div className="kpi-title">{label}</div>
       <div className="kpi-value">{value}</div>
       {helpText ? <div className="kpi-subtitle">{helpText}</div> : null}

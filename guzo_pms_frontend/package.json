@@ -8,7 +8,8 @@
     "build": "vite build",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "responsive:qa": "node scripts/visual-qa.mjs"
   },
   "dependencies": {
     "axios": "^1.13.6",

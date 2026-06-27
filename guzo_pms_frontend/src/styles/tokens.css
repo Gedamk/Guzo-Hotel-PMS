@@ -1,0 +1,35 @@
+:root {
+  --guzo-bg: #f7f3ea;
+  --guzo-surface: #ffffff;
+  --guzo-surface-soft: #fbf8f1;
+  --guzo-text: #1f2933;
+  --guzo-text-muted: #667085;
+  --guzo-border: #d8cfc2;
+  --guzo-coffee: #4b2e1f;
+  --guzo-coffee-soft: #6f4e37;
+  --guzo-gold: #c89b3c;
+  --guzo-green: #1f6f43;
+  --guzo-red: #b42318;
+  --guzo-blue-info: #2563eb;
+  --guzo-success-bg: #e7f6ed;
+  --guzo-success-text: #146c43;
+  --guzo-warning-bg: #fff4d6;
+  --guzo-warning-text: #8a5a00;
+  --guzo-danger-bg: #fdecec;
+  --guzo-danger-text: #b42318;
+  --guzo-info-bg: #eef4ff;
+  --guzo-info-text: #1d4ed8;
+  --guzo-neutral-bg: #f2f4f7;
+  --guzo-neutral-text: #475467;
+  --guzo-radius-sm: 6px;
+  --guzo-radius-md: 10px;
+  --guzo-radius-lg: 16px;
+  --guzo-shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.08);
+  --guzo-shadow-md: 0 8px 24px rgba(16, 24, 40, 0.12);
+  --guzo-font: Inter, "Noto Sans", "Segoe UI", Arial, sans-serif;
+  --guzo-font-size-xs: 12px;
+  --guzo-font-size-sm: 14px;
+  --guzo-font-size-md: 16px;
+  --guzo-font-size-lg: 20px;
+  --guzo-font-size-xl: 24px;
+}

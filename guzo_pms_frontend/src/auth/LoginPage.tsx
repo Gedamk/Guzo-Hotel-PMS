@@ -1,20 +1,36 @@
 import { useState } from "react";
 import type { UserSession } from "../types/pms";
+import { PROPERTY_CODE } from "../config/pms";
+import { loginPmsUser } from "../services/authService";
+import { getErrorMessage } from "../services/http";
 
 type LoginPageProps = {
   onLogin: (session: UserSession) => void;
 };
 
 export default function LoginPage({ onLogin }: LoginPageProps) {
-  const [username, setUsername] = useState("manager");
-  const [role, setRole] = useState<UserSession["role"]>("frontdesk");
+  const [email, setEmail] = useState("admin@guzo.local");
+  const [password, setPassword] = useState("admin123");
+  const [propertyCode, setPropertyCode] = useState(PROPERTY_CODE);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    onLogin({
-      username: username.trim() || "manager",
-      role,
-    });
+    try {
+      setLoading(true);
+      setError("");
+      const session = await loginPmsUser({
+        email: email.trim(),
+        password,
+        property_code: propertyCode.trim().toUpperCase(),
+      });
+      onLogin(session);
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -50,7 +66,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 marginBottom: "20px",
               }}
             >
-              Hotel Operations Platform
+              Enterprise Hotel Operations Platform
             </div>
 
             <h1
@@ -61,7 +77,7 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 fontWeight: 800,
               }}
             >
-              Guzo Guest Assist PMS
+              Guzo PMS
             </h1>
 
             <p
@@ -73,9 +89,20 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
                 margin: 0,
               }}
             >
-              Global hotel operations, one standard workflow. Front office,
-              housekeeping, finance, reporting, and admin in one operational
-              dashboard designed for daily hotel use.
+              AI-powered Hotel Property Management System with Built-in Guest CRM
+            </p>
+            <p
+              style={{
+                fontSize: "15px",
+                lineHeight: "1.7",
+                color: "var(--muted)",
+                maxWidth: "760px",
+                marginTop: "12px",
+              }}
+            >
+              Manage reservations, front desk operations, housekeeping, folio,
+              payments, reports, night audit, and guest relationships from one
+              modern hotel platform.
             </p>
 
             <div
@@ -191,46 +218,58 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
               fontSize: "14px",
             }}
           >
-            Demo access for PMS module testing and workflow validation.
+            Sign in with your PMS user account. Local development seeds an admin user unless configured otherwise.
           </p>
 
           <form onSubmit={handleSubmit} className="form-grid" style={{ marginTop: "24px" }}>
             <div className="field">
-              <label>Username</label>
+              <label>Email</label>
               <input
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="admin@guzo.local"
+                autoComplete="username"
+                required
               />
             </div>
 
             <div className="field">
-              <label>Role</label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value as UserSession["role"])}
-              >
-                <option value="manager">Manager</option>
-                <option value="frontdesk">Front Desk</option>
-                <option value="housekeeping">Housekeeping</option>
-                <option value="finance">Finance</option>
-                <option value="admin">Admin</option>
-              </select>
+              <label>Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+              />
             </div>
 
-            <button type="submit" className="primary-btn" style={{ marginTop: "6px" }}>
-              Enter PMS
+            <div className="field">
+              <label>Property Code</label>
+              <input
+                value={propertyCode}
+                onChange={(e) => setPropertyCode(e.target.value)}
+                placeholder="DRE001"
+                required
+              />
+            </div>
+
+            {error ? <div className="error-box">{error}</div> : null}
+
+            <button type="submit" className="primary-btn" style={{ marginTop: "6px" }} disabled={loading}>
+              {loading ? "Signing in..." : "Sign In"}
             </button>
           </form>
 
           <div className="card" style={{ marginTop: "22px", padding: "16px" }}>
-            <div style={{ fontWeight: 700, marginBottom: "10px" }}>Demo login notes</div>
+            <div style={{ fontWeight: 700, marginBottom: "10px" }}>Local login notes</div>
             <div className="muted" style={{ fontSize: "14px", lineHeight: "1.7" }}>
-              • Use any username for testing
+              Default local admin: admin@guzo.local
               <br />
-              • Select the role that matches your workflow
+              Default local password: admin123
               <br />
-              • Best first test: Front Desk or Manager
+              Change GUZO_DEFAULT_ADMIN_PASSWORD before pilot use.
             </div>
           </div>
         </section>

@@ -8,8 +8,8 @@ import { getErrorMessage } from "../../services/http";
 import {
   markRoomClean,
   markRoomDirty,
-  markRoomInService,
   markRoomOutOfOrder,
+  markRoomServiceInProgress,
 } from "../../services/housekeepingActions";
 import type { RoomStatusItem } from "../../types/pms";
 
@@ -17,7 +17,7 @@ function hkClass(status: string) {
   const s = String(status || "").toLowerCase();
   if (s.includes("inspected")) return "pill pill-inspected";
   if (s.includes("dirty")) return "pill pill-danger";
-  if (s.includes("out_of_order") || s.includes("out_of_service")) return "pill pill-warning";
+  if (s.includes("out_of_order") || s.includes("out_of_service") || s.includes("service_in_progress")) return "pill pill-warning";
   if (s.includes("clean")) return "pill pill-success";
   return "pill";
 }
@@ -54,7 +54,7 @@ export default function HousekeepingPage() {
 
   async function runRoomAction(
     roomNumber: string,
-    action: "clean" | "dirty" | "in_service" | "out_of_order"
+    action: "clean" | "dirty" | "service_in_progress" | "out_of_order"
   ) {
     try {
       setBusyRoomNumber(roomNumber);
@@ -69,7 +69,7 @@ export default function HousekeepingPage() {
 
       if (action === "clean") await markRoomClean(payload);
       if (action === "dirty") await markRoomDirty(payload);
-      if (action === "in_service") await markRoomInService(payload);
+      if (action === "service_in_progress") await markRoomServiceInProgress(payload);
       if (action === "out_of_order") await markRoomOutOfOrder(payload);
 
       setActionMessage(`Room ${roomNumber} updated successfully.`);
@@ -119,7 +119,7 @@ export default function HousekeepingPage() {
     () =>
       rows.filter((row) => {
         const s = String(row.hk_status || "").toLowerCase();
-        return s === "out_of_order" || s === "out_of_service";
+        return s === "out_of_order" || s === "out_of_service" || s === "service_in_progress";
       }).length,
     [rows]
   );
@@ -128,7 +128,8 @@ export default function HousekeepingPage() {
     <div className="page-grid">
       <PageHeader
         title="Housekeeping"
-        subtitle={`Room status board for ${propertyCode} on ${businessDate}`}
+        subtitle="Room status board."
+        metadata={`${propertyCode} • ${businessDate}`}
         rightSlot={
           <>
             <div className="pill">Occupied: {occupiedRooms}</div>
@@ -188,6 +189,8 @@ export default function HousekeepingPage() {
                   <option value="occupied_dirty">occupied_dirty</option>
                   <option value="out_of_order">out_of_order</option>
                   <option value="out_of_service">out_of_service</option>
+                  <option value="service_in_progress">service_in_progress</option>
+                  <option value="in_service">in_service</option>
                 </select>
               </div>
 
@@ -272,9 +275,9 @@ export default function HousekeepingPage() {
                       <button
                         className="small-btn"
                         disabled={busyRoomNumber === row.room_number}
-                        onClick={() => runRoomAction(row.room_number, "in_service")}
+                        onClick={() => runRoomAction(row.room_number, "service_in_progress")}
                       >
-                        In Service
+                        Start Cleaning
                       </button>
                       <button
                         className="small-btn"

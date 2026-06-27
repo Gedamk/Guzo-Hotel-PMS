@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { API_BASE_URL, DEFAULT_PROPERTY_CODE } from "../../config/pms";
 import {
   Bar,
@@ -20,6 +21,7 @@ import {
   ClipboardList,
   Download,
   FileCheck2,
+  Info,
   LayoutDashboard,
   PackageMinus,
   PackagePlus,
@@ -226,6 +228,28 @@ const actorByRole: Record<string, string> = {
   admin: "admin@guzo.local",
 };
 
+const workflowByHash: Record<string, string> = {
+  dashboard: "fnb-dashboard",
+  recipes: "recipes",
+  "recipe-costing": "recipes",
+  "menu-engineering": "menu-engineering",
+  "menu-costing": "menu-engineering",
+  suppliers: "suppliers",
+  "purchase-orders": "purchase-orders",
+  purchasing: "purchase-orders",
+  receiving: "receiving",
+  "store-inventory": "store-inventory",
+  "store-control": "store-inventory",
+  issuing: "kitchen-requisition",
+  "kitchen-requisition": "kitchen-requisition",
+  "inventory-ledger": "stock-count",
+  "stock-count": "stock-count",
+  "wastage-spoilage": "wastage-spoilage",
+  ingredients: "ingredients",
+  "pos-sales": "pos-sales",
+  "variance-report": "variance-report",
+};
+
 function addDays(dateText: string, days: number) {
   const date = new Date(`${dateText}T00:00:00`);
   date.setDate(date.getDate() + days);
@@ -262,14 +286,22 @@ function csvSection(title: string, columns: string[], rows: (string | number | n
 }
 
 export default function FoodCostingPage() {
+  const location = useLocation();
+  const isStoreControl = location.pathname === "/store-control";
   const [role, setRole] = useState("fb_controller");
-  const [activeWorkflow, setActiveWorkflow] = useState("fnb-dashboard");
+  const [activeWorkflow, setActiveWorkflow] = useState(isStoreControl ? "store-inventory" : "fnb-dashboard");
   const [activeMetric, setActiveMetric] = useState("revenue");
   const [reportPeriod, setReportPeriod] = useState<ReportPeriod>("daily");
   const [reportDate, setReportDate] = useState(todayIso());
   const [reportApproval, setReportApproval] = useState<ReportApproval>({ status: "draft" });
   const [approvalLoading, setApprovalLoading] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const hashKey = location.hash.replace(/^#/, "");
+    const workflow = workflowByHash[hashKey];
+    if (workflow) setActiveWorkflow(workflow);
+  }, [location.hash]);
 
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -1499,10 +1531,18 @@ export default function FoodCostingPage() {
             </div>
             <div>
               <p className="fnb-kicker text-amber-700">Guzo F&B Control</p>
-              <h1>Food & Beverage Control Center</h1>
-              <p className="text-slate-600">
-                Interactive purchasing, inventory, recipe costing, POS variance, and finance reporting.
-              </p>
+              <div className="page-title-row">
+                <h1>{isStoreControl ? "Store Control" : "F&B Cost Control"}</h1>
+                <button
+                  className="page-info-button"
+                  type="button"
+                  aria-label={`About ${isStoreControl ? "Store Control" : "F&B Cost Control"}: Interactive purchasing, inventory, recipe costing, POS variance, and finance reporting.`}
+                  title="Interactive purchasing, inventory, recipe costing, POS variance, and finance reporting."
+                >
+                  <Info aria-hidden="true" size={17} />
+                </button>
+              </div>
+              <div className="page-metadata">{DEFAULT_PROPERTY_CODE} • {reportDate}</div>
             </div>
           </div>
 
@@ -2128,7 +2168,7 @@ export default function FoodCostingPage() {
             <section className="grid gap-6">
               {activeWorkflow === "store-inventory" && (
                 <Panel title="Store Control Actions">
-                  <div className="grid gap-3 md:grid-cols-4">
+                  <div className="fnb-store-actions grid gap-3 md:grid-cols-4">
                     <button className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-bold text-white" type="button" onClick={() => setActiveWorkflow("receiving")}>Receive Goods</button>
                     <button className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-bold text-white" type="button" onClick={() => setActiveWorkflow("kitchen-requisition")}>Issue Stock</button>
                     <button className="rounded-lg border border-amber-200 bg-white px-4 py-2 text-sm font-bold text-slate-800" type="button">View Ledger</button>
@@ -2282,7 +2322,7 @@ export default function FoodCostingPage() {
               </Panel>
 
               {activeWorkflow === "store-inventory" && (
-                <section className="grid gap-6 xl:grid-cols-2">
+                <section className="fnb-store-report-grid grid gap-6 xl:grid-cols-2">
                   <Panel title="Daily Receiving Report">
                     <DataTable
                       columns={["GRN", "Item", "Supplier", "Qty", "Unit Cost", "Value"]}
@@ -2923,8 +2963,16 @@ function RiskItem({ label, value }: { label: string; value: string | number }) {
 }
 
 function DataTable({ columns, rows }: { columns: string[]; rows: (string | number)[][] }) {
+  const tableSizeClass =
+    columns.length >= 14
+      ? "fnb-ledger-table-wide"
+      : columns.length <= 5
+      ? "fnb-ledger-table-compact"
+      : "fnb-ledger-table-standard";
+  const numberColumnPattern = /^(serial|qty|quantity|opening|purchased|total|issued|balance|unit price|value|selling|cost|margin|target|reorder|received|rejected|sold|revenue|physical|system|variance)/i;
+
   return (
-    <div className="fnb-ledger-table overflow-hidden rounded-lg border border-amber-200 bg-white shadow-sm">
+    <div className={`fnb-ledger-table ${tableSizeClass} overflow-hidden rounded-lg border border-amber-200 bg-white shadow-sm`}>
       <div className="overflow-x-auto">
         <table>
           <thead>
@@ -2948,12 +2996,17 @@ function DataTable({ columns, rows }: { columns: string[]; rows: (string | numbe
                     const columnName = columns[cellIndex] || "";
                     const isLabelCell = cellIndex === 0;
                     const isBadgeCell = ["status", "class"].includes(columnName.toLowerCase());
+                    const isNumberCell = typeof cell === "number" || numberColumnPattern.test(columnName);
 
                     return (
                       <td
                         key={cellIndex}
                         data-label={columnName}
-                        className={isLabelCell ? "fnb-primary-cell" : ""}
+                        className={[
+                          isLabelCell ? "fnb-primary-cell" : "",
+                          isBadgeCell ? "fnb-cell-status" : "",
+                          isNumberCell ? "fnb-cell-number" : "",
+                        ].filter(Boolean).join(" ")}
                       >
                         {isBadgeCell ? (
                           <span className={`fnb-table-badge fnb-table-badge-${String(cell).toLowerCase().replace(/\s+/g, "-")}`}>

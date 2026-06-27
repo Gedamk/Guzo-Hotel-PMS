@@ -7,13 +7,17 @@ import {
   type ReactNode,
   type SetStateAction,
 } from "react";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import {
   AlertTriangle,
   BedDouble,
   CalendarCheck,
+  Clock,
   ClipboardList,
+  CreditCard,
   DoorOpen,
   KeyRound,
+  MessageSquare,
   ReceiptText,
   Sparkles,
   UserCheck,
@@ -34,8 +38,17 @@ import {
   checkOutGuest,
   createWalkInBooking,
   extendStay,
+  createFrontDeskServiceRecord,
+  fetchFrontDeskServiceRecords,
+  markRegistrationCardGenerated,
+  markRegistrationCardSigned,
   markEarlyDeparture,
   moveGuestRoom,
+  placeReservationOnQ,
+  recordManualAuthorization,
+  recordUpsellDecision,
+  removeReservationFromQ,
+  updateFrontDeskServiceRecord,
 } from "../../services/frontdeskActions";
 import {
   fetchFolioReceipt,
@@ -43,22 +56,31 @@ import {
   validateCheckout,
   type FolioReceipt,
 } from "../../services/financeService";
-import type { FrontdeskBooking, RoomStatusItem } from "../../types/pms";
+import type {
+  FrontDeskServiceRecord,
+  FrontDeskServiceRecordStatus,
+  FrontDeskServiceRecordType,
+  FrontdeskBooking,
+  RoomStatusItem,
+} from "../../types/pms";
 import { permissionMessage, roleCan } from "../../auth/permissions";
 
 type FrontDeskTab =
   | "shift"
   | "houseStatus"
   | "arrivals"
-  | "qReservations"
+  | "queueRooms"
   | "departures"
   | "inHouse"
   | "walkIn"
   | "assignment"
-  | "roomPlan"
-  | "floorPlan"
+  | "paymentAuth"
+  | "accounts"
+  | "guestService"
+  | "messages"
+  | "traces"
+  | "wakeUpCalls"
   | "registration"
-  | "reports"
   | "exceptions";
 
 type FrontDeskOperation =
@@ -72,6 +94,13 @@ type FrontDeskOperation =
   | "noShows"
   | "walkIns"
   | "assignment"
+  | "registration"
+  | "paymentAuth"
+  | "accounts"
+  | "guestService"
+  | "messages"
+  | "traces"
+  | "wakeUpCalls"
   | "exceptions";
 
 type WalkInFormState = {
@@ -125,7 +154,7 @@ type RoomCandidateFilterState = {
   housekeeping: string;
 };
 
-type QReservationState = {
+type QueueReservationState = {
   startedAt: string;
   priority: "normal" | "vip" | "urgent";
   notes: string;
@@ -144,16 +173,146 @@ const tabLabels: Record<FrontDeskTab, string> = {
   shift: "Shift Start",
   houseStatus: "House Status",
   arrivals: "Arrivals",
-  qReservations: "Q Reservations",
+  queueRooms: "Queue Rooms",
   departures: "Departures",
-  inHouse: "In House",
+  inHouse: "In-House",
   walkIn: "Walk-In",
   assignment: "Room Assignment",
-  roomPlan: "Room Plan",
-  floorPlan: "Floor Plan",
+  paymentAuth: "Payment/Auth",
+  accounts: "Accounts",
+  guestService: "Folio/Guest Service",
+  messages: "Messages",
+  traces: "Traces",
+  wakeUpCalls: "Wake-Up Calls",
   registration: "Registration Cards",
-  reports: "Reports",
   exceptions: "Exceptions",
+};
+
+type FrontDeskModuleNavItem = {
+  key: string;
+  label: string;
+  tab: FrontDeskTab;
+  operation: FrontDeskOperation;
+  icon: typeof ClipboardList;
+  disabled?: boolean;
+  disabledReason?: string;
+};
+
+const frontDeskSectionToTab: Record<string, FrontDeskTab> = {
+  houseStatus: "houseStatus",
+  arrivals: "arrivals",
+  checkIn: "arrivals",
+  departures: "departures",
+  checkOut: "departures",
+  inHouse: "inHouse",
+  roomMove: "inHouse",
+  queueRooms: "queueRooms",
+  qReservations: "queueRooms",
+  queueReservation: "queueRooms",
+  walkIn: "walkIn",
+  roomAssignment: "assignment",
+  registration: "registration",
+  registrationCard: "registration",
+  paymentAuth: "paymentAuth",
+  accounts: "accounts",
+  account: "accounts",
+  guestService: "guestService",
+  messages: "messages",
+  traces: "traces",
+  wakeUpCalls: "wakeUpCalls",
+};
+
+const frontDeskSectionToOperation: Record<string, FrontDeskOperation> = {
+  houseStatus: "shift",
+  arrivals: "arrivals",
+  checkIn: "arrivals",
+  departures: "departures",
+  checkOut: "departures",
+  inHouse: "inHouse",
+  roomMove: "inHouse",
+  queueRooms: "arrivals",
+  qReservations: "arrivals",
+  queueReservation: "arrivals",
+  walkIn: "walkIns",
+  roomAssignment: "assignment",
+  registration: "registration",
+  registrationCard: "registration",
+  paymentAuth: "paymentAuth",
+  accounts: "accounts",
+  account: "accounts",
+  guestService: "guestService",
+  messages: "messages",
+  traces: "traces",
+  wakeUpCalls: "wakeUpCalls",
+};
+
+const frontDeskDefaultSectionByTab: Partial<Record<FrontDeskTab, string>> = {
+  houseStatus: "houseStatus",
+  arrivals: "arrivals",
+  departures: "departures",
+  inHouse: "inHouse",
+  queueRooms: "queueRooms",
+  walkIn: "walkIn",
+  assignment: "roomAssignment",
+  registration: "registration",
+  paymentAuth: "paymentAuth",
+  accounts: "accounts",
+  guestService: "guestService",
+  messages: "messages",
+  traces: "traces",
+  wakeUpCalls: "wakeUpCalls",
+};
+
+const frontDeskPathToSection: Record<string, string> = {
+  "house-status": "houseStatus",
+  arrivals: "arrivals",
+  "check-in": "checkIn",
+  departures: "departures",
+  "check-out": "checkOut",
+  "in-house": "inHouse",
+  "room-move": "roomMove",
+  "room-assignment": "roomAssignment",
+  "registration-card": "registrationCard",
+  registration: "registration",
+  "payment-auth": "paymentAuth",
+  payment: "paymentAuth",
+  authorization: "paymentAuth",
+  "queue-rooms": "queueRooms",
+  "queue-reservation": "queueReservation",
+  "q-reservations": "queueRooms",
+  "walk-in": "walkIn",
+  account: "accounts",
+  accounts: "accounts",
+  "guest-service": "guestService",
+  "folio-guest-service": "guestService",
+  messages: "messages",
+  traces: "traces",
+  "wake-up-calls": "wakeUpCalls",
+  "wakeup-calls": "wakeUpCalls",
+};
+
+const frontDeskSectionPath: Record<string, string> = {
+  houseStatus: "/frontdesk/house-status",
+  arrivals: "/frontdesk/arrivals",
+  checkIn: "/frontdesk/check-in",
+  departures: "/frontdesk/departures",
+  checkOut: "/frontdesk/check-out",
+  inHouse: "/frontdesk/in-house",
+  roomMove: "/frontdesk/room-move",
+  roomAssignment: "/frontdesk/room-assignment",
+  registration: "/frontdesk/registration-card",
+  registrationCard: "/frontdesk/registration-card",
+  paymentAuth: "/frontdesk/payment-auth",
+  queueRooms: "/frontdesk/queue-rooms",
+  queueReservation: "/frontdesk/queue-reservation",
+  qReservations: "/frontdesk/queue-rooms",
+  walkIn: "/frontdesk/walk-in",
+  accounts: "/frontdesk/accounts",
+  account: "/frontdesk/accounts",
+  guestService: "/frontdesk/folio-guest-service",
+  messages: "/frontdesk/messages",
+  traces: "/frontdesk/traces",
+  wakeUpCalls: "/frontdesk/wake-up-calls",
 };
 
 const operationLabels: Record<FrontDeskOperation, string> = {
@@ -163,10 +322,17 @@ const operationLabels: Record<FrontDeskOperation, string> = {
   checkedIn: "Checked In",
   departures: "Departures",
   checkedOut: "Checked Out",
-  inHouse: "In House",
+  inHouse: "In-House",
   noShows: "No-Shows",
-  walkIns: "Walk-Ins",
+  walkIns: "Walk-In",
   assignment: "Room Assignment",
+  registration: "Registration Cards",
+  paymentAuth: "Payment/Auth",
+  accounts: "Accounts",
+  guestService: "Folio/Guest Service",
+  messages: "Messages",
+  traces: "Traces",
+  wakeUpCalls: "Wake-Up Calls",
   exceptions: "Exceptions",
 };
 
@@ -380,6 +546,9 @@ function walkInReceiptTotals(form: WalkInFormState) {
 
 export default function FrontDeskCommandCenter() {
   const { propertyCode, businessDate, refreshKey, refreshData } = usePmsContext();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { section: routeSection } = useParams<{ section?: string }>();
 
   const [rows, setRows] = useState<FrontdeskBooking[]>([]);
   const [rooms, setRooms] = useState<RoomStatusItem[]>([]);
@@ -389,6 +558,7 @@ export default function FrontDeskCommandCenter() {
   const [busyBookingId, setBusyBookingId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<FrontDeskTab>("arrivals");
   const [activeOperation, setActiveOperation] = useState<FrontDeskOperation>("arrivals");
+  const [activeModuleNav, setActiveModuleNav] = useState("arrivals");
   const [selectedFolio, setSelectedFolio] = useState<FrontdeskBooking | null>(null);
   const [roomInputs, setRoomInputs] = useState<Record<number, string>>({});
   const [showWalkIn, setShowWalkIn] = useState(false);
@@ -411,10 +581,14 @@ export default function FrontDeskCommandCenter() {
     floor: "",
     housekeeping: "ready",
   });
-  const [qReservations, setQReservations] = useState<Record<number, QReservationState>>({});
+  const [queueReservations, setQueueReservations] = useState<Record<number, QueueReservationState>>({});
   const [registrationGenerated, setRegistrationGenerated] = useState<Record<number, string>>({});
+  const [registrationSigned, setRegistrationSigned] = useState<Record<number, string>>({});
   const [manualAuthorizations, setManualAuthorizations] = useState<Record<number, ManualAuthorizationState>>({});
   const [upsellDecisions, setUpsellDecisions] = useState<Record<number, "accepted" | "declined">>({});
+  const [frontDeskTaskState, setFrontDeskTaskState] = useState<Record<string, string>>({});
+  const [frontDeskServiceRecords, setFrontDeskServiceRecords] = useState<FrontDeskServiceRecord[]>([]);
+  const [serviceRecordsFallbackActive, setServiceRecordsFallbackActive] = useState(false);
   const [selectedRegistrationCard, setSelectedRegistrationCard] = useState<FrontdeskBooking | null>(null);
   const canCheckIn = roleCan("frontdesk.check_in");
   const canCheckOut = roleCan("frontdesk.check_out");
@@ -428,12 +602,25 @@ export default function FrontDeskCommandCenter() {
     try {
       setLoading(true);
       setError("");
-      const [bookingRows, roomRows] = await Promise.all([
+      const [bookingRows, roomRows, serviceRecordResult] = await Promise.all([
         fetchFrontdeskBookings(propertyCode, businessDate),
         fetchRoomStatusBoard(propertyCode, businessDate),
+        fetchFrontDeskServiceRecords({ propertyCode }).then(
+          (records) => ({ ok: true as const, records }),
+          (err) => ({ ok: false as const, err })
+        ),
       ]);
       setRows(bookingRows);
       setRooms(roomRows);
+      if (serviceRecordResult.ok) {
+        setFrontDeskServiceRecords(serviceRecordResult.records);
+        setServiceRecordsFallbackActive(false);
+      } else {
+        setServiceRecordsFallbackActive(true);
+        setActionMessage(
+          "Front Desk guest-service tools are using local fallback because backend service records are unreachable."
+        );
+      }
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -444,6 +631,29 @@ export default function FrontDeskCommandCenter() {
   useEffect(() => {
     loadBoard();
   }, [propertyCode, businessDate, refreshKey]);
+
+  useEffect(() => {
+    const querySection = new URLSearchParams(location.search).get("section");
+    const section = routeSection ? frontDeskPathToSection[routeSection] : querySection;
+    if (!section) return;
+    const targetTab = frontDeskSectionToTab[section];
+    if (!targetTab) return;
+    setActiveTab(targetTab);
+    setActiveOperation(frontDeskSectionToOperation[section] || "arrivals");
+    setActiveModuleNav(section === "qReservations" ? "queueRooms" : section);
+    if (section === "walkIn") setShowWalkIn(true);
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById(`fd-section-${targetTab}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }, [location.search, routeSection]);
+
+  useEffect(() => {
+    if (frontDeskSectionToTab[activeModuleNav] === activeTab) return;
+    const nextSection = frontDeskDefaultSectionByTab[activeTab];
+    if (nextSection) setActiveModuleNav(nextSection);
+  }, [activeModuleNav, activeTab]);
 
   useEffect(() => {
     setWalkInForm((prev) => ({
@@ -570,8 +780,8 @@ export default function FrontDeskCommandCenter() {
   );
 
   const qRows = useMemo(
-    () => rows.filter((row) => qReservations[row.id]),
-    [qReservations, rows]
+    () => rows.filter((row) => queueReservations[row.id] || String(row.q_status || "").toLowerCase() === "waiting"),
+    [queueReservations, rows]
   );
 
   const filteredArrivals = useMemo(() => {
@@ -667,19 +877,19 @@ export default function FrontDeskCommandCenter() {
     return [
       { label: "Total Physical Rooms", value: rooms.length, note: "Configured room inventory" },
       { label: "Available Tonight", value: availableTonight, note: "Sellable rooms after occupancy and arrivals" },
-      { label: "Occupied Rooms", value: occupiedCount, note: "Current in-house / occupied rooms" },
+      { label: "Occupied Rooms", value: occupiedCount, note: "Current In-House / occupied rooms" },
       { label: "Occupancy %", value: `${occupancyPct}%`, note: "Current operational occupancy" },
       { label: "Expected Arrivals", value: expectedCheckIns.length, note: "Due to arrive today" },
-      { label: "Arrivals Checked In", value: checkedIn.length, note: "Completed check-ins today" },
+      { label: "Arrivals Checked In", value: checkedIn.length, note: "Completed Check-In today" },
       { label: "Expected Departures", value: departures.length, note: "Due out today" },
       { label: "Stayovers", value: stayovers.length, note: "In-house past today" },
       { label: "Out of Order", value: outOfOrderRooms.length, note: "Not sellable" },
       { label: "Out of Service", value: outOfServiceRooms.length, note: "Operationally unavailable" },
       { label: "Dirty Rooms", value: dirtyRooms.length, note: "Housekeeping required" },
       { label: "Clean Rooms", value: cleanRooms.length, note: "Clean or inspected supply" },
-      { label: "Inspected Rooms", value: inspectedRooms.length, note: "Preferred for check-in" },
-      { label: "Rooms on Q", value: qRows.length, note: "Guests waiting for room readiness" },
-      { label: "Projected Room Revenue", value: money(projectedRoomRevenue), note: "Arrival and in-house room value" },
+      { label: "Inspected Rooms", value: inspectedRooms.length, note: "Preferred for Check-In" },
+      { label: "Queue Rooms", value: qRows.length, note: "Guests queued for room readiness" },
+      { label: "Projected Room Revenue", value: money(projectedRoomRevenue), note: "Arrival and In-House room value" },
       { label: "ADR", value: money(adr), note: "Average daily rate estimate" },
     ];
   }, [checkedIn.length, cleanRooms.length, departures.length, dirtyRooms.length, expectedCheckIns.length, inHouse.length, inspectedRooms.length, occupiedRooms.length, outOfOrderRooms.length, outOfServiceRooms.length, projectedRoomRevenue, qRows.length, rooms.length, stayovers.length]);
@@ -709,6 +919,66 @@ export default function FrontDeskCommandCenter() {
     [departures, inHouse]
   );
 
+  const accountRows = useMemo(
+    () => {
+      const accountMap = new Map<number, FrontdeskBooking>();
+      [...balanceReview, ...departures, ...inHouse].forEach((row) => accountMap.set(row.id, row));
+      return Array.from(accountMap.values());
+    },
+    [balanceReview, departures, inHouse]
+  );
+
+  const paymentAuthRows = useMemo(
+    () => {
+      const paymentMap = new Map<number, FrontdeskBooking>();
+      [...expectedCheckIns, ...balanceReview].forEach((row) => paymentMap.set(row.id, row));
+      return Array.from(paymentMap.values());
+    },
+    [balanceReview, expectedCheckIns]
+  );
+
+  const messageRows = useMemo(
+    () =>
+      rows
+        .filter((row) => row.special_requests || row.notes || bookingIsVip(row))
+        .slice(0, 12),
+    [rows]
+  );
+
+  const guestServiceRows = useMemo(
+    () => {
+      const serviceMap = new Map<number, FrontdeskBooking>();
+      [...inHouse, ...accountRows, ...messageRows].forEach((row) => serviceMap.set(row.id, row));
+      return Array.from(serviceMap.values());
+    },
+    [accountRows, inHouse, messageRows]
+  );
+
+  const readyForCheckInRows = useMemo(
+    () => expectedCheckIns.filter((row) => !checkInReadiness(row).blockers.length),
+    [expectedCheckIns, roomByNumber, manualAuthorizations, registrationGenerated, registrationSigned]
+  );
+
+  const traceRows = useMemo(
+    () => {
+      const traceMap = new Map<number, FrontdeskBooking>();
+      [
+        ...unassignedArrivals,
+        ...roomNotReadyArrivals,
+        ...balanceReview,
+        ...noShows,
+        ...qRows,
+      ].forEach((row) => traceMap.set(row.id, row));
+      return Array.from(traceMap.values());
+    },
+    [balanceReview, noShows, qRows, roomNotReadyArrivals, unassignedArrivals]
+  );
+
+  const wakeUpRows = useMemo(
+    () => inHouse.slice(0, 12),
+    [inHouse]
+  );
+
   const suggestedRooms = useMemo(() => {
     const map = new Map<number, string>();
     expectedCheckIns.forEach((row, index) => {
@@ -733,6 +1003,106 @@ export default function FrontDeskCommandCenter() {
 
   function isVipBooking(row: FrontdeskBooking) {
     return bookingIsVip(row);
+  }
+
+  function serviceRecordStatusLabel(record?: FrontDeskServiceRecord, fallbackKey?: string) {
+    if (record?.status_label) return record.status_label;
+    if (fallbackKey && frontDeskTaskState[fallbackKey]) return "Completed";
+    return "Open";
+  }
+
+  function serviceRecordStatusClass(status: string) {
+    const normalized = status.toLowerCase();
+    if (normalized === "completed") return "pill pill-success";
+    if (normalized === "cancelled") return "pill pill-muted";
+    if (normalized === "in progress" || normalized === "in_progress") return "pill pill-warning";
+    return "pill";
+  }
+
+  function findServiceRecord(
+    recordType: FrontDeskServiceRecordType,
+    row: FrontdeskBooking,
+    taskKey?: string
+  ) {
+    return frontDeskServiceRecords.find((record) => {
+      if (record.property_code !== propertyCode) return false;
+      if (record.record_type !== recordType) return false;
+      if (Number(record.booking_id || 0) !== row.id) return false;
+      if (taskKey && record.task_key !== taskKey) return false;
+      return true;
+    });
+  }
+
+  function serviceRecordPayload(
+    row: FrontdeskBooking,
+    recordType: FrontDeskServiceRecordType,
+    taskKey: string,
+    notes: string,
+    status: FrontDeskServiceRecordStatus,
+    title?: string,
+    scheduledFor?: string
+  ) {
+    return {
+      record_type: recordType,
+      property_code: propertyCode,
+      booking_id: row.id,
+      reservation_reference: row.confirmation_id || `#${row.id}`,
+      guest_name: row.guest_name,
+      room_number: normalizeRoomNumber(row.room_number) || null,
+      status,
+      priority: bookingIsVip(row) ? "high" as const : "normal" as const,
+      assigned_to: "Front Desk",
+      notes,
+      task_key: taskKey,
+      title,
+      scheduled_for: scheduledFor || null,
+    };
+  }
+
+  async function saveFrontDeskServiceRecord(
+    row: FrontdeskBooking,
+    recordType: FrontDeskServiceRecordType,
+    taskKey: string,
+    notes: string,
+    status: FrontDeskServiceRecordStatus,
+    successMessage: string,
+    title?: string,
+    scheduledFor?: string
+  ) {
+    const existing = findServiceRecord(recordType, row, taskKey);
+    try {
+      setBusyBookingId(row.id);
+      setError("");
+      setActionMessage("");
+      const saved = existing
+        ? await updateFrontDeskServiceRecord({
+            id: existing.id,
+            propertyCode,
+            status,
+            notes,
+            roomNumber: normalizeRoomNumber(row.room_number) || null,
+            scheduledFor,
+          })
+        : await createFrontDeskServiceRecord(
+            serviceRecordPayload(row, recordType, taskKey, notes, status, title, scheduledFor)
+          );
+      setFrontDeskServiceRecords((current) => {
+        const withoutSaved = current.filter((record) => record.id !== saved.id);
+        return [saved, ...withoutSaved];
+      });
+      setServiceRecordsFallbackActive(false);
+      setActionMessage(successMessage);
+    } catch (err) {
+      const completedAt = new Date().toISOString();
+      setServiceRecordsFallbackActive(true);
+      setFrontDeskTaskState((current) => ({ ...current, [taskKey]: scheduledFor || completedAt }));
+      setActionMessage(
+        `${successMessage} Backend service records are unreachable, so this is temporarily tracked in the current front desk session.`
+      );
+      setError(getErrorMessage(err));
+    } finally {
+      setBusyBookingId(null);
+    }
   }
 
   function hasPaymentGuarantee(row: FrontdeskBooking) {
@@ -762,8 +1132,10 @@ export default function FrontDeskCommandCenter() {
     if (roomNumber && !hkStatus.includes("clean") && !hkStatus.includes("inspect")) warnings.push("Room Not Inspected");
     if (!row.payment_method && !manualAuthorizations[row.id]) warnings.push("Payment Required");
     if (!hasPaymentGuarantee(row)) warnings.push("Payment Required");
-    if (!manualAuthorizations[row.id] && !hasPaymentGuarantee(row)) warnings.push("Authorization Required");
-    if (!registrationGenerated[row.id]) warnings.push("Registration Card Pending");
+    const hasManualAuthorization = Boolean(manualAuthorizations[row.id] || row.authorization_status);
+    const hasRegistrationCard = Boolean(registrationGenerated[row.id] || row.registration_card_generated_at || row.registration_card_signed);
+    if (!hasManualAuthorization && !hasPaymentGuarantee(row)) warnings.push("Authorization Required");
+    if (!hasRegistrationCard) warnings.push("Registration Card Pending");
     if (!row.guest_email && !String(row.notes || "").toLowerCase().includes("profile")) warnings.push("Guest profile contact needs review.");
     if (isVipBooking(row)) warnings.push("VIP/special request review required.");
     if (row.notes || row.special_requests) warnings.push("Comments and alerts must be reviewed.");
@@ -780,7 +1152,7 @@ export default function FrontDeskCommandCenter() {
 
     if (!roomNumber && expectedCheckIns.some((arrival) => arrival.id === row.id)) {
       badges.push({ label: "Room TBD", className: "pill pill-warning" });
-      badges.push({ label: "Assignment Required Before Check-in", className: "pill pill-danger" });
+      badges.push({ label: "Assignment Required Before Check-In", className: "pill pill-danger" });
     }
 
     if (roomNumber && assignedRoom && !roomReady(assignedRoom)) {
@@ -795,13 +1167,13 @@ export default function FrontDeskCommandCenter() {
       badges.push({ label: "Guaranteed", className: "pill pill-success" });
     }
 
-    if (qReservations[row.id]) badges.push({ label: "On Q", className: "pill pill-warning" });
+    if (queueReservations[row.id] || String(row.q_status || "").toLowerCase() === "waiting") badges.push({ label: "In Queue", className: "pill pill-warning" });
     if (isVipBooking(row)) badges.push({ label: "VIP", className: "pill pill-warning" });
     if (isNoPost(row)) badges.push({ label: "No Post", className: "pill pill-danger" });
     if (String(row.notes || row.special_requests || "").toLowerCase().includes("route")) {
       badges.push({ label: "Routed", className: "pill pill-success" });
     }
-    if (manualAuthorizations[row.id]) {
+    if (manualAuthorizations[row.id] || row.authorization_status) {
       badges.push({ label: "Authorized", className: "pill pill-success" });
     } else if (!hasPaymentGuarantee(row)) {
       badges.push({ label: "Authorization Required", className: "pill pill-warning" });
@@ -922,70 +1294,253 @@ export default function FrontDeskCommandCenter() {
     setActionMessage(`Exchanged rooms for ${first.guest_name} and ${second.guest_name}.`);
   }
 
-  function handlePlaceOnQ(row: FrontdeskBooking) {
-    setQReservations((current) => ({
-      ...current,
-      [row.id]: {
-        startedAt: new Date().toISOString(),
-        priority: isVipBooking(row) ? "vip" : "normal",
-        notes: `Waiting for ${displayRoomType(row)} readiness.`,
-      },
-    }));
-    setActionMessage(`${row.guest_name} placed on Q. Housekeeping should prioritize room readiness.`);
+  async function handlePlaceOnQ(row: FrontdeskBooking) {
+    const priority = isVipBooking(row) ? "vip" : "normal";
+    const notes = `Waiting for ${displayRoomType(row)} readiness.`;
+    try {
+      setBusyBookingId(row.id);
+      setError("");
+      setActionMessage("");
+      await placeReservationOnQ({
+        bookingId: row.id,
+        propertyCode,
+        businessDate,
+        qPriority: priority,
+        qNotes: notes,
+      });
+      setQueueReservations((current) => ({
+        ...current,
+        [row.id]: {
+          startedAt: new Date().toISOString(),
+          priority,
+          notes,
+        },
+      }));
+      setActionMessage(`${row.guest_name} added to Queue Rooms. Guest is waiting for room readiness, not checked in.`);
+      refreshData();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setBusyBookingId(null);
+    }
   }
 
-  function handleRemoveFromQ(row: FrontdeskBooking) {
-    setQReservations((current) => {
-      const next = { ...current };
-      delete next[row.id];
-      return next;
-    });
-    setActionMessage(`${row.guest_name} removed from Q.`);
+  async function handleRemoveFromQ(row: FrontdeskBooking) {
+    try {
+      setBusyBookingId(row.id);
+      setError("");
+      setActionMessage("");
+      await removeReservationFromQ({
+        bookingId: row.id,
+        propertyCode,
+        businessDate,
+        qNotes: "Guest removed from waiting queue.",
+      });
+      setQueueReservations((current) => {
+        const next = { ...current };
+        delete next[row.id];
+        return next;
+      });
+      setActionMessage(`${row.guest_name} removed from Queue Rooms.`);
+      refreshData();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setBusyBookingId(null);
+    }
   }
 
-  function handleGenerateRegistrationCard(row: FrontdeskBooking) {
-    setRegistrationGenerated((current) => ({ ...current, [row.id]: new Date().toISOString() }));
-    setSelectedRegistrationCard(row);
-    setActionMessage(`Registration card generated for ${row.guest_name}.`);
+  async function handleUpdateQPriority(row: FrontdeskBooking) {
+    const rawPriority = window.prompt("Queue priority: normal, vip, or urgent", queueReservations[row.id]?.priority || row.q_priority || (bookingIsVip(row) ? "vip" : "normal"));
+    if (!rawPriority) return;
+    const priority = ["normal", "vip", "urgent"].includes(rawPriority.toLowerCase())
+      ? (rawPriority.toLowerCase() as "normal" | "vip" | "urgent")
+      : "normal";
+    const notes = window.prompt("Queue notes", queueReservations[row.id]?.notes || row.q_notes || "Waiting for room readiness.") || "Waiting for room readiness.";
+    try {
+      setBusyBookingId(row.id);
+      setError("");
+      setActionMessage("");
+      await placeReservationOnQ({
+        bookingId: row.id,
+        propertyCode,
+        businessDate,
+        qPriority: priority,
+        qNotes: notes,
+      });
+      setQueueReservations((current) => ({
+        ...current,
+        [row.id]: {
+          startedAt: current[row.id]?.startedAt || row.q_started_at || new Date().toISOString(),
+          priority,
+          notes,
+        },
+      }));
+      setActionMessage(`Queue priority updated for ${row.guest_name}.`);
+      refreshData();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setBusyBookingId(null);
+    }
   }
 
-  function handleBatchRegistrationCards() {
+
+  async function handleGenerateRegistrationCard(row: FrontdeskBooking) {
+    try {
+      setBusyBookingId(row.id);
+      setError("");
+      setActionMessage("");
+      const result = await markRegistrationCardGenerated({
+        bookingId: row.id,
+        propertyCode,
+        businessDate,
+        notes: "Print-ready HTML registration card preview generated.",
+      });
+      setRegistrationGenerated((current) => ({ ...current, [row.id]: new Date().toISOString() }));
+      setSelectedRegistrationCard(result);
+      setActionMessage(`Registration card generated for ${row.guest_name}.`);
+      refreshData();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setBusyBookingId(null);
+    }
+  }
+
+  async function handleMarkRegistrationSigned(row: FrontdeskBooking) {
+    try {
+      setBusyBookingId(row.id);
+      setError("");
+      setActionMessage("");
+      await markRegistrationCardSigned({
+        bookingId: row.id,
+        propertyCode,
+        businessDate,
+        signed: true,
+        notes: "Guest registration card signed/acknowledged at Front Desk.",
+      });
+      setRegistrationSigned((current) => ({ ...current, [row.id]: new Date().toISOString() }));
+      setActionMessage(`Registration card marked signed for ${row.guest_name}.`);
+      refreshData();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setBusyBookingId(null);
+    }
+  }
+
+  async function handleBatchRegistrationCards() {
     const timestamp = new Date().toISOString();
     const next = { ...registrationGenerated };
-    filteredArrivals.forEach((row) => {
-      next[row.id] = timestamp;
-    });
-    setRegistrationGenerated(next);
-    setActionMessage(`Generated ${filteredArrivals.length} registration card(s) for selected arrivals.`);
+    try {
+      setError("");
+      setActionMessage("");
+      await Promise.all(
+        filteredArrivals.map((row) =>
+          markRegistrationCardGenerated({
+            bookingId: row.id,
+            propertyCode,
+            businessDate,
+            notes: "Batch print-ready HTML registration card preview generated.",
+          })
+        )
+      );
+      filteredArrivals.forEach((row) => {
+        next[row.id] = timestamp;
+      });
+      setRegistrationGenerated(next);
+      setActionMessage(`Generated ${filteredArrivals.length} registration card(s) for selected arrivals. Cards are not marked signed.`);
+      refreshData();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    }
   }
 
-  function handleManualAuthorization(row: FrontdeskBooking) {
+  async function handleManualAuthorization(row: FrontdeskBooking) {
     const amount = Number(window.prompt("Authorization amount", String(Math.max(bookingBalance(row), Number(row.rate_per_night_etb || 0)) || 0)));
     if (!Number.isFinite(amount) || amount <= 0) return;
     const code = window.prompt("Approval code / manual reference", "MANUAL-AUTH") || "MANUAL-AUTH";
-    setManualAuthorizations((current) => ({
-      ...current,
-      [row.id]: {
-        amount,
-        code,
-        authorizedBy: "Front Desk",
-        authorizedAt: new Date().toISOString(),
-        type: String(row.payment_method || "").toLowerCase().includes("cash") ? "cash" : "offline",
-        notes: "Manual/offline front desk authorization recorded.",
-      },
-    }));
-    setActionMessage(`Manual authorization recorded for ${row.guest_name}.`);
+    const authorizationType = String(row.payment_method || "").toLowerCase().includes("cash") ? "cash" : "offline";
+    try {
+      setBusyBookingId(row.id);
+      setError("");
+      setActionMessage("");
+      await recordManualAuthorization({
+        bookingId: row.id,
+        propertyCode,
+        businessDate,
+        authorizationAmount: amount,
+        authorizationType,
+        authorizationCode: code,
+        authorizationNotes: "Manual/offline front desk authorization recorded. This is not a payment gateway charge.",
+      });
+      setManualAuthorizations((current) => ({
+        ...current,
+        [row.id]: {
+          amount,
+          code,
+          authorizedBy: "Front Desk",
+          authorizedAt: new Date().toISOString(),
+          type: authorizationType,
+          notes: "Manual/offline front desk authorization recorded.",
+        },
+      }));
+      setActionMessage(`Manual/offline authorization recorded for ${row.guest_name}.`);
+      refreshData();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setBusyBookingId(null);
+    }
   }
 
-  function handleUpsell(row: FrontdeskBooking, accepted: boolean) {
-    setUpsellDecisions((current) => ({ ...current, [row.id]: accepted ? "accepted" : "declined" }));
-    setActionMessage(`${row.guest_name} ${accepted ? "accepted" : "declined"} the check-in upsell offer.`);
+  async function handleUpsell(row: FrontdeskBooking, accepted: boolean) {
+    const fromRoomType = displayRoomType(row);
+    const toRoomType = accepted
+      ? window.prompt("Upgrade room type", fromRoomType.toLowerCase().includes("suite") ? "Executive Suite" : "Deluxe Room") || ""
+      : "";
+    const amountPerNight = accepted
+      ? Number(window.prompt("Upsell amount per night (ETB)", "0") || "0")
+      : 0;
+    if (accepted && (!toRoomType.trim() || !Number.isFinite(amountPerNight) || amountPerNight < 0)) {
+      setError("Enter a valid upgrade room type and upsell amount.");
+      return;
+    }
+    const totalAmount = amountPerNight * countNights(row.check_in_date, row.check_out_date);
+    try {
+      setBusyBookingId(row.id);
+      setError("");
+      setActionMessage("");
+      await recordUpsellDecision({
+        bookingId: row.id,
+        propertyCode,
+        businessDate,
+        offered: true,
+        accepted,
+        declined: !accepted,
+        fromRoomType,
+        toRoomType: toRoomType || undefined,
+        amountPerNight: accepted ? amountPerNight : undefined,
+        totalAmount: accepted ? totalAmount : undefined,
+        notes: accepted
+          ? "Front desk upsell accepted. Pricing/room change remains subject to existing PMS rate and room assignment controls."
+          : "Front Desk upsell declined. Check-In may continue.",
+      });
+      setUpsellDecisions((current) => ({ ...current, [row.id]: accepted ? "accepted" : "declined" }));
+      setActionMessage(`${row.guest_name} ${accepted ? "accepted" : "declined"} the Check-In upsell offer. Decision saved.`);
+      refreshData();
+    } catch (err) {
+      setError(getErrorMessage(err));
+    } finally {
+      setBusyBookingId(null);
+    }
   }
 
   async function handleCheckIn(row: FrontdeskBooking) {
     const status = String(row.booking_status || "").toLowerCase();
     if (status === "in_house" || status === "checked_in") {
-      setError(`${row.guest_name} is already in house. Use Open Folio, Room Move, or Check Out.`);
+      setError(`${row.guest_name} is already In-House. Use Open Folio, Room Move, or Check-Out.`);
       return;
     }
 
@@ -999,14 +1554,14 @@ export default function FrontDeskCommandCenter() {
 
     if (assignedRoom && !roomReady(assignedRoom)) {
       setError(
-        `Room ${roomNumber} is not ready. Check-in is blocked until housekeeping marks it clean or inspected.`
+        `Room ${roomNumber} is not ready. Check-In is blocked until housekeeping marks it clean or inspected.`
       );
       return;
     }
 
     const readiness = checkInReadiness(row);
     if (readiness.blockers.length) {
-      setError(`Check-in blocked: ${readiness.blockers.join(" ")}`);
+      setError(`Check-In blocked: ${readiness.blockers.join(" ")}`);
       return;
     }
 
@@ -1026,7 +1581,7 @@ export default function FrontDeskCommandCenter() {
         propertyCode,
         businessDate,
       });
-      setActionMessage(`Check-in completed for ${row.guest_name}. Folio is ready.`);
+      setActionMessage(`Check-In completed for ${row.guest_name}. Folio is ready.`);
       refreshData();
     } catch (err) {
       setError(getErrorMessage(err));
@@ -1045,7 +1600,7 @@ export default function FrontDeskCommandCenter() {
       if (!validation.can_checkout) {
         setError(
           validation.message ||
-            `Checkout blocked. Folio balance is ${validation.balance.toFixed(2)}.`
+            `Check-Out blocked. Folio balance is ${validation.balance.toFixed(2)}.`
         );
         return;
       }
@@ -1056,7 +1611,7 @@ export default function FrontDeskCommandCenter() {
         businessDate,
       });
       setActionMessage(
-        `Check-out completed for ${row.guest_name}. Housekeeping can clean room ${
+        `Check-Out completed for ${row.guest_name}. Housekeeping can clean room ${
           row.room_number || ""
         }.`.trim()
       );
@@ -1102,7 +1657,7 @@ export default function FrontDeskCommandCenter() {
     const current = new Date(`${row.check_out_date}T00:00:00`);
     current.setDate(current.getDate() + 1);
     const nextDate = current.toISOString().slice(0, 10);
-    const checkOutDate = window.prompt(`Extend ${row.guest_name} to which check-out date?`, nextDate);
+    const checkOutDate = window.prompt(`Extend ${row.guest_name} to which Check-Out date?`, nextDate);
     if (!checkOutDate?.trim()) return;
 
     try {
@@ -1264,63 +1819,122 @@ export default function FrontDeskCommandCenter() {
   const occupancyPercent = sellableRooms
     ? Math.round(((occupiedRooms.length || inHouse.length) / sellableRooms) * 100)
     : 0;
-  const summaryCards = [
+  const commandKpis = [
+    { label: "Arrivals", value: expectedCheckIns.length, note: "Expected Check-In", tab: "arrivals" as FrontDeskTab },
+    { label: "Departures", value: departures.length, note: "Due out today", tab: "departures" as FrontDeskTab },
+    { label: "Occupied Rooms", value: occupiedRooms.length || inHouse.length, note: "Current house", tab: "inHouse" as FrontDeskTab },
+    { label: "Available Rooms", value: Math.max(sellableRooms - (occupiedRooms.length || inHouse.length), 0), note: "Sellable inventory", tab: "houseStatus" as FrontDeskTab },
+    { label: "Dirty Rooms", value: dirtyRooms.length, note: "Housekeeping queue", tab: "houseStatus" as FrontDeskTab },
+    { label: "Inspected Rooms", value: inspectedRooms.length, note: "Preferred for arrivals", tab: "houseStatus" as FrontDeskTab },
+  ];
+
+  const readyForCheckIn = expectedCheckIns.filter((row) => checkInReadiness(row).blockers.length === 0);
+  const earlyArrivals = expectedCheckIns.filter((row) =>
+    String(row.notes || row.special_requests || "").toLowerCase().includes("early")
+  );
+  const lateDepartures = departures.filter((row) =>
+    String(row.notes || row.special_requests || "").toLowerCase().includes("late")
+  );
+  const frontDeskWorkQueues = [
+    { label: "Ready for Check-In", value: readyForCheckIn.length, tab: "arrivals" as FrontDeskTab },
+    { label: "Queue Rooms", value: roomNotReadyArrivals.length + qRows.length, tab: "queueRooms" as FrontDeskTab },
+    { label: "Early Arrivals", value: earlyArrivals.length, tab: "arrivals" as FrontDeskTab },
+    { label: "Late Departures", value: lateDepartures.length, tab: "departures" as FrontDeskTab },
+    { label: "VIP Arrivals", value: expectedCheckIns.filter(bookingIsVip).length, tab: "arrivals" as FrontDeskTab },
+  ];
+
+  const guestOperations = [
+    { label: "Check-In", tab: "arrivals" as FrontDeskTab },
+    { label: "Check-Out", tab: "departures" as FrontDeskTab },
+    { label: "Room Move", tab: "inHouse" as FrontDeskTab },
+    { label: "Extend Stay", tab: "inHouse" as FrontDeskTab },
+    { label: "Guest Notes", tab: "exceptions" as FrontDeskTab },
+  ];
+
+  const liveRoomStatus = [
+    { label: "Clean", value: cleanRooms.length, tone: "clean" },
+    { label: "Dirty", value: dirtyRooms.length, tone: "dirty" },
+    { label: "Inspected", value: inspectedRooms.length, tone: "inspected" },
+    { label: "Out of Order", value: outOfOrderRooms.length, tone: "blocked" },
+    { label: "Out of Service", value: outOfServiceRooms.length, tone: "blocked" },
+    { label: "Maintenance", value: rooms.filter((room) => String(room.hk_status || room.maintenance_note || "").toLowerCase().includes("maintenance")).length, tone: "maintenance" },
+  ];
+
+  const manualAuthorizationRequired = expectedCheckIns.filter(
+    (row) => !manualAuthorizations[row.id] && !row.authorization_status && bookingBalance(row) > 0
+  );
+  const pendingUpsellOffers = expectedCheckIns.filter(
+    (row) => !upsellDecisions[row.id] && !row.upsell_accepted && !row.upsell_declined
+  );
+  const guestNotes = rows.filter((row) => row.notes || row.special_requests);
+  const nightAuditReadinessIssues =
+    balanceReview.length + roomNotReadyArrivals.length + inHouseRoomStatusExceptions.length;
+  const frontDeskTools = [
     {
-      label: "Expected Arrivals",
+      label: "Registration Cards",
       value: expectedCheckIns.length,
-      note: "Due today",
-      tone: expectedCheckIns.length ? "info" : "neutral",
+      note: "Generate arrival cards",
+      tab: "registration" as FrontDeskTab,
+      icon: ClipboardList,
+    },
+    {
+      label: "Manual Authorization",
+      value: manualAuthorizationRequired.length,
+      note: "Offline guarantees",
       tab: "arrivals" as FrontDeskTab,
+      icon: CreditCard,
     },
     {
-      label: "Checked In",
-      value: checkedIn.length,
-      note: "Arrived today",
-      tone: "success",
+      label: "Upsell Offers",
+      value: pendingUpsellOffers.length,
+      note: "Check-In upgrade decisions",
       tab: "arrivals" as FrontDeskTab,
+      icon: Sparkles,
     },
     {
-      label: "Rooms Ready",
-      value: cleanRooms.length,
-      note: "Clean or inspected",
-      tone: cleanRooms.length ? "success" : "warning",
+      label: "Guest Notes",
+      value: guestNotes.length,
+      note: "Requests and traces",
+      tab: "exceptions" as FrontDeskTab,
+      icon: MessageSquare,
+    },
+    {
+      label: "Housekeeping Alerts",
+      value: dirtyRooms.length + roomNotReadyArrivals.length,
+      note: "Room readiness risks",
       tab: "houseStatus" as FrontDeskTab,
+      icon: BedDouble,
     },
     {
-      label: "Rooms Dirty",
-      value: dirtyRooms.length,
-      note: "Needs housekeeping",
-      tone: dirtyRooms.length ? "warning" : "success",
-      tab: "houseStatus" as FrontDeskTab,
+      label: "Night Audit Readiness",
+      value: nightAuditReadinessIssues,
+      note: nightAuditReadinessIssues ? "Review blockers" : "Ready",
+      tab: "exceptions" as FrontDeskTab,
+      icon: AlertTriangle,
     },
-    {
-      label: "Rooms on Q",
-      value: qRows.length,
-      note: "Waiting guests",
-      tone: qRows.length ? "warning" : "neutral",
-      tab: "qReservations" as FrontDeskTab,
-    },
-    {
-      label: "Occupancy",
-      value: `${occupancyPercent}%`,
-      note: `${occupiedRooms.length || inHouse.length} occupied`,
-      tone: occupancyPercent > 85 ? "warning" : "info",
-      tab: "houseStatus" as FrontDeskTab,
-    },
-    {
-      label: "Departures",
-      value: departures.length,
-      note: "Due out today",
-      tone: departures.length ? "info" : "neutral",
-      tab: "departures" as FrontDeskTab,
-    },
-    {
-      label: "OOO / OOS",
-      value: outOfOrderRooms.length + outOfServiceRooms.length,
-      note: "Not sellable",
-      tone: outOfOrderRooms.length + outOfServiceRooms.length ? "danger" : "success",
-      tab: "houseStatus" as FrontDeskTab,
-    },
+  ];
+
+  const pendingRegistrationCards = expectedCheckIns.filter(
+    (row) => !registrationGenerated[row.id] && !row.registration_card_generated_at
+  );
+  const missingRegistrationSignatures = expectedCheckIns.filter(
+    (row) => !registrationSigned[row.id] && !row.registration_card_signed
+  );
+  const pendingGuarantees = expectedCheckIns.filter((row) => !hasPaymentGuarantee(row));
+  const assignedArrivalCount = assignedArrivals.length;
+  const unassignedArrivalCount = unassignedArrivals.length;
+  const shiftReadinessItems = [
+    { label: "Today's expected arrivals", value: expectedCheckIns.length, status: "Arrivals", tone: expectedCheckIns.length ? "warning" : "success" },
+    { label: "VIP arrivals", value: expectedCheckIns.filter(bookingIsVip).length, status: "VIP", tone: expectedCheckIns.filter(bookingIsVip).length ? "warning" : "success" },
+    { label: "Early arrivals", value: earlyArrivals.length, status: "Priority", tone: earlyArrivals.length ? "warning" : "success" },
+    { label: "Assigned rooms", value: assignedArrivalCount, status: "Pre-blocked", tone: "success" },
+    { label: "Unassigned rooms", value: unassignedArrivalCount, status: "Needs action", tone: unassignedArrivalCount ? "danger" : "success" },
+    { label: "Rooms ready / clean / inspected", value: cleanRooms.length + inspectedRooms.length, status: "Ready supply", tone: cleanRooms.length + inspectedRooms.length ? "success" : "warning" },
+    { label: "Dirty rooms", value: dirtyRooms.length, status: "HK pressure", tone: dirtyRooms.length ? "warning" : "success" },
+    { label: "OOO / OOS rooms", value: outOfOrderRooms.length + outOfServiceRooms.length, status: "Blocked", tone: outOfOrderRooms.length + outOfServiceRooms.length ? "danger" : "success" },
+    { label: "Queue", value: qRows.length, status: "Waiting", tone: qRows.length ? "warning" : "success" },
+    { label: "Pending registration cards", value: pendingRegistrationCards.length + missingRegistrationSignatures.length, status: "Reg cards", tone: pendingRegistrationCards.length + missingRegistrationSignatures.length ? "warning" : "success" },
+    { label: "Pending guarantees / deposits", value: pendingGuarantees.length, status: "Authorization", tone: pendingGuarantees.length ? "danger" : "success" },
   ];
 
   const guestActionColumns = [
@@ -1397,6 +2011,13 @@ export default function FrontDeskCommandCenter() {
     noShows,
     walkIns,
     assignment: unassignedArrivals,
+    registration: expectedCheckIns,
+    paymentAuth: paymentAuthRows,
+    accounts: accountRows,
+    guestService: guestServiceRows,
+    messages: messageRows,
+    traces: traceRows,
+    wakeUpCalls: wakeUpRows,
     exceptions: [
       ...unassignedArrivals,
       ...roomNotReadyArrivals,
@@ -1406,32 +2027,155 @@ export default function FrontDeskCommandCenter() {
     ],
   };
 
-  const tabOrder: FrontDeskTab[] = [
-    "arrivals",
-    "houseStatus",
-    "qReservations",
-    "assignment",
-    "roomPlan",
-    "floorPlan",
-    "registration",
-    "walkIn",
-    "inHouse",
-    "departures",
-    "reports",
-    "exceptions",
+  const frontDeskModuleNav: FrontDeskModuleNavItem[] = [
+    { key: "houseStatus", label: "House Status", tab: "houseStatus", operation: "shift", icon: ClipboardList },
+    { key: "arrivals", label: "Arrivals", tab: "arrivals", operation: "arrivals", icon: CalendarCheck },
+    { key: "roomAssignment", label: "Room Assignment", tab: "assignment", operation: "assignment", icon: BedDouble },
+    { key: "registration", label: "Registration Card", tab: "registration", operation: "arrivals", icon: ClipboardList },
+    { key: "paymentAuth", label: "Payment/Auth", tab: "paymentAuth", operation: "paymentAuth", icon: CreditCard },
+    { key: "queueRooms", label: "Queue If Not Ready", tab: "queueRooms", operation: "arrivals", icon: Sparkles },
+    {
+      key: "checkIn",
+      label: "Check-In",
+      tab: "arrivals",
+      operation: "arrivals",
+      icon: DoorOpen,
+      disabled: !canCheckIn,
+      disabledReason: permissionMessage("Check-In"),
+    },
+    { key: "inHouse", label: "In-House", tab: "inHouse", operation: "inHouse", icon: KeyRound },
+    { key: "guestService", label: "Folio/Guest Service", tab: "guestService", operation: "guestService", icon: MessageSquare },
+    { key: "departures", label: "Departures", tab: "departures", operation: "departures", icon: ReceiptText },
+    { key: "accounts", label: "Accounts", tab: "accounts", operation: "accounts", icon: CreditCard },
+    {
+      key: "checkOut",
+      label: "Check-Out",
+      tab: "departures",
+      operation: "departures",
+      icon: ReceiptText,
+      disabled: !canCheckOut,
+      disabledReason: permissionMessage("Check-Out"),
+    },
+    {
+      key: "roomMove",
+      label: "Room Move",
+      tab: "inHouse",
+      operation: "inHouse",
+      icon: BedDouble,
+      disabled: !canAssignRoom,
+      disabledReason: permissionMessage("Room move"),
+    },
+    { key: "queueReservation", label: "Queue Reservation", tab: "queueRooms", operation: "arrivals", icon: Sparkles },
+    { key: "messages", label: "Messages", tab: "messages", operation: "messages", icon: MessageSquare },
+    { key: "traces", label: "Traces", tab: "traces", operation: "traces", icon: ClipboardList },
+    { key: "wakeUpCalls", label: "Wake-Up Calls", tab: "wakeUpCalls", operation: "wakeUpCalls", icon: Clock },
+    {
+      key: "walkIn",
+      label: "Walk-In",
+      tab: "walkIn",
+      operation: "walkIns",
+      icon: UserCheck,
+      disabled: !canCheckIn,
+      disabledReason: permissionMessage("Walk-in creation"),
+    },
   ];
 
-  const visibleTabs = tabOrder.filter((tab) => {
-    if (tab === "walkIn") return canCheckIn;
-    if (tab === "assignment") return canAssignRoom;
-    return true;
-  });
+  const hotelArrivalWorkflow = [
+    {
+      step: "01",
+      label: "Prepare Hotel",
+      detail: "House status, clean rooms, VIPs, and readiness blockers",
+      metric: `${cleanRooms.length + inspectedRooms.length} ready`,
+      moduleKey: "houseStatus",
+      icon: ClipboardList,
+    },
+    {
+      step: "02",
+      label: "Find Arrival",
+      detail: "Search arrival list and confirm reservation details",
+      metric: `${expectedCheckIns.length} pending`,
+      moduleKey: "arrivals",
+      icon: CalendarCheck,
+    },
+    {
+      step: "03",
+      label: "Assign Room",
+      detail: "Pre-block a clean or inspected room before key issue",
+      metric: `${unassignedArrivalCount} unassigned`,
+      moduleKey: "roomAssignment",
+      icon: BedDouble,
+    },
+    {
+      step: "04",
+      label: "Registration / Payment",
+      detail: "Generate card, capture signature, and verify guarantee",
+      metric: `${pendingRegistrationCards.length + pendingGuarantees.length} pending`,
+      moduleKey: "registration",
+      secondaryKey: "paymentAuth",
+      icon: CreditCard,
+    },
+    {
+      step: "05",
+      label: "Queue If Room Not Ready",
+      detail: "Put early arrivals into Queue Rooms until housekeeping clears",
+      metric: `${roomNotReadyArrivals.length + qRows.length} waiting`,
+      moduleKey: "queueRooms",
+      icon: Sparkles,
+    },
+    {
+      step: "06",
+      label: "Check In Guest",
+      detail: "Complete final readiness checks and move guest in-house",
+      metric: `${readyForCheckIn.length} ready`,
+      moduleKey: "checkIn",
+      icon: DoorOpen,
+      disabled: !canCheckIn,
+    },
+    {
+      step: "07",
+      label: "Manage In-House",
+      detail: "Room move, extend stay, late checkout, notes, and service",
+      metric: `${inHouse.length} in-house`,
+      moduleKey: "inHouse",
+      icon: KeyRound,
+    },
+    {
+      step: "08",
+      label: "Folio / Guest Service",
+      detail: "Review folio, charges, balances, requests, and recovery",
+      metric: `${guestServiceRows.length} active`,
+      moduleKey: "guestService",
+      icon: ReceiptText,
+    },
+  ];
+
+  function openFrontDeskSection(item: FrontDeskModuleNavItem) {
+    if (item.disabled) return;
+    setActiveModuleNav(item.key);
+    setActiveOperation(item.operation);
+    setActiveTab(item.tab);
+    if (item.key === "walkIn") setShowWalkIn(true);
+    navigate(frontDeskSectionPath[item.key] || "/frontdesk");
+    window.requestAnimationFrame(() => {
+      document
+        .getElementById(`fd-section-${item.tab}`)
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
+  function openFrontDeskModule(moduleKey: string) {
+    const item = frontDeskModuleNav.find((navItem) => navItem.key === moduleKey);
+    if (item) openFrontDeskSection(item);
+  }
+
+  const arrivalWorkflowRows = activeModuleNav === "checkIn" ? readyForCheckInRows : filteredArrivals;
 
   return (
     <div className="page-grid frontdesk-command frontdesk-command-center">
       <PageHeader
-        title="Front Desk Command Center"
-        subtitle={`Arrival, room readiness, check-in, queue, and guest movement control | ${propertyCode} | ${businessDate}`}
+        title="Front Desk"
+        subtitle="Arrival, room readiness, Check-In, Queue, and guest movement control."
+        metadata={`${propertyCode} • ${businessDate}`}
         rightSlot={
           <div className="frontdesk-header-actions">
             <span className="pill pill-success">Live Data</span>
@@ -1440,7 +2184,7 @@ export default function FrontDeskCommandCenter() {
               {expectedCheckIns.length} Arrivals Pending
             </span>
             <span className={qRows.length ? "pill pill-warning" : "pill pill-muted"}>
-              {qRows.length} Q Waiting
+              {qRows.length} Queue Waiting
             </span>
             {canCheckIn ? (
               <button
@@ -1472,6 +2216,11 @@ export default function FrontDeskCommandCenter() {
               {permissionMessage("Front Desk operational actions")}
             </div>
           ) : null}
+          {serviceRecordsFallbackActive ? (
+            <div className="notice-box">
+              Guest messages, traces, wake-up calls, and task history are using local fallback until backend persistence is reachable.
+            </div>
+          ) : null}
           {selectedFolio ? (
             <FolioReceiptModal
               row={selectedFolio}
@@ -1493,68 +2242,190 @@ export default function FrontDeskCommandCenter() {
             />
           ) : null}
 
-          <div className="frontdesk-summary-grid fd-kpi-strip fd-operation-strip">
-            {summaryCards.map((card) => {
-              return (
+          <section className="fd-workflow-card fd-arrival-journey-panel">
+            <SectionTitle
+              icon={<DoorOpen />}
+              title="Arrival To In-House Workflow"
+              subtitle="Prepare hotel, find arrival, assign room, complete registration/payment, queue if needed, check in, then manage folio and guest service."
+            />
+            <div className="fd-arrival-journey-grid" role="region" aria-label="Arrival to in-house workflow steps">
+              {hotelArrivalWorkflow.map((step) => {
+                const Icon = step.icon;
+                const isActive =
+                  activeModuleNav === step.moduleKey ||
+                  (step.secondaryKey ? activeModuleNav === step.secondaryKey : false);
+                return (
+                  <button
+                    key={step.step}
+                    type="button"
+                    className={isActive ? "active" : ""}
+                    disabled={step.disabled}
+                    onClick={() => openFrontDeskModule(step.moduleKey)}
+                    title={step.disabled ? permissionMessage(step.label) : `Open ${step.label}`}
+                  >
+                    <em>{step.step}</em>
+                    <Icon aria-hidden="true" size={18} />
+                    <strong>{step.label}</strong>
+                    <span>{step.detail}</span>
+                    <small>{step.metric}</small>
+                    {step.secondaryKey ? (
+                      <span
+                        role="button"
+                        tabIndex={0}
+                        className="fd-arrival-secondary-action"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          openFrontDeskModule(step.secondaryKey);
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter" || event.key === " ") {
+                            event.preventDefault();
+                            event.stopPropagation();
+                            openFrontDeskModule(step.secondaryKey);
+                          }
+                        }}
+                      >
+                        Payment/Auth
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+
+          <section id="fd-section-houseStatus" className="fd-workflow-card fd-shift-readiness-panel">
+            <SectionTitle
+              icon={<ClipboardList />}
+              title="House Status & Arrival Readiness"
+              subtitle="Compact live view of arrivals, room readiness, queued guests, registration cards, and guarantees."
+            />
+            <div className="fd-shift-readiness-grid">
+              {shiftReadinessItems.map((item) => (
                 <button
-                  key={card.label}
+                  key={item.label}
                   type="button"
-                  className={`frontdesk-status-card fd-metric ${card.tone} ${activeTab === card.tab ? "active" : ""}`}
+                  className={`fd-shift-readiness-card ${item.tone}`}
                   onClick={() => {
-                    setActiveTab(card.tab);
-                    const operationByCard: Partial<Record<FrontDeskTab, FrontDeskOperation>> = {
-                      arrivals: "arrivals",
-                      houseStatus: "shift",
-                      qReservations: "arrivals",
-                      departures: "departures",
-                    };
-                    setActiveOperation(operationByCard[card.tab] || "shift");
+                    if (item.label.includes("Unassigned")) setActiveTab("assignment");
+                    else if (item.label.includes("Queue")) setActiveTab("queueRooms");
+                    else if (item.label.includes("registration")) setActiveTab("registration");
+                    else if (item.label.includes("Dirty") || item.label.includes("OOO") || item.label.includes("Rooms ready")) setActiveTab("houseStatus");
+                    else setActiveTab("arrivals");
                   }}
                 >
-                  <span>{card.label}</span>
-                  <strong>{card.value}</strong>
-                  <small>{card.note}</small>
+                  <span>{item.label}</span>
+                  <strong>{item.value}</strong>
+                  <small>{item.status}</small>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          <section className="fd-command-overview">
+            <div className="fd-command-main">
+              <div className="fd-command-kpis">
+                {commandKpis.map((card) => (
+                  <button
+                    key={card.label}
+                    type="button"
+                    className="frontdesk-status-card fd-metric"
+                    onClick={() => setActiveTab(card.tab)}
+                  >
+                    <span>{card.label}</span>
+                    <strong>{card.value}</strong>
+                    <small>{card.note}</small>
+                  </button>
+                ))}
+              </div>
+
+              <div className="fd-command-panels">
+                <section className="fd-workflow-card">
+                  <SectionTitle icon={<ClipboardList />} title="Main Work Queues" subtitle="Arrival and departure work sorted for the front office shift." />
+                  <div className="fd-command-row-grid">
+                    {frontDeskWorkQueues.map((queue) => (
+                      <button key={queue.label} type="button" onClick={() => setActiveTab(queue.tab)}>
+                        <span>{queue.label}</span>
+                        <strong>{queue.value}</strong>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="fd-workflow-card">
+                  <SectionTitle icon={<KeyRound />} title="Guest Operations" subtitle="Fast access to the main guest movement tasks." />
+                  <div className="fd-command-action-grid">
+                    {guestOperations.map((action) => (
+                      <button key={action.label} type="button" className="small-btn" onClick={() => setActiveTab(action.tab)}>
+                        {action.label}
+                      </button>
+                    ))}
+                  </div>
+                </section>
+
+                <section className="fd-workflow-card">
+                  <SectionTitle icon={<BedDouble />} title="Live Room Status" subtitle="Housekeeping readiness and unavailable room signals." />
+                  <div className="fd-command-row-grid">
+                    {liveRoomStatus.map((status) => (
+                      <button
+                        key={status.label}
+                        type="button"
+                        className={`fd-room-status-tile ${status.tone}`}
+                        onClick={() => setActiveTab("houseStatus")}
+                      >
+                        <span>{status.label}</span>
+                        <strong>{status.value}</strong>
+                      </button>
+                    ))}
+                  </div>
+                </section>
+              </div>
+            </div>
+
+            <aside className="fd-command-tools">
+              <SectionTitle icon={<ReceiptText />} title="Operational Tools" subtitle="Registration, authorization, upsell, notes, housekeeping, and audit readiness." />
+              <div className="fd-command-tool-list">
+                {frontDeskTools.map((tool) => {
+                  const Icon = tool.icon;
+                  return (
+                    <button key={tool.label} type="button" onClick={() => setActiveTab(tool.tab)}>
+                      <Icon aria-hidden="true" size={20} />
+                      <span>{tool.label}</span>
+                      <strong>{tool.value}</strong>
+                      <small>{tool.note}</small>
+                    </button>
+                  );
+                })}
+              </div>
+            </aside>
+          </section>
+
+          <nav className="frontdesk-module-nav" aria-label="Front Desk workflow sections">
+            {frontDeskModuleNav.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeModuleNav === item.key;
+              return (
+                <button
+                  key={item.key}
+                  type="button"
+                  className={isActive ? "active" : ""}
+                  disabled={item.disabled}
+                  title={item.disabled ? item.disabledReason : `Open ${item.label}`}
+                  onClick={() => openFrontDeskSection(item)}
+                >
+                  <Icon aria-hidden="true" size={16} />
+                  <span>{item.label}</span>
                 </button>
               );
             })}
-          </div>
-
-          <div className="frontdesk-workflow-tabs fd-tabs">
-            {visibleTabs.map((tab) => (
-              <button
-                key={tab}
-                className={`tab-btn ${activeTab === tab ? "active" : ""}`}
-                onClick={() => {
-                  const operationByTab: Record<FrontDeskTab, FrontDeskOperation> = {
-                    shift: "shift",
-                    houseStatus: "shift",
-                    arrivals: "arrivals",
-                    qReservations: "arrivals",
-                    departures: "departures",
-                    inHouse: "inHouse",
-                    walkIn: "walkIns",
-                    assignment: "assignment",
-                    roomPlan: "assignment",
-                    floorPlan: "assignment",
-                    registration: "arrivals",
-                    reports: "shift",
-                    exceptions: "exceptions",
-                  };
-                  setActiveOperation(operationByTab[tab]);
-                  setActiveTab(tab);
-                }}
-              >
-                {tabLabels[tab]}
-              </button>
-            ))}
-          </div>
+          </nav>
 
           {activeTab === "houseStatus" ? (
             <section className="card fd-workflow-card">
               <SectionTitle
                 icon={<ClipboardList />}
                 title="House Status"
-                subtitle="Arrival-day hotel condition before check-in, room assignment, Q, and night audit handoff."
+                subtitle="Arrival-day hotel condition before Check-In, room assignment, queued guests, and night audit handoff."
               />
               <div className="fd-house-status-grid">
                 {houseStatusMetrics.map((metric) => (
@@ -1616,11 +2487,15 @@ export default function FrontDeskCommandCenter() {
           ) : null}
 
           {activeTab === "arrivals" ? (
-            <section className="card fd-workflow-card frontdesk-arrivals-table">
+            <section id="fd-section-arrivals" className="card fd-workflow-card frontdesk-arrivals-table">
               <SectionTitle
                 icon={<UserCheck />}
-                title="Arrivals Preparation"
-                subtitle="Search arrivals, pre-block rooms, review registration, authorize payment, and complete check-in."
+                title={activeModuleNav === "checkIn" ? "Check-In" : "Arrivals Preparation"}
+                subtitle={
+                  activeModuleNav === "checkIn"
+                    ? "Complete Check-In only after room assignment, registration card, and payment authorization are ready."
+                    : "Search arrivals, pre-block rooms, review registration, authorize payment, and prepare for Check-In."
+                }
               />
               <ArrivalFilters
                 filters={arrivalFilters}
@@ -1628,8 +2503,8 @@ export default function FrontDeskCommandCenter() {
                 roomTypes={Array.from(new Set(rows.map(displayRoomType))).sort()}
               />
               <DataTable
-                rows={filteredArrivals}
-                emptyMessage="No expected check-ins for this business date."
+                rows={arrivalWorkflowRows}
+                emptyMessage={activeModuleNav === "checkIn" ? "No guests are ready for Check-In yet." : "No expected Check-In guests for this business date."}
                 columns={[
                   {
                     key: "guest",
@@ -1697,7 +2572,7 @@ export default function FrontDeskCommandCenter() {
                       const readiness = checkInReadiness(row);
                       return (
                         <div className="fd-ops-badge-stack">
-                          {readiness.blockers.length ? <span className="pill pill-danger">Blocked</span> : <span className="pill pill-success">Ready to Check In</span>}
+                          {readiness.blockers.length ? <span className="pill pill-danger">Blocked</span> : <span className="pill pill-success">Ready for Check-In</span>}
                           {readiness.blockers.slice(0, 2).map((blocker) => (
                             <span className="pill pill-danger" key={blocker}>{blocker}</span>
                           ))}
@@ -1717,7 +2592,7 @@ export default function FrontDeskCommandCenter() {
                           {money(bookingBalance(row), row.currency || "ETB")}
                         </span>
                         <span className={manualAuthorizations[row.id] ? "pill pill-success" : "pill pill-warning"}>
-                          {manualAuthorizations[row.id] ? "Authorized" : row.guarantee_status || row.payment_status || "Authorization Required"}
+                          {manualAuthorizations[row.id] || row.authorization_status ? "Authorized" : row.guarantee_status || row.payment_status || "Authorization Required"}
                         </span>
                       </div>
                     ),
@@ -1729,7 +2604,7 @@ export default function FrontDeskCommandCenter() {
                       <div className="fd-ops-badge-stack">
                         {bookingIsVip(row) ? <span className="pill pill-warning">VIP</span> : <span className="pill pill-muted">Standard</span>}
                         {operationalBadges(row)
-                          .filter((badge) => ["No Post", "Routed", "On Q"].includes(badge.label))
+                          .filter((badge) => ["No Post", "Routed", "In Queue"].includes(badge.label))
                           .map((badge) => (
                             <span className={badge.className} key={badge.label}>{badge.label}</span>
                           ))}
@@ -1764,7 +2639,7 @@ export default function FrontDeskCommandCenter() {
                           </div>
                         ) : null}
                         <button className="small-btn" type="button" onClick={() => setSelectedFolio(row)}>
-                          View
+                          View Reservation
                         </button>
                         <button className="small-btn" type="button" onClick={() => window.location.assign(`/guest-profiles?guest=${encodeURIComponent(row.guest_name)}`)}>
                           Profile
@@ -1772,17 +2647,17 @@ export default function FrontDeskCommandCenter() {
                         <button className="small-btn" type="button" onClick={() => handleGenerateRegistrationCard(row)}>
                           Reg Card
                         </button>
-                        <button className="small-btn" type="button" onClick={() => setSelectedFolio(row)}>
-                          Routing/Folio
+                        <button className="small-btn" type="button" onClick={() => handleMarkRegistrationSigned(row)}>
+                          Mark Signed
                         </button>
                         <button className="small-btn" type="button" onClick={() => handleManualAuthorization(row)}>
                           Authorize
                         </button>
                         <button className="small-btn" type="button" onClick={() => handlePlaceOnQ(row)}>
-                          Place on Q
+                          Queue Guest
                         </button>
                         <button className="small-btn" type="button" onClick={() => handleUpsell(row, true)}>
-                          Upsell
+                          Offer Upsell
                         </button>
                         {canCheckIn ? (
                           <button
@@ -1790,7 +2665,7 @@ export default function FrontDeskCommandCenter() {
                             disabled={busyBookingId === row.id}
                             onClick={() => handleCheckIn(row)}
                           >
-                            Check In
+                            Check-In
                           </button>
                         ) : null}
                         {!canAssignRoom && !canCheckIn ? <span className="pill pill-muted">Read Only</span> : null}
@@ -1802,7 +2677,7 @@ export default function FrontDeskCommandCenter() {
               <ArrivalSupportPanels
                 rows={filteredArrivals}
                 cleanRooms={cleanRooms}
-                qReservations={qReservations}
+                queueReservations={queueReservations}
                 authorizations={manualAuthorizations}
                 upsellDecisions={upsellDecisions}
                 onUpsell={handleUpsell}
@@ -1810,16 +2685,16 @@ export default function FrontDeskCommandCenter() {
             </section>
           ) : null}
 
-          {activeTab === "qReservations" ? (
-            <section className="card fd-workflow-card frontdesk-q-panel">
+          {activeTab === "queueRooms" ? (
+            <section id="fd-section-queueRooms" className="card fd-workflow-card frontdesk-q-panel">
               <SectionTitle
                 icon={<Sparkles />}
-                title="Q Reservations"
-                subtitle="Early arrivals waiting for room readiness. Q is not check-in; it is a guest waiting state."
+                title="Queue Rooms"
+                subtitle="Early arrivals waiting for room readiness. Queue Rooms is not Check-In; it is a guest waiting state."
               />
               <DataTable
                 rows={qRows}
-                emptyMessage="No guests are waiting on Q."
+                emptyMessage="No guests are waiting in Queue Rooms."
                 columns={[
                   {
                     key: "guest",
@@ -1854,8 +2729,9 @@ export default function FrontDeskCommandCenter() {
                     key: "wait",
                     header: "Waiting",
                     render: (row: FrontdeskBooking) => {
-                      const q = qReservations[row.id];
-                      const minutes = q ? Math.max(Math.round((Date.now() - new Date(q.startedAt).getTime()) / 60000), 0) : 0;
+                      const q = queueReservations[row.id];
+                      const startedAt = q?.startedAt || row.q_started_at;
+                      const minutes = startedAt ? Math.max(Math.round((Date.now() - new Date(startedAt).getTime()) / 60000), 0) : 0;
                       return <span className={minutes > 30 ? "pill pill-danger" : minutes > 10 ? "pill pill-warning" : "pill"}>{minutes} min</span>;
                     },
                   },
@@ -1863,7 +2739,7 @@ export default function FrontDeskCommandCenter() {
                     key: "priority",
                     header: "Priority / VIP",
                     render: (row: FrontdeskBooking) => {
-                      const priority = qReservations[row.id]?.priority || "normal";
+                      const priority = queueReservations[row.id]?.priority || row.q_priority || "normal";
                       return (
                         <div className="fd-ops-badge-stack">
                           <span className={priority === "urgent" || priority === "vip" ? "pill pill-warning" : "pill"}>{priority}</span>
@@ -1879,8 +2755,9 @@ export default function FrontDeskCommandCenter() {
                       <div className="frontdesk-action-group fd-inline-actions">
                         <button className="small-btn" type="button" onClick={() => setSelectedFolio(row)}>Open Reservation</button>
                         <button className="small-btn" type="button" onClick={() => handleAssignSuggested(row)}>Assign Ready Room</button>
-                        {canCheckIn ? <button className="primary-btn fd-gold-action" type="button" onClick={() => handleCheckIn(row)}>Check In</button> : null}
-                        <button className="small-btn" type="button" onClick={() => handleRemoveFromQ(row)}>Remove from Q</button>
+                        <button className="small-btn" type="button" onClick={() => handleUpdateQPriority(row)}>Update Priority</button>
+                        {canCheckIn ? <button className="primary-btn fd-gold-action" type="button" onClick={() => handleCheckIn(row)}>Check-In</button> : null}
+                        <button className="small-btn" type="button" onClick={() => handleRemoveFromQ(row)}>Remove from Queue</button>
                       </div>
                     ),
                   },
@@ -1890,7 +2767,7 @@ export default function FrontDeskCommandCenter() {
           ) : null}
 
           {activeTab === "departures" ? (
-            <section className="card fd-workflow-card">
+            <section id="fd-section-departures" className="card fd-workflow-card">
               <SectionTitle
                 icon={<ReceiptText />}
                 title="Departure Control"
@@ -1941,7 +2818,7 @@ export default function FrontDeskCommandCenter() {
                               disabled={busyBookingId === row.id}
                               onClick={() => handleLateCheckoutNote(row)}
                             >
-                              Late Checkout Note
+                              Late Check-Out Note
                             </button>
                           </>
                         ) : null}
@@ -1951,7 +2828,7 @@ export default function FrontDeskCommandCenter() {
                             disabled={busyBookingId === row.id}
                             onClick={() => handleCheckOut(row)}
                           >
-                            Check Out
+                            Check-Out
                           </button>
                         ) : null}
                       </div>
@@ -1963,15 +2840,15 @@ export default function FrontDeskCommandCenter() {
           ) : null}
 
           {activeTab === "inHouse" ? (
-            <section className="card fd-workflow-card">
+            <section id="fd-section-inHouse" className="card fd-workflow-card">
               <SectionTitle
                 icon={<KeyRound />}
-                title="Guest Stay Panel"
-                subtitle="In-house guests with folio, payment, extension, and departure actions."
+                title="In-House"
+                subtitle="In-House guests with folio, payment, extension, Room Move, Late Check-Out, and Check-Out actions."
               />
               <DataTable
                 rows={inHouse}
-                emptyMessage="No in-house guests for this business date."
+                emptyMessage="No In-House guests for this business date."
                 columns={[
                   ...guestActionColumns,
                   {
@@ -2025,14 +2902,14 @@ export default function FrontDeskCommandCenter() {
                               disabled={busyBookingId === row.id}
                               onClick={() => handleLateCheckoutNote(row)}
                             >
-                              Late Checkout Note
+                              Late Check-Out Note
                             </button>
                             <button
                               className="primary-btn fd-gold-action"
                               disabled={busyBookingId === row.id}
                               onClick={() => handleCheckOut(row)}
                             >
-                              Check Out
+                              Check-Out
                             </button>
                           </>
                         ) : null}
@@ -2044,8 +2921,473 @@ export default function FrontDeskCommandCenter() {
             </section>
           ) : null}
 
+          {activeTab === "paymentAuth" ? (
+            <section id="fd-section-paymentAuth" className="card fd-workflow-card">
+              <SectionTitle
+                icon={<CreditCard />}
+                title="Payment / Authorization"
+                subtitle="Confirm guarantee, manual authorization, deposit, balance, and no-post/routing before Check-In."
+              />
+              <DataTable
+                rows={paymentAuthRows}
+                emptyMessage="No arrivals or active accounts need payment authorization review."
+                columns={[
+                  ...guestActionColumns,
+                  {
+                    key: "balance",
+                    header: "Balance / Deposit",
+                    render: (row: FrontdeskBooking) => (
+                      <div className="fd-ops-badge-stack">
+                        <span className={bookingBalance(row) > 0 ? "pill pill-warning" : "pill pill-success"}>
+                          {money(bookingBalance(row), row.currency || "ETB")}
+                        </span>
+                        <span className="pill">{row.guarantee_status || row.payment_status || "pending"}</span>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: "auth",
+                    header: "Authorization",
+                    render: (row: FrontdeskBooking) => {
+                      const auth = manualAuthorizations[row.id];
+                      return auth || row.authorization_status ? (
+                        <span className="pill pill-success">Authorized</span>
+                      ) : (
+                        <span className="pill pill-warning">Auth Needed</span>
+                      );
+                    },
+                  },
+                  {
+                    key: "paymentActions",
+                    header: "Actions",
+                    render: (row: FrontdeskBooking) => (
+                      <div className="fd-inline-actions">
+                        <button className="small-btn" type="button" onClick={() => setSelectedFolio(row)}>
+                          Open Folio
+                        </button>
+                        <button className="small-btn" type="button" onClick={() => handleManualAuthorization(row)}>
+                          Authorize
+                        </button>
+                        <button
+                          className="small-btn"
+                          type="button"
+                          onClick={() =>
+                            saveFrontDeskServiceRecord(
+                              row,
+                              "task_history",
+                              `payment-${row.id}`,
+                              "Payment/Auth reviewed by Front Desk.",
+                              "completed",
+                              `Payment/Auth reviewed for ${row.guest_name}.`,
+                              "Payment/Auth review"
+                            )
+                          }
+                        >
+                          Mark Reviewed
+                        </button>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+            </section>
+          ) : null}
+
+          {activeTab === "guestService" ? (
+            <section id="fd-section-guestService" className="card fd-workflow-card">
+              <SectionTitle
+                icon={<MessageSquare />}
+                title="Folio / Guest Service"
+                subtitle="In-house service desk for folio review, guest requests, messages, traces, room move, extension, and wake-up calls."
+              />
+              <DataTable
+                rows={guestServiceRows}
+                emptyMessage="No in-house folio or guest-service items are active."
+                columns={[
+                  ...guestActionColumns,
+                  {
+                    key: "serviceNeed",
+                    header: "Service Need",
+                    render: (row: FrontdeskBooking) => row.special_requests || row.notes || (bookingBalance(row) > 0 ? "Folio balance review" : "Guest service follow-up"),
+                  },
+                  {
+                    key: "serviceActions",
+                    header: "Actions",
+                    render: (row: FrontdeskBooking) => (
+                      <div className="fd-inline-actions">
+                        <button className="small-btn" type="button" onClick={() => setSelectedFolio(row)}>
+                          Open Folio
+                        </button>
+                        {canAssignRoom ? (
+                          <button className="small-btn" type="button" disabled={busyBookingId === row.id} onClick={() => handleRoomMove(row)}>
+                            Room Move
+                          </button>
+                        ) : null}
+                        <button
+                          className="small-btn"
+                          type="button"
+                          onClick={() =>
+                            saveFrontDeskServiceRecord(
+                              row,
+                              "task_history",
+                              `service-${row.id}`,
+                              row.special_requests || row.notes || "Guest service follow-up completed.",
+                              "completed",
+                              `Guest service follow-up completed for ${row.guest_name}.`,
+                              "Guest service follow-up"
+                            )
+                          }
+                        >
+                          Mark Served
+                        </button>
+                        <button
+                          className="small-btn"
+                          type="button"
+                          onClick={() => {
+                            const time = window.prompt("Wake-up call time", frontDeskTaskState[`wake-${row.id}`] || "06:30");
+                            if (!time) return;
+                            saveFrontDeskServiceRecord(
+                              row,
+                              "wake_up_call",
+                              `wake-${row.id}`,
+                              `Wake-up call requested for ${time}.`,
+                              "open",
+                              `Wake-up call set for ${row.guest_name} at ${time}.`,
+                              "Wake-up call",
+                              `${businessDate}T${time}:00`
+                            );
+                          }}
+                        >
+                          Wake-Up
+                        </button>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+            </section>
+          ) : null}
+
+          {activeTab === "accounts" ? (
+            <section id="fd-section-accounts" className="card fd-workflow-card">
+              <SectionTitle
+                icon={<CreditCard />}
+                title="Guest Accounts"
+                subtitle="Front-desk account review for in-house guests, departure balances, folio handoff, and cashier follow-up."
+              />
+              <DataTable
+                rows={accountRows}
+                emptyMessage="No active guest accounts need front desk review."
+                columns={[
+                  ...guestActionColumns,
+                  {
+                    key: "balance",
+                    header: "Balance",
+                    render: (row: FrontdeskBooking) => (
+                      <span className={bookingBalance(row) > 0 ? "pill pill-warning" : "pill pill-success"}>
+                        {money(bookingBalance(row), row.currency || "ETB")}
+                      </span>
+                    ),
+                  },
+                  {
+                    key: "accountStatus",
+                    header: "Account Status",
+                    render: (row: FrontdeskBooking) => {
+                      const taskKey = `account-${row.id}`;
+                      const record = findServiceRecord("task_history", row, taskKey);
+                      const status = serviceRecordStatusLabel(record, taskKey);
+                      return <span className={serviceRecordStatusClass(status)}>{status}</span>;
+                    },
+                  },
+                  {
+                    key: "accountActions",
+                    header: "Actions",
+                    render: (row: FrontdeskBooking) => (
+                      <div className="fd-inline-actions">
+                        <button className="small-btn" type="button" onClick={() => setSelectedFolio(row)}>
+                          Open Folio
+                        </button>
+                        <button
+                          className="small-btn"
+                          type="button"
+                          onClick={() =>
+                            saveFrontDeskServiceRecord(
+                              row,
+                              "task_history",
+                              `account-${row.id}`,
+                              "Guest account reviewed by Front Desk.",
+                              "completed",
+                              `Account reviewed for ${row.guest_name}.`,
+                              "Guest account review"
+                            )
+                          }
+                        >
+                          Mark Reviewed
+                        </button>
+                        <button
+                          className="small-btn"
+                          type="button"
+                          onClick={() =>
+                            saveFrontDeskServiceRecord(
+                              row,
+                              "trace",
+                              `cashier-${row.id}`,
+                              "Cashier follow-up required for guest account.",
+                              "open",
+                              `Cashier follow-up noted for ${row.guest_name}.`,
+                              "Cashier follow-up"
+                            )
+                          }
+                        >
+                          Cashier Follow-Up
+                        </button>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+            </section>
+          ) : null}
+
+          {activeTab === "messages" ? (
+            <section id="fd-section-messages" className="card fd-workflow-card">
+              <SectionTitle
+                icon={<MessageSquare />}
+                title="Guest Messages"
+                subtitle="Guest notes, special requests, VIP alerts, and front-desk message delivery."
+              />
+              <DataTable
+                rows={messageRows}
+                emptyMessage="No guest messages or special-request notes are waiting."
+                columns={[
+                  ...guestActionColumns,
+                  {
+                    key: "message",
+                    header: "Message / Request",
+                    render: (row: FrontdeskBooking) => row.special_requests || row.notes || (bookingIsVip(row) ? "VIP arrival attention required." : "Front desk note"),
+                  },
+                  {
+                    key: "messageStatus",
+                    header: "Status",
+                    render: (row: FrontdeskBooking) => {
+                      const taskKey = `message-${row.id}`;
+                      const record = findServiceRecord("guest_message", row, taskKey);
+                      const status = serviceRecordStatusLabel(record, taskKey);
+                      return <span className={serviceRecordStatusClass(status)}>{status}</span>;
+                    },
+                  },
+                  {
+                    key: "messageActions",
+                    header: "Actions",
+                    render: (row: FrontdeskBooking) => (
+                      <div className="fd-inline-actions">
+                        <button className="small-btn" type="button" onClick={() => setSelectedFolio(row)}>
+                          Open Reservation
+                        </button>
+                        <button
+                          className="small-btn"
+                          type="button"
+                          onClick={() =>
+                            saveFrontDeskServiceRecord(
+                              row,
+                              "guest_message",
+                              `message-${row.id}`,
+                              row.special_requests || row.notes || "Guest message delivered.",
+                              "completed",
+                              `Message marked delivered for ${row.guest_name}.`,
+                              "Guest message"
+                            )
+                          }
+                        >
+                          Mark Delivered
+                        </button>
+                        <button
+                          className="small-btn"
+                          type="button"
+                          onClick={() =>
+                            saveFrontDeskServiceRecord(
+                              row,
+                              "guest_message",
+                              `message-followup-${row.id}`,
+                              row.special_requests || row.notes || "Guest message follow-up required.",
+                              "open",
+                              `Follow-up message noted for ${row.guest_name}.`,
+                              "Guest message follow-up"
+                            )
+                          }
+                        >
+                          Add Follow-Up
+                        </button>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+            </section>
+          ) : null}
+
+          {activeTab === "traces" ? (
+            <section id="fd-section-traces" className="card fd-workflow-card">
+              <SectionTitle
+                icon={<ClipboardList />}
+                title="Front Desk Traces"
+                subtitle="Operational follow-ups for room assignment, room readiness, balances, no-shows, and queued reservations."
+              />
+              <DataTable
+                rows={traceRows}
+                emptyMessage="No front desk traces are open."
+                columns={[
+                  ...guestActionColumns,
+                  {
+                    key: "trace",
+                    header: "Trace",
+                    render: (row: FrontdeskBooking) => {
+                      if (!normalizeRoomNumber(row.room_number)) return "Assign room before arrival.";
+                      if (roomNotReadyArrivals.some((item) => item.id === row.id)) return "Assigned room is not ready.";
+                      if (balanceReview.some((item) => item.id === row.id)) return "Review guest account balance.";
+                      if (qRows.some((item) => item.id === row.id)) return "Guest waiting in Queue Rooms.";
+                      return "Review front desk exception.";
+                    },
+                  },
+                  {
+                    key: "traceStatus",
+                    header: "Status",
+                    render: (row: FrontdeskBooking) => {
+                      const taskKey = `trace-${row.id}`;
+                      const record = findServiceRecord("trace", row, taskKey);
+                      const status = serviceRecordStatusLabel(record, taskKey);
+                      return <span className={serviceRecordStatusClass(status)}>{status}</span>;
+                    },
+                  },
+                  {
+                    key: "traceActions",
+                    header: "Actions",
+                    render: (row: FrontdeskBooking) => (
+                      <div className="fd-inline-actions">
+                        {!normalizeRoomNumber(row.room_number) && canAssignRoom ? (
+                          <button className="small-btn" type="button" onClick={() => handleAssignSuggested(row)}>
+                            Assign Room
+                          </button>
+                        ) : null}
+                        {bookingBalance(row) > 0 ? (
+                          <button className="small-btn" type="button" onClick={() => setSelectedFolio(row)}>
+                            Open Folio
+                          </button>
+                        ) : null}
+                        <button
+                          className="small-btn"
+                          type="button"
+                          onClick={() =>
+                            saveFrontDeskServiceRecord(
+                              row,
+                              "trace",
+                              `trace-${row.id}`,
+                              "Front Desk trace resolved.",
+                              "completed",
+                              `Trace resolved for ${row.guest_name}.`,
+                              "Front Desk trace"
+                            )
+                          }
+                        >
+                          Resolve Trace
+                        </button>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+            </section>
+          ) : null}
+
+          {activeTab === "wakeUpCalls" ? (
+            <section id="fd-section-wakeUpCalls" className="card fd-workflow-card">
+              <SectionTitle
+                icon={<Clock />}
+                title="Wake-Up Calls"
+                subtitle="Front-desk wake-up call register for in-house guests, persisted by selected property."
+              />
+              <DataTable
+                rows={wakeUpRows}
+                emptyMessage="No in-house guests are available for wake-up call setup."
+                columns={[
+                  ...guestActionColumns,
+                  {
+                    key: "wakeTime",
+                    header: "Wake-Up Time",
+                    render: (row: FrontdeskBooking) => {
+                      const taskKey = `wake-${row.id}`;
+                      const record = findServiceRecord("wake_up_call", row, taskKey);
+                      if (record?.scheduled_for) {
+                        return new Date(record.scheduled_for).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        });
+                      }
+                      return frontDeskTaskState[taskKey] || "06:30";
+                    },
+                  },
+                  {
+                    key: "wakeStatus",
+                    header: "Status",
+                    render: (row: FrontdeskBooking) => {
+                      const taskKey = `wake-${row.id}`;
+                      const record = findServiceRecord("wake_up_call", row, taskKey);
+                      const status = serviceRecordStatusLabel(record, taskKey);
+                      return <span className={serviceRecordStatusClass(status)}>{status}</span>;
+                    },
+                  },
+                  {
+                    key: "wakeActions",
+                    header: "Actions",
+                    render: (row: FrontdeskBooking) => (
+                      <div className="fd-inline-actions">
+                        <button
+                          className="small-btn"
+                          type="button"
+                          onClick={() => {
+                            const time = window.prompt("Wake-up call time", frontDeskTaskState[`wake-${row.id}`] || "06:30");
+                            if (!time) return;
+                            saveFrontDeskServiceRecord(
+                              row,
+                              "wake_up_call",
+                              `wake-${row.id}`,
+                              `Wake-up call requested for ${time}.`,
+                              "open",
+                              `Wake-up call set for ${row.guest_name} at ${time}.`,
+                              "Wake-up call",
+                              `${businessDate}T${time}:00`
+                            );
+                          }}
+                        >
+                          Set Wake-Up
+                        </button>
+                        <button
+                          className="small-btn"
+                          type="button"
+                          onClick={() =>
+                            saveFrontDeskServiceRecord(
+                              row,
+                              "wake_up_call",
+                              `wake-${row.id}`,
+                              "Wake-up call completed by Front Desk.",
+                              "completed",
+                              `Wake-up call completed for ${row.guest_name}.`,
+                              "Wake-up call"
+                            )
+                          }
+                        >
+                          Mark Done
+                        </button>
+                      </div>
+                    ),
+                  },
+                ]}
+              />
+            </section>
+          ) : null}
+
           {activeTab === "walkIn" ? (
-            <section className="card fd-workflow-card">
+            <section id="fd-section-walkIn" className="card fd-workflow-card">
               <SectionTitle
                 icon={<DoorOpen />}
                 title="Fast Walk-In"
@@ -2076,16 +3418,12 @@ export default function FrontDeskCommandCenter() {
           ) : null}
 
           {activeTab === "assignment" ? (
-            <section className="card fd-workflow-card frontdesk-room-assignment">
+            <section id="fd-section-assignment" className="card fd-workflow-card frontdesk-room-assignment">
               <SectionTitle
                 icon={<BedDouble />}
                 title="Room Assignment / Pre-Block"
-                subtitle="Pre-block arrivals, auto-assign inspected rooms, and manage room exchange before check-in."
+                subtitle="Assign or change rooms before Check-In. Prefer clean or inspected rooms and keep room-readiness validation intact."
               />
-              <div className="fd-inline-actions frontdesk-panel-actions">
-                <button className="primary-btn fd-gold-action" type="button" onClick={handleAutoAssignAll}>Auto Assign</button>
-                <button className="small-btn" type="button" onClick={handleExchangeRooms}>Exchange Room</button>
-              </div>
               <div className="frontdesk-assignment-layout">
                 <div className="frontdesk-assignment-panel">
                   <h3>Unassigned Arrivals</h3>
@@ -2111,7 +3449,7 @@ export default function FrontDeskCommandCenter() {
                                 Assign Room
                               </button>
                               <button className="small-btn" type="button" onClick={() => handlePlaceOnQ(row)}>
-                                Place on Q
+                                Queue Guest
                               </button>
                             </div>
                           ) : (
@@ -2120,7 +3458,7 @@ export default function FrontDeskCommandCenter() {
                         </div>
                       ))
                     ) : (
-                      <div className="muted">All expected check-ins have room assignments.</div>
+                      <div className="muted">All expected Check-In guests have room assignments.</div>
                     )}
                   </div>
                 </div>
@@ -2138,7 +3476,7 @@ export default function FrontDeskCommandCenter() {
                             Unassign
                           </button>
                           <button className="small-btn" type="button" onClick={() => handlePlaceOnQ(row)}>
-                            Q
+                            Queue
                           </button>
                         </div>
                       </div>
@@ -2174,37 +3512,8 @@ export default function FrontDeskCommandCenter() {
             </section>
           ) : null}
 
-          {activeTab === "roomPlan" ? (
-            <section className="card fd-workflow-card frontdesk-room-plan">
-              <SectionTitle
-                icon={<BedDouble />}
-                title="Room Plan"
-                subtitle="Planning table by room, date, assignment, VIP indicator, and room readiness."
-              />
-              <RoomPlan rows={rows} rooms={rooms} businessDate={businessDate} roomByNumber={roomByNumber} />
-            </section>
-          ) : null}
-
-          {activeTab === "floorPlan" ? (
-            <section className="card fd-workflow-card frontdesk-floor-plan">
-              <SectionTitle
-                icon={<BedDouble />}
-                title="Floor Plan"
-                subtitle="Simplified floor view for room readiness, pre-blocking, in-house status, and arrival attention."
-              />
-              <FloorPlan
-                rooms={rooms}
-                rows={rows}
-                businessDate={businessDate}
-                qReservations={qReservations}
-                onAssign={(booking, room) => assignSpecificRoom(booking, room.room_number)}
-                onCheckIn={handleCheckIn}
-              />
-            </section>
-          ) : null}
-
           {activeTab === "registration" ? (
-            <section className="card fd-workflow-card frontdesk-registration-cards">
+            <section id="fd-section-registration" className="card fd-workflow-card frontdesk-registration-cards">
               <SectionTitle
                 icon={<ClipboardList />}
                 title="Registration Card Workflow"
@@ -2240,41 +3549,38 @@ export default function FrontDeskCommandCenter() {
                   {
                     key: "generated",
                     header: "Generated",
-                    render: (row: FrontdeskBooking) => registrationGenerated[row.id] ? new Date(registrationGenerated[row.id]).toLocaleString() : "Pending",
+                    render: (row: FrontdeskBooking) => {
+                      const generatedAt = registrationGenerated[row.id] || row.registration_card_generated_at;
+                      return generatedAt ? new Date(generatedAt).toLocaleString() : "Pending";
+                    },
+                  },
+                  {
+                    key: "signed",
+                    header: "Signed",
+                    render: (row: FrontdeskBooking) => {
+                      const signedAt = registrationSigned[row.id] || row.registration_card_signed_at;
+                      return row.registration_card_signed || signedAt ? (
+                        <span className="pill pill-success">{signedAt ? new Date(signedAt).toLocaleString() : "Signed"}</span>
+                      ) : (
+                        <span className="pill pill-warning">Missing signature</span>
+                      );
+                    },
                   },
                   {
                     key: "card",
                     header: "Card",
                     render: (row: FrontdeskBooking) => (
-                      <button className="small-btn" type="button" onClick={() => handleGenerateRegistrationCard(row)}>
-                        Print/View Reg Card
-                      </button>
+                      <div className="fd-inline-actions">
+                        <button className="small-btn" type="button" onClick={() => handleGenerateRegistrationCard(row)}>
+                          Print/View Reg Card
+                        </button>
+                        <button className="small-btn" type="button" onClick={() => handleMarkRegistrationSigned(row)}>
+                          Mark Signed
+                        </button>
+                      </div>
                     ),
                   },
                 ]}
-              />
-            </section>
-          ) : null}
-
-          {activeTab === "reports" ? (
-            <section className="card fd-workflow-card">
-              <SectionTitle
-                icon={<ClipboardList />}
-                title="Front Desk Reports"
-                subtitle="Export-ready operating views for arrivals, Q, assignments, house status, and room readiness."
-              />
-              <FrontDeskReports
-                arrivals={filteredArrivals}
-                qRows={qRows}
-                inHouse={inHouse}
-                rooms={rooms}
-                unassignedArrivals={unassignedArrivals}
-                dirtyRooms={dirtyRooms}
-                cleanRooms={cleanRooms}
-                inspectedRooms={inspectedRooms}
-                outOfOrderRooms={outOfOrderRooms}
-                walkIns={walkIns}
-                noShows={noShows}
               />
             </section>
           ) : null}
@@ -2296,37 +3602,6 @@ export default function FrontDeskCommandCenter() {
             </section>
           ) : null}
 
-          <section className="card fd-workflow-card fd-shift-handover-card">
-            <SectionTitle
-              icon={<ClipboardList />}
-              title="Shift Handover"
-              subtitle="Summary for the next agent or manager review."
-            />
-            <div className="shift-grid">
-              <div className="shift-card">
-                <span>Remaining arrivals</span>
-                <strong>{expectedCheckIns.length}</strong>
-              </div>
-              <div className="shift-card">
-                <span>Departures not checked out</span>
-                <strong>
-                  {
-                    departures.filter(
-                      (row) => String(row.booking_status).toLowerCase() !== "checked_out"
-                    ).length
-                  }
-                </strong>
-              </div>
-              <div className="shift-card">
-                <span>Dirty rooms</span>
-                <strong>{dirtyRooms.length}</strong>
-              </div>
-              <div className="shift-card">
-                <span>Manual follow-up</span>
-                <strong>{attentionItems.reduce((sum, item) => sum + item.value, 0)}</strong>
-              </div>
-            </div>
-          </section>
         </>
       )}
     </div>
@@ -2734,7 +4009,7 @@ function ArrivalFilters({
         Readiness
         <select value={filters.readiness} onChange={(event) => update("readiness", event.target.value)}>
           <option value="all">All readiness</option>
-          <option value="ready">Ready to Check In</option>
+          <option value="ready">Ready for Check-In</option>
           <option value="blocked">Blocked / issue</option>
           <option value="room">Room readiness issue</option>
           <option value="payment">Payment / authorization issue</option>
@@ -2820,14 +4095,14 @@ function RoomCandidateFilters({
 function ArrivalSupportPanels({
   rows,
   cleanRooms,
-  qReservations,
+  queueReservations,
   authorizations,
   upsellDecisions,
   onUpsell,
 }: {
   rows: FrontdeskBooking[];
   cleanRooms: RoomStatusItem[];
-  qReservations: Record<number, QReservationState>;
+  queueReservations: Record<number, QueueReservationState>;
   authorizations: Record<number, ManualAuthorizationState>;
   upsellDecisions: Record<number, "accepted" | "declined">;
   onUpsell: (row: FrontdeskBooking, accepted: boolean) => void;
@@ -2839,13 +4114,25 @@ function ArrivalSupportPanels({
       .match(/route|no post|cash|company/)
   );
   const vipRows = rows.filter(bookingIsVip);
+  const firstArrival = rows[0];
+  const checklistItems = firstArrival
+    ? [
+        { label: "Guest profile reviewed", done: Boolean(firstArrival.guest_email || firstArrival.notes) },
+        { label: "Room assigned", done: Boolean(normalizeRoomNumber(firstArrival.room_number)) },
+        { label: "Registration card signed", done: Boolean(firstArrival.registration_card_signed) },
+        { label: "Payment / authorization completed", done: Boolean(authorizations[firstArrival.id] || firstArrival.authorization_status || firstArrival.payment_method) },
+        { label: "Deposit / guarantee satisfied", done: Boolean(firstArrival.guarantee_status || firstArrival.payment_status) },
+        { label: "VIP notes reviewed", done: !bookingIsVip(firstArrival) || Boolean(firstArrival.special_requests || firstArrival.notes) },
+        { label: "Upsell accepted / declined", done: Boolean(upsellDecisions[firstArrival.id] || firstArrival.upsell_accepted || firstArrival.upsell_declined) },
+      ]
+    : [];
 
   return (
     <div className="fd-support-grid">
       <div className="fd-support-card">
         <h3>Credit Authorization</h3>
         <strong>{authorizationRequired.length}</strong>
-        <span>arrival(s) need card, cash, or offline approval before check-in.</span>
+        <span>arrival(s) need card, cash, or offline approval before Check-In.</span>
       </div>
       <div className="fd-support-card">
         <h3>Routing / No Post</h3>
@@ -2855,11 +4142,11 @@ function ArrivalSupportPanels({
       <div className="fd-support-card">
         <h3>Room Key Readiness</h3>
         <strong>{cleanRooms.length}</strong>
-        <span>clean or inspected rooms available for key cutting and check-in.</span>
+        <span>clean or inspected rooms available for key cutting and Check-In.</span>
       </div>
       <div className="fd-support-card">
-        <h3>Q / VIP Attention</h3>
-        <strong>{Object.keys(qReservations).length + vipRows.length}</strong>
+        <h3>Queue / VIP Attention</h3>
+        <strong>{Object.keys(queueReservations).length + vipRows.length}</strong>
         <span>waiting or VIP guests should be prioritized with housekeeping.</span>
       </div>
       <div className="fd-support-card fd-support-wide">
@@ -2871,7 +4158,9 @@ function ArrivalSupportPanels({
                 <strong>{row.guest_name}</strong>
                 <span>{row.room_type || "Standard Room"} to Deluxe / Suite candidate</span>
               </div>
-              <span className="pill">{upsellDecisions[row.id] || "Offer ETB 1,200/night"}</span>
+              <span className="pill">
+                {upsellDecisions[row.id] || (row.upsell_accepted ? "accepted" : row.upsell_declined ? "declined" : "Offer ETB 1,200/night")}
+              </span>
               <button className="small-btn" type="button" onClick={() => onUpsell(row, true)}>
                 Accept
               </button>
@@ -2883,235 +4172,23 @@ function ArrivalSupportPanels({
           {!rows.length ? <p className="muted">No arrivals in the current filter.</p> : null}
         </div>
       </div>
-    </div>
-  );
-}
-
-function RoomPlan({
-  rows,
-  rooms,
-  businessDate,
-  roomByNumber,
-}: {
-  rows: FrontdeskBooking[];
-  rooms: RoomStatusItem[];
-  businessDate: string;
-  roomByNumber: Map<string, RoomStatusItem>;
-}) {
-  const planRows = rooms
-    .slice()
-    .sort((a, b) =>
-      normalizeRoomNumber(a.room_number).localeCompare(normalizeRoomNumber(b.room_number), undefined, {
-        numeric: true,
-      })
-    )
-    .map((room) => {
-      const assigned = rows.find((row) => normalizeRoomNumber(row.room_number) === normalizeRoomNumber(room.room_number));
-      const arrival = rows.find(
-        (row) =>
-          row.check_in_date === businessDate &&
-          normalizeRoomNumber(row.room_number) === normalizeRoomNumber(room.room_number)
-      );
-      return { room, assigned, arrival };
-    });
-
-  return (
-    <div className="fd-room-plan-grid">
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Room</th>
-            <th>Type</th>
-            <th>Floor</th>
-            <th>Housekeeping</th>
-            <th>Guest / Assignment</th>
-            <th>VIP</th>
-            <th>Stay</th>
-            <th>Readiness</th>
-          </tr>
-        </thead>
-        <tbody>
-          {planRows.map(({ room, assigned, arrival }) => {
-            const roomRecord = roomByNumber.get(normalizeRoomNumber(room.room_number));
-            return (
-              <tr key={`room-plan-${room.room_number}`}>
-                <td data-label="Room">{room.room_number}</td>
-                <td data-label="Type">{room.room_type || assigned?.room_type || "Standard Room"}</td>
-                <td data-label="Floor">{room.floor}</td>
-                <td data-label="Housekeeping"><span className={statusClass(room.hk_status)}>{room.hk_status}</span></td>
-                <td data-label="Guest">{assigned?.guest_name || "Available"}</td>
-                <td data-label="VIP">{assigned && bookingIsVip(assigned) ? "VIP" : "-"}</td>
-                <td data-label="Stay">{assigned ? `${assigned.check_in_date} to ${assigned.check_out_date}` : "-"}</td>
-                <td data-label="Readiness">
-                  <span className={roomReady(roomRecord) ? "pill pill-success" : roomBlocked(roomRecord) ? "pill pill-danger" : "pill pill-warning"}>
-                    {arrival ? "Arrival Room" : roomReady(roomRecord) ? "Ready" : "Review"}
-                  </span>
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function FloorPlan({
-  rooms,
-  rows,
-  businessDate,
-  qReservations,
-  onAssign,
-  onCheckIn,
-}: {
-  rooms: RoomStatusItem[];
-  rows: FrontdeskBooking[];
-  businessDate: string;
-  qReservations: Record<number, QReservationState>;
-  onAssign: (booking: FrontdeskBooking, room: RoomStatusItem) => void | Promise<void>;
-  onCheckIn: (booking: FrontdeskBooking) => void | Promise<void>;
-}) {
-  const floors = Array.from(new Set(rooms.map((room) => room.floor))).sort((a, b) => a - b);
-  const unassignedArrivals = rows.filter(
-    (row) => row.check_in_date === businessDate && !normalizeRoomNumber(row.room_number)
-  );
-
-  return (
-    <div className="fd-floor-plan">
-      {floors.map((floor) => {
-        const floorRooms = rooms
-          .filter((room) => room.floor === floor)
-          .sort((a, b) =>
-            normalizeRoomNumber(a.room_number).localeCompare(normalizeRoomNumber(b.room_number), undefined, {
-              numeric: true,
-            })
-          );
-        return (
-          <section className="fd-floor-section" key={`floor-${floor}`}>
-            <h3>Floor {floor}</h3>
-            <div className="fd-floor-grid">
-              {floorRooms.map((room) => {
-                const assigned = rows.find((row) => normalizeRoomNumber(row.room_number) === normalizeRoomNumber(room.room_number));
-                const waiting = assigned ? qReservations[assigned.id] : undefined;
-                const suggestedArrival = !assigned && roomReady(room) ? unassignedArrivals[0] : undefined;
-                return (
-                  <div
-                    className={`fd-floor-room ${roomReady(room) ? "ready" : roomBlocked(room) ? "blocked" : "review"}`}
-                    key={`floor-room-${room.room_number}`}
-                  >
-                    <div>
-                      <strong>{room.room_number}</strong>
-                      <span>{room.room_type || "Room"}</span>
-                    </div>
-                    <span>{room.hk_status}</span>
-                    <small>{assigned?.guest_name || (suggestedArrival ? `Suggest ${suggestedArrival.guest_name}` : "Available")}</small>
-                    {waiting ? <span className="pill pill-warning">On Q</span> : null}
-                    <div className="fd-inline-actions">
-                      {suggestedArrival ? (
-                        <button className="small-btn" type="button" onClick={() => onAssign(suggestedArrival, room)}>
-                          Assign
-                        </button>
-                      ) : null}
-                      {assigned && assigned.check_in_date === businessDate ? (
-                        <button className="small-btn" type="button" onClick={() => onCheckIn(assigned)}>
-                          Check In
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-                );
-              })}
+      <div className="fd-support-card fd-support-wide">
+        <h3>Final Check-In Checklist</h3>
+        {firstArrival ? (
+          <>
+            <span>Current focus: {firstArrival.guest_name}</span>
+            <div className="fd-final-checklist">
+              {checklistItems.map((item) => (
+                <span className={item.done ? "ready" : "pending"} key={item.label}>
+                  {item.done ? "Ready" : "Pending"} - {item.label}
+                </span>
+              ))}
             </div>
-          </section>
-        );
-      })}
-    </div>
-  );
-}
-
-function FrontDeskReports({
-  arrivals,
-  qRows,
-  inHouse,
-  rooms,
-  unassignedArrivals,
-  dirtyRooms,
-  cleanRooms,
-  inspectedRooms,
-  outOfOrderRooms,
-  walkIns,
-  noShows,
-}: {
-  arrivals: FrontdeskBooking[];
-  qRows: FrontdeskBooking[];
-  inHouse: FrontdeskBooking[];
-  rooms: RoomStatusItem[];
-  unassignedArrivals: FrontdeskBooking[];
-  dirtyRooms: RoomStatusItem[];
-  cleanRooms: RoomStatusItem[];
-  inspectedRooms: RoomStatusItem[];
-  outOfOrderRooms: RoomStatusItem[];
-  walkIns: FrontdeskBooking[];
-  noShows: FrontdeskBooking[];
-}) {
-  const reportGroups = [
-    {
-      group: "Arrival Reports",
-      items: [
-        { title: "Arrival List", value: arrivals.length, detail: "Expected arrivals and filtered check-in worklist" },
-        { title: "VIP Arrivals", value: arrivals.filter(bookingIsVip).length, detail: "Guests needing manager/front office attention" },
-        { title: "Unassigned Arrivals", value: unassignedArrivals.length, detail: "Rooms must be assigned before check-in" },
-        { title: "Walk-In Report", value: walkIns.length, detail: "Direct desk bookings" },
-      ],
-    },
-    {
-      group: "Room Status Reports",
-      items: [
-        { title: "Room Status", value: rooms.length, detail: "Total physical room board" },
-        { title: "Dirty Rooms", value: dirtyRooms.length, detail: "Housekeeping priority list" },
-        { title: "Clean / Inspected", value: cleanRooms.length + inspectedRooms.length, detail: "Ready-room supply" },
-        { title: "Out of Order", value: outOfOrderRooms.length, detail: "Non-sellable rooms" },
-      ],
-    },
-    {
-      group: "In-House Reports",
-      items: [
-        { title: "In-House List", value: inHouse.length, detail: "Current guest stay panel" },
-      ],
-    },
-    {
-      group: "Queue Reports",
-      items: [
-        { title: "Q Reservations", value: qRows.length, detail: "Waiting guests not yet checked in" },
-      ],
-    },
-    {
-      group: "Exception Reports",
-      items: [
-        { title: "No-Show Report", value: noShows.length, detail: "Reservations requiring follow-up" },
-      ],
-    },
-  ];
-
-  return (
-    <div className="frontdesk-report-launcher">
-      {reportGroups.map((group) => (
-        <section className="frontdesk-report-group" key={group.group}>
-          <h3>{group.group}</h3>
-          <div className="fd-report-grid">
-            {group.items.map((card) => (
-              <div className="fd-report-card" key={card.title}>
-                <span>{card.title}</span>
-                <strong>{card.value}</strong>
-                <small>{card.detail}</small>
-                <button className="small-btn" type="button">
-                  Preview
-                </button>
-              </div>
-            ))}
-          </div>
-        </section>
-      ))}
+          </>
+        ) : (
+          <span>No arrival selected in the current filter.</span>
+        )}
+      </div>
     </div>
   );
 }
@@ -3344,7 +4421,7 @@ function WalkInForm({
             </select>
           </label>
           <label>
-            Check In
+            Check-In
             <input
               type="date"
               value={form.checkInDate}
@@ -3355,7 +4432,7 @@ function WalkInForm({
             />
           </label>
           <label>
-            Check Out
+            Check-Out
             <input
               type="date"
               value={form.checkOutDate}
@@ -3557,7 +4634,7 @@ function WalkInForm({
               <option>Card</option>
               <option>Bank Transfer</option>
               <option>Mobile Money</option>
-              <option>Pay at Checkout</option>
+              <option>Pay at Check-Out</option>
             </select>
           </label>
           <label>

@@ -2,6 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import PageHeader from "../../components/PageHeader";
 import KpiCard from "../../components/KpiCard";
 import DataTable from "../../components/DataTable";
+import { HandoffBadge } from "../../components/ui/HandoffBadge";
+import { LoadingState } from "../../components/ui/LoadingState";
+import { StatusBadge } from "../../components/ui/StatusBadge";
 import { usePmsContext } from "../../context/PmsContext";
 import { fetchFrontdeskBookings } from "../../services/pmsService";
 import { getErrorMessage } from "../../services/http";
@@ -48,13 +51,57 @@ function parseOptionalNumber(value: string) {
   return Number.isFinite(parsed) ? parsed : undefined;
 }
 
-function statusClass(status: string) {
-  const s = String(status || "").toLowerCase();
-  if (s === "in_house" || s === "checked_in") return "pill pill-success";
-  if (s === "checked_out") return "pill pill-muted";
-  if (s === "reserved" || s === "confirmed") return "pill pill-warning";
-  if (s === "cancelled" || s === "no_show") return "pill pill-danger";
-  return "pill";
+function bookingStatus(row: FrontdeskBooking) {
+  return String(row.booking_status || "").toLowerCase();
+}
+
+function paymentStatus(row: FrontdeskBooking) {
+  const handoff = row as FrontdeskBooking & {
+    deposit_status?: string;
+    guarantee_status?: string;
+  };
+  return String(
+    row.payment_status || handoff.deposit_status || handoff.guarantee_status || "pending"
+  ).toLowerCase();
+}
+
+function guaranteeHandoff(row: FrontdeskBooking) {
+  const status = paymentStatus(row);
+  if (status === "paid" || status === "deposit_paid" || status === "guaranteed") {
+    return <HandoffBadge label="Guarantee ready" variant="success" />;
+  }
+  if (status.includes("request") || status.includes("deposit")) {
+    return <HandoffBadge label="Deposit requested" variant="warning" />;
+  }
+  return <HandoffBadge label="Guarantee review" variant="warning" />;
+}
+
+function roomAssignmentHandoff(row: FrontdeskBooking) {
+  if (row.room_number) {
+    return <HandoffBadge label={`Room ${row.room_number}`} variant="success" />;
+  }
+  return <HandoffBadge label="Room TBD" variant="warning" />;
+}
+
+function readinessHandoff(row: FrontdeskBooking) {
+  const readiness = String((row as any).room_readiness || (row as any).hk_status || "").toLowerCase();
+  if (readiness.includes("inspect") || readiness === "vacant_clean" || readiness.includes("clean")) {
+    return <HandoffBadge label="HK ready" variant="success" />;
+  }
+  if (row.room_number) {
+    return <HandoffBadge label="HK check" variant="warning" />;
+  }
+  return <HandoffBadge label="Assign first" variant="neutral" />;
+}
+
+function isInHouse(row: FrontdeskBooking) {
+  return ["in_house", "checked_in"].includes(bookingStatus(row));
+}
+
+function isExpectedCheckIn(row: FrontdeskBooking) {
+  return ["confirmed", "reserved", "pending", "pending_guarantee"].includes(
+    bookingStatus(row)
+  );
 }
 
 export default function FrontDeskPage() {
@@ -195,17 +242,23 @@ export default function FrontDeskPage() {
     [rows, businessDate]
   );
 
+  const expectedCheckIns = useMemo(
+    () => arrivals.filter(isExpectedCheckIn),
+    [arrivals]
+  );
+
+  const checkedInToday = useMemo(
+    () => arrivals.filter(isInHouse),
+    [arrivals]
+  );
+
   const departures = useMemo(
     () => rows.filter((row) => row.check_out_date === businessDate),
     [rows, businessDate]
   );
 
   const inHouse = useMemo(
-    () =>
-      rows.filter((row) => {
-        const status = String(row.booking_status || "").toLowerCase();
-        return status === "in_house" || status === "checked_in";
-      }),
+    () => rows.filter(isInHouse),
     [rows]
   );
 
@@ -230,12 +283,14 @@ export default function FrontDeskPage() {
     <div className="page-grid">
       <PageHeader
         title="Front Desk"
-        subtitle={`Guest movement and room control for ${propertyCode} on ${businessDate}`}
+        subtitle="Guest movement and room control."
+        metadata={`${propertyCode} • ${businessDate}`}
         rightSlot={
           <>
-            <div className="pill">Arrivals: {arrivals.length}</div>
+            <div className="pill">Expected Check-ins: {expectedCheckIns.length}</div>
+            <div className="pill">Checked-In Today: {checkedInToday.length}</div>
             <div className="pill">Departures: {departures.length}</div>
-            <div className="pill">In House: {inHouse.length}</div>
+            <div className="pill">In-House: {inHouse.length}</div>
             <button className="small-btn" onClick={() => setShowWalkIn(true)}>
               New Walk-In
             </button>
@@ -250,7 +305,7 @@ export default function FrontDeskPage() {
               <div>
                 <h2 style={{ margin: 0 }}>Walk-In Booking</h2>
                 <div className="muted">
-                  Create an in-house guest directly from the front desk.
+                  Create an In-House guest directly from the Front Desk.
                 </div>
               </div>
               <button
@@ -308,7 +363,7 @@ export default function FrontDeskPage() {
                 </select>
               </label>
               <label>
-                Check In
+                Check-In
                 <input
                   type="date"
                   value={walkInForm.checkInDate}
@@ -322,7 +377,7 @@ export default function FrontDeskPage() {
                 />
               </label>
               <label>
-                Check Out
+                Check-Out
                 <input
                   type="date"
                   value={walkInForm.checkOutDate}
@@ -378,7 +433,7 @@ export default function FrontDeskPage() {
                   <option>Card</option>
                   <option>Bank Transfer</option>
                   <option>Mobile Money</option>
-                  <option>Pay at Checkout</option>
+                  <option>Pay at Check-Out</option>
                 </select>
               </label>
               <label>
@@ -428,7 +483,7 @@ export default function FrontDeskPage() {
       ) : null}
 
       {loading ? (
-        <div className="card">Loading front desk activity...</div>
+        <LoadingState label="Loading front desk activity..." />
       ) : (
         <>
           {error ? <div className="error-box">{error}</div> : null}
@@ -437,22 +492,24 @@ export default function FrontDeskPage() {
           <div className="kpi-grid">
             <KpiCard label="Total Bookings" value={String(rows.length)} />
             <KpiCard label="Arrivals Today" value={String(arrivals.length)} />
+            <KpiCard label="Expected Check-ins" value={String(expectedCheckIns.length)} />
+            <KpiCard label="Checked-In Today" value={String(checkedInToday.length)} />
             <KpiCard label="Departures Today" value={String(departures.length)} />
-            <KpiCard label="In House" value={String(inHouse.length)} />
+            <KpiCard label="In-House" value={String(inHouse.length)} />
             <KpiCard label="Walk-Ins" value={String(walkIns.length)} />
             <KpiCard label="No-Shows" value={String(noShows.length)} />
           </div>
 
           <div className="page-grid two-col">
             <div className="card">
-              <h2 style={{ marginTop: 0 }}>Arrivals</h2>
+              <h2 style={{ marginTop: 0 }}>Expected Check-ins</h2>
               <div className="muted" style={{ marginBottom: "14px" }}>
-                Assign room and complete check-in for arriving guests
+                Assign a clean room and complete Check-In for guests not yet In-House
               </div>
 
               <DataTable
-                rows={arrivals}
-                emptyMessage="No arrivals for this business date."
+                rows={expectedCheckIns}
+                emptyMessage="No expected Check-In guests for this business date."
                 columns={[
                   {
                     key: "id",
@@ -470,19 +527,41 @@ export default function FrontDeskPage() {
                     render: (row) => row.check_in_date,
                   },
                   {
+                    key: "room_type",
+                    header: "Room Type",
+                    render: (row) => row.room_type || "TBD",
+                  },
+                  {
+                    key: "channel",
+                    header: "Source",
+                    render: (row) => row.source || row.channel || "Direct",
+                  },
+                  {
+                    key: "payment_status",
+                    header: "Payment",
+                    render: (row) => <StatusBadge status={paymentStatus(row)} />,
+                  },
+                  {
                     key: "status",
                     header: "Status",
+                    render: (row) => <StatusBadge status={row.booking_status} />,
+                  },
+                  {
+                    key: "handoff",
+                    header: "PMS Handoff",
                     render: (row) => (
-                      <span className={statusClass(row.booking_status)}>
-                        {row.booking_status}
-                      </span>
+                      <div className="pms-inline-actions">
+                        {roomAssignmentHandoff(row)}
+                        {guaranteeHandoff(row)}
+                        {readinessHandoff(row)}
+                      </div>
                     ),
                   },
                   {
                     key: "room_assign",
                     header: "Assign Room",
                     render: (row) => (
-                      <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                      <div className="pms-assignment-control">
                         <input
                           value={roomInputs[row.id] || ""}
                           onChange={(e) =>
@@ -492,14 +571,6 @@ export default function FrontDeskPage() {
                             }))
                           }
                           placeholder="Room"
-                          style={{
-                            width: "88px",
-                            padding: "8px 10px",
-                            background: "#0b1220",
-                            color: "white",
-                            border: "1px solid var(--line)",
-                            borderRadius: "10px",
-                          }}
                         />
                         <button
                           className="small-btn"
@@ -513,14 +584,14 @@ export default function FrontDeskPage() {
                   },
                   {
                     key: "action",
-                    header: "Check In",
+                    header: "Check-In",
                     render: (row) => (
                       <button
                         className="small-btn"
                         disabled={busyBookingId === row.id}
                         onClick={() => handleCheckIn(row)}
                       >
-                        Check In
+                        Check-In
                       </button>
                     ),
                   },
@@ -556,22 +627,18 @@ export default function FrontDeskPage() {
                   {
                     key: "status",
                     header: "Status",
-                    render: (row) => (
-                      <span className={statusClass(row.booking_status)}>
-                        {row.booking_status}
-                      </span>
-                    ),
+                    render: (row) => <StatusBadge status={row.booking_status} />,
                   },
                   {
                     key: "action",
-                    header: "Check Out",
+                    header: "Check-Out",
                     render: (row) => (
                       <button
                         className="small-btn"
                         disabled={busyBookingId === row.id}
                         onClick={() => handleCheckOut(row)}
                       >
-                        Check Out
+                        Check-Out
                       </button>
                     ),
                   },
@@ -588,7 +655,7 @@ export default function FrontDeskPage() {
 
             <DataTable
               rows={inHouse}
-              emptyMessage="No in-house guests for this business date."
+              emptyMessage="No In-House guests for this business date."
               columns={[
                 {
                   key: "id",
@@ -602,12 +669,12 @@ export default function FrontDeskPage() {
                 },
                 {
                   key: "check_in_date",
-                  header: "Check In",
+                  header: "Check-In",
                   render: (row) => row.check_in_date,
                 },
                 {
                   key: "check_out_date",
-                  header: "Check Out",
+                  header: "Check-Out",
                   render: (row) => row.check_out_date,
                 },
                 {
@@ -618,10 +685,53 @@ export default function FrontDeskPage() {
                 {
                   key: "status",
                   header: "Status",
+                  render: (row) => <StatusBadge status={row.booking_status} />,
+                },
+              ]}
+            />
+          </div>
+
+          <div className="card">
+            <h2 style={{ marginTop: 0 }}>Checked-In Today</h2>
+            <div className="muted" style={{ marginBottom: "14px" }}>
+              Guests who arrived today and are already in house
+            </div>
+
+            <DataTable
+              rows={checkedInToday}
+              emptyMessage="No guests have checked in today."
+              columns={[
+                {
+                  key: "id",
+                  header: "Booking ID",
+                  render: (row) => `#${row.id}`,
+                },
+                {
+                  key: "guest_name",
+                  header: "Guest Name",
+                  render: (row) => row.guest_name,
+                },
+                {
+                  key: "room_number",
+                  header: "Room",
+                  render: (row) => row.room_number || "Assigned room pending",
+                },
+                {
+                  key: "status",
+                  header: "Status",
+                  render: (row) => <StatusBadge status={row.booking_status} />,
+                },
+                {
+                  key: "action",
+                  header: "Stay Actions",
                   render: (row) => (
-                    <span className={statusClass(row.booking_status)}>
-                      {row.booking_status}
-                    </span>
+                    <button
+                      className="small-btn"
+                      disabled={busyBookingId === row.id}
+                      onClick={() => handleCheckOut(row)}
+                    >
+                      Check-Out
+                    </button>
                   ),
                 },
               ]}
@@ -657,7 +767,9 @@ export default function FrontDeskPage() {
               </div>
               <DataTable
                 rows={[
-                  { label: "Arrivals", value: arrivals.length },
+                  { label: "Arrivals Today", value: arrivals.length },
+                  { label: "Expected Check-ins", value: expectedCheckIns.length },
+                  { label: "Checked-In Today", value: checkedInToday.length },
                   { label: "Departures", value: departures.length },
                   { label: "In-House", value: inHouse.length },
                   { label: "Walk-Ins", value: walkIns.length },

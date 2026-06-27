@@ -1,45 +1,157 @@
-import { Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { useEffect, useState, type ReactNode } from "react";
+import {
+  Navigate,
+  Route,
+  Routes,
+  useLocation,
+  useNavigate,
+} from "react-router-dom";
 import PmsShell from "./layout/PmsShell";
 import LoginPage from "./auth/LoginPage";
-import DashboardPage from "./modules/dashboard/DashboardPage";
-import ReservationsPage from "./modules/reservations/ReservationsPage";
-import FrontDeskPage from "./modules/frontdesk/FrontDeskPage";
-import HousekeepingPage from "./modules/housekeeping/HousekeepingPage";
-import FinanceDashboard from "./modules/finance/FinanceDashboard";
-import ReportsPage from "./modules/reports/ReportsPage";
-import NightAuditPage from "./modules/nightaudit/NightAuditPage";
-import AdminPage from "./modules/admin/AdminPage";
-import BookingAssistantPage from "./modules/booking/BookingAssistantPage";
+import { canAccessPath, getDefaultPath } from "./auth/accessControl";
+import {
+  clearStoredSession,
+  loadStoredSession,
+  saveStoredSession,
+} from "./auth/sessionStorage";
+import { pmsCompatibilityRoutes, pmsWorkflowRoutes } from "./routes/pmsRoutes";
+import { fetchCurrentUser, logoutPmsUser } from "./services/authService";
+import { DEV_AUTH_FALLBACK } from "./config/pms";
 import type { UserSession } from "./types/pms";
-import FoodCostingPage from "./modules/foodcosting/FoodCostingPage";
-function LoginRoute() {
+
+function LoginRoute({
+  session,
+  onLogin,
+}: {
+  session: UserSession | null;
+  onLogin: (session: UserSession) => void;
+}) {
   const navigate = useNavigate();
 
-  function handleLogin(_session: UserSession) {
-    navigate("/dashboard", { replace: true });
+  if (session) {
+    return <Navigate to={getDefaultPath(session)} replace />;
+  }
+
+  function handleLogin(nextSession: UserSession) {
+    onLogin(nextSession);
+    navigate(getDefaultPath(nextSession), { replace: true });
   }
 
   return <LoginPage onLogin={handleLogin} />;
 }
 
+function ProtectedRoute({
+  session,
+  children,
+}: {
+  session: UserSession | null;
+  children: ReactNode;
+}) {
+  const location = useLocation();
+
+  if (!session) {
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+  }
+
+  if (!canAccessPath(session, location.pathname)) {
+    return <Navigate to={getDefaultPath(session)} replace />;
+  }
+
+  return <>{children}</>;
+}
+
 export default function App() {
+  const [session, setSession] = useState<UserSession | null>(() =>
+    loadStoredSession()
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    async function hydrateAuthenticatedUser() {
+      const stored = loadStoredSession();
+      if (!stored?.access_token) {
+        if (stored && !DEV_AUTH_FALLBACK) {
+          clearStoredSession();
+          setSession(null);
+        }
+        return;
+      }
+      try {
+        const user = await fetchCurrentUser();
+        if (!cancelled) {
+          const nextSession = {
+            ...user,
+            access_token: stored.access_token,
+            expires_at: stored.expires_at,
+          };
+          saveStoredSession(nextSession);
+          setSession(nextSession);
+        }
+      } catch {
+        if (!cancelled) {
+          clearStoredSession();
+          setSession(null);
+        }
+      }
+    }
+    hydrateAuthenticatedUser();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function handleLogin(nextSession: UserSession) {
+    saveStoredSession(nextSession);
+    setSession(nextSession);
+  }
+
+  async function handleLogout() {
+    if (session?.access_token) {
+      try {
+        await logoutPmsUser();
+      } catch {
+        // Client-side token clearing is the logout behavior for JWT auth.
+      }
+    }
+    clearStoredSession();
+    setSession(null);
+  }
+
   return (
-    <PmsShell>
+    session ? (
+    <PmsShell session={session} onLogout={handleLogout}>
       <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/login" element={<LoginRoute />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/reservations" element={<ReservationsPage />} />
-        <Route path="/frontdesk" element={<FrontDeskPage />} />
-        <Route path="/housekeeping" element={<HousekeepingPage />} />
-        <Route path="/finance" element={<FinanceDashboard />} />
-        <Route path="/reports" element={<ReportsPage />} />
-        <Route path="/night-audit" element={<NightAuditPage />} />
-        <Route path="/booking-assistant" element={<BookingAssistantPage />} />
-        <Route path="/admin" element={<AdminPage />} />
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/food-costing" element={<FoodCostingPage />} />
+        <Route
+          path="/"
+          element={<Navigate to={getDefaultPath(session)} replace />}
+        />
+        <Route
+          path="/login"
+          element={<LoginRoute session={session} onLogin={handleLogin} />}
+        />
+        {[...pmsWorkflowRoutes, ...pmsCompatibilityRoutes].map((route) => (
+          <Route
+            key={route.path}
+            path={route.path}
+            element={
+              <ProtectedRoute session={session}>{route.element}</ProtectedRoute>
+            }
+          />
+        ))}
+        <Route
+          path="*"
+          element={<Navigate to={getDefaultPath(session)} replace />}
+        />
       </Routes>
     </PmsShell>
+    ) : (
+      <Routes>
+        <Route
+          path="/login"
+          element={<LoginRoute session={session} onLogin={handleLogin} />}
+        />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    )
   );
 }
