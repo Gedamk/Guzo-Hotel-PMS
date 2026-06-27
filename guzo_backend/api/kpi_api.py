@@ -1,9 +1,12 @@
 from datetime import date
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
+from guzo_backend.dependencies import get_db
 from guzo_backend.db.postgres_bookings import get_connection
 from guzo_backend.core.booking_status import ACTIVE_STATUSES
+from guzo_backend.services.pms_security_service import require_property_access
 
 router = APIRouter(prefix="/kpi", tags=["kpi"])
 
@@ -60,6 +63,13 @@ def compute_daily_kpi(property_code: str, target: date) -> DailyKpiOut:
 
 
 @router.get("/daily", response_model=DailyKpiOut)
-def get_daily_kpi(property_code: str, date: date):
+def get_daily_kpi(
+    property_code: str,
+    date: date,
+    db: Session = Depends(get_db),
+    x_pms_user_email: str | None = Header(None),
+):
+    property_code = property_code.strip().upper()
+    require_property_access(db, property_code=property_code, user_email=x_pms_user_email)
     kpi = compute_daily_kpi(property_code, date)
     return kpi

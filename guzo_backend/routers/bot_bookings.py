@@ -22,7 +22,7 @@ router = APIRouter(prefix="/bot", tags=["bot"])
 # Map property_code -> hotel name for response / message
 HOTEL_NAME_BY_PROPERTY = {
     "DRE001": "Dream Big  Hotel",   # keep double space to match your Sheets
-    "N&N002": "N&N Luxury Hotel",
+    "NN002": "N&N Luxury Hotel",
 }
 
 
@@ -34,6 +34,16 @@ class BotBookingRequest(BaseModel):
     channel: str = Field(..., example="Telegram Bot")
     total_amount_etb: float = Field(..., example=8000.0)
     currency: str = Field("ETB", example="ETB")
+    room_type: Optional[str] = Field(None, example="Family Room")
+    guest_email: Optional[str] = Field(None, example="guest@example.com")
+    guest_count: Optional[int] = Field(None, example=2)
+    payment_method: Optional[str] = Field(None, example="Card")
+    payment_status: Optional[str] = Field(None, example="pending")
+    guest_phone: Optional[str] = Field(None, example="+251911000000")
+    adults: Optional[int] = Field(None, example=2)
+    children: Optional[int] = Field(None, example=2)
+    purpose_of_visit: Optional[str] = Field(None, example="Leisure")
+    notes: Optional[str] = Field(None, example="Online reservation via Telegram")
 
 
 class BotBookingResponse(BaseModel):
@@ -100,6 +110,15 @@ async def create_bot_booking(payload: BotBookingRequest) -> BotBookingResponse:
             channel=payload.channel,
             total_amount_etb=payload.total_amount_etb,
             currency=payload.currency,
+            room_type=payload.room_type,
+            guest_email=payload.guest_email,
+            payment_method=payload.payment_method,
+            payment_status=payload.payment_status,
+            guest_phone=payload.guest_phone,
+            adults=payload.adults,
+            children=payload.children,
+            purpose_of_visit=payload.purpose_of_visit,
+            notes=payload.notes,
         )
     except Exception as e:
         # Surface the real error so we can see what's wrong
@@ -136,4 +155,3 @@ async def create_bot_booking(payload: BotBookingRequest) -> BotBookingResponse:
         status=status,
         message=message,
     )
-

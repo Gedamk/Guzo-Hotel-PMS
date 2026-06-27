@@ -17,8 +17,12 @@ from typing import Optional, Dict, Any
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
+
+from guzo_backend.dependencies import get_db
+from guzo_backend.services.pms_security_service import require_pms_permission
 
 
 # -----------------------------------------------------------------------------
@@ -47,6 +51,7 @@ router = APIRouter(prefix="/bookings", tags=["bookings-actions"])
 # Pydantic models
 # -----------------------------------------------------------------------------
 class AssignRoomRequest(BaseModel):
+    property_code: str
     room_number: str
     force: bool = False
 
@@ -61,7 +66,7 @@ class RoomAssignmentResult(BaseModel):
 # -----------------------------------------------------------------------------
 # Internal helpers
 # -----------------------------------------------------------------------------
-def fetch_booking(booking_id: int) -> Dict[str, Any]:
+def fetch_booking(booking_id: int, property_code: str) -> Dict[str, Any]:
     """
     Load a booking row by id using only REAL columns that exist in `bookings`.
     """
@@ -85,9 +90,9 @@ def fetch_booking(booking_id: int) -> Dict[str, Any]:
                     booking_status,
                     payment_status
                 FROM bookings
-                WHERE id = %s
+                WHERE id = %s AND property_code = %s
                 """,
-                (booking_id,),
+                (booking_id, property_code),
             )
             row = cur.fetchone()
             if not row:
@@ -184,7 +189,12 @@ def find_conflict_booking_id(
 
 
 @router.post("/{booking_id}/assign-room", response_model=RoomAssignmentResult)
-def assign_room(booking_id: int, payload: AssignRoomRequest):
+def assign_room(
+    booking_id: int,
+    payload: AssignRoomRequest,
+    db: Session = Depends(get_db),
+    x_pms_user_email: str | None = Header(None),
+):
     """
     Assign a physical room number to a booking.
 
@@ -193,7 +203,14 @@ def assign_room(booking_id: int, payload: AssignRoomRequest):
     - If a conflict exists, returns HTTP 409 with conflict_booking_id.
     - If OK (or forced), upserts into room_assignments.
     """
-    booking = fetch_booking(booking_id)
+    property_code = payload.property_code.strip().upper()
+    require_pms_permission(
+        db,
+        permission_key="frontdesk.assign_room",
+        property_code=property_code,
+        user_email=x_pms_user_email,
+    )
+    booking = fetch_booking(booking_id, property_code)
 
     room_number = payload.room_number.strip()
     if not room_number:
@@ -255,12 +272,24 @@ def assign_room(booking_id: int, payload: AssignRoomRequest):
 
 
 @router.post("/{booking_id}/clear-room", response_model=RoomAssignmentResult)
-def clear_room(booking_id: int):
+def clear_room(
+    booking_id: int,
+    property_code: str = Query(..., min_length=1),
+    db: Session = Depends(get_db),
+    x_pms_user_email: str | None = Header(None),
+):
     """
     Clear the assigned room for this booking (if any).
     """
     # Ensure the booking exists
-    fetch_booking(booking_id)
+    property_code = property_code.strip().upper()
+    require_pms_permission(
+        db,
+        permission_key="frontdesk.assign_room",
+        property_code=property_code,
+        user_email=x_pms_user_email,
+    )
+    fetch_booking(booking_id, property_code)
 
     try:
         conn = get_connection()
@@ -274,11 +303,14 @@ def clear_room(booking_id: int):
             with conn.cursor() as cur:
                 cur.execute(
                     """
-                    DELETE FROM room_assignments
-                    WHERE booking_id = %s
-                    RETURNING room_number
+                    DELETE FROM room_assignments ra
+                    USING bookings b
+                    WHERE ra.booking_id = %s
+                      AND b.id = ra.booking_id
+                      AND b.property_code = %s
+                    RETURNING ra.room_number
                     """,
-                    (booking_id,),
+                    (booking_id, property_code),
                 )
                 row = cur.fetchone()
                 if row:

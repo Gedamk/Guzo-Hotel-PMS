@@ -6,6 +6,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from guzo_backend.services.business_date_lock_service import assert_business_date_editable
+from guzo_backend.services.finance_transaction_service import post_finance_transaction
 from guzo_backend.services.pms_security_service import record_pms_audit_log
 from guzo_backend.modules.food_costing.models import (
     Ingredient,
@@ -1134,9 +1135,16 @@ def create_pos_sale(db: Session, data, actor_email: str | None = None):
                 db.add(movement)
 
     if data.room_charge_booking_id:
-        assert_business_date_editable(db, property_code, data.business_date)
+        assert_business_date_editable(
+            db,
+            property_code=property_code,
+            business_date=data.business_date,
+            module="fnb",
+            action="post_room_charge",
+        )
         folio_id = _get_or_create_folio(db, property_code, int(data.room_charge_booking_id))
         posted_ids: list[int] = []
+        ledger_ids: list[int] = []
         for category, description, amount in [
             ("fnb", f"{data.outlet_name}: {data.menu_item_name} x {data.quantity_sold}", total_revenue),
             ("service_charge", f"F&B service charge {service_rate * 100}%", _as_decimal(sale.service_charge_amount)),
@@ -1144,6 +1152,24 @@ def create_pos_sale(db: Session, data, actor_email: str | None = None):
         ]:
             if amount <= 0:
                 continue
+            ledger = post_finance_transaction(
+                db,
+                property_code=property_code,
+                business_date=data.business_date,
+                folio_id=folio_id,
+                booking_id=int(data.room_charge_booking_id),
+                transaction_type="charge",
+                amount=amount,
+                currency=PROPERTY_BASE_CURRENCIES.get(property_code, "ETB"),
+                direction="debit",
+                reference=description,
+                source_document_type="fnb_pos_sale",
+                source_document_id=sale.id,
+                created_by=actor_email,
+                idempotency_key=f"fnb-pos:{property_code}:{sale.id}:{category}",
+                metadata={"category": category, "outlet": data.outlet_name},
+            )
+            ledger_ids.append(int(ledger["id"]))
             row = db.execute(
                 text(
                     """
@@ -1184,6 +1210,7 @@ def create_pos_sale(db: Session, data, actor_email: str | None = None):
                 "booking_id": data.room_charge_booking_id,
                 "folio_id": folio_id,
                 "transaction_ids": posted_ids,
+                "ledger_transaction_ids": ledger_ids,
                 "total_revenue": str(total_revenue),
                 "tax": str(sale.tax_amount or 0),
                 "service_charge": str(sale.service_charge_amount or 0),

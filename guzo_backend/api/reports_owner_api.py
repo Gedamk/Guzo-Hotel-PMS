@@ -2,9 +2,13 @@
 #
 # Monthly owner summary: rooms available, rooms sold, revenue, ADR, OCC%, RevPAR.
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Header
 from pydantic import BaseModel
 from typing import List
+from sqlalchemy.orm import Session
+
+from guzo_backend.dependencies import get_db
+from guzo_backend.services.pms_security_service import require_global_admin
 
 import os
 import psycopg2
@@ -50,8 +54,16 @@ def get_db_conn():
 
 
 @router.get("/owner_summary", response_model=List[OwnerSummaryRow])
-def owner_summary(year: int, month: int, conn=Depends(get_db_conn)):
+def owner_summary(
+    year: int,
+    month: int,
+    conn=Depends(get_db_conn),
+    db: Session = Depends(get_db),
+    x_pms_user_email: str | None = Header(None),
+):
     import calendar
+
+    require_global_admin(db, user_email=x_pms_user_email)
 
     days_in_month = calendar.monthrange(year, month)[1]
 

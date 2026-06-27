@@ -20,6 +20,7 @@ from __future__ import annotations
 import os
 import logging
 from typing import Dict, Any, Optional, List
+from datetime import datetime
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -96,6 +97,7 @@ def _insert_booking_core(
     source: str,
     room_type: Optional[str] = None,
     payment_method: Optional[str] = None,
+    notes: Optional[str] = None,
 ) -> int:
     """
     Low-level insert into bookings table. Returns new booking id.
@@ -111,11 +113,13 @@ def _insert_booking_core(
     # Derive rate_per_night_etb from total_amount_etb and nights
     nights_for_rate = nights if nights and nights > 0 else 1
     rate_per_night = float(total_amount_etb) / float(nights_for_rate)
+    confirmation_id = f"GZ-{property_code}-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}"
 
     with conn.cursor(cursor_factory=RealDictCursor) as cur:
         cur.execute(
             """
             INSERT INTO bookings (
+                confirmation_id,
                 hotel_id,
                 guest_name,
                 guest_email,
@@ -130,9 +134,11 @@ def _insert_booking_core(
                 payment_status,
                 source,
                 property_code,
+                notes,
                 created_at
             )
             VALUES (
+                %s,           -- confirmation_id
                 %s,           -- hotel_id
                 %s,           -- guest_name
                 %s,           -- guest_email
@@ -147,11 +153,13 @@ def _insert_booking_core(
                 %s,           -- payment_status
                 %s,           -- source
                 %s,           -- property_code
+                %s,           -- notes
                 NOW()         -- created_at
             )
             RETURNING id;
             """,
             (
+                confirmation_id,
                 hotel_id,
                 guest_name,
                 guest_email,
@@ -166,6 +174,7 @@ def _insert_booking_core(
                 payment_status,
                 source,
                 property_code,
+                notes,
             ),
         )
         row = cur.fetchone()
@@ -313,6 +322,15 @@ def insert_booking_from_bot(
     channel: str,
     total_amount_etb: float,
     currency: str = "ETB",
+    room_type: Optional[str] = None,
+    guest_email: Optional[str] = None,
+    payment_method: Optional[str] = None,
+    payment_status: Optional[str] = None,
+    guest_phone: Optional[str] = None,
+    adults: Optional[int] = None,
+    children: Optional[int] = None,
+    purpose_of_visit: Optional[str] = None,
+    notes: Optional[str] = None,
 ) -> Optional[int]:
     """
     Insert a booking created by Telegram bot and return new booking id.
@@ -344,12 +362,37 @@ def insert_booking_from_bot(
 
             hotel_id = hotel["id"]
 
-            # For now: no room_type / payment_method / guest_email at DB layer
-            room_type = None
-            payment_method = None
-            booking_status = "confirmed"
-            payment_status = "paid"  # change to 'unpaid' if you prefer
+            payment_status = (payment_status or "pending").strip().lower()
+            guaranteed_payment_statuses = {
+                "paid",
+                "authorized",
+                "approved",
+                "deposit_paid",
+                "guaranteed",
+                "guarantee_on_file",
+                "card_authorized",
+            }
+            booking_status = (
+                "confirmed"
+                if payment_status in guaranteed_payment_statuses
+                else "pending_guarantee"
+            )
             source = channel or "Telegram Bot"
+            registration_parts = [
+                "Online Reservation Form: Telegram",
+                f"Guarantee Status: {'guaranteed' if booking_status == 'confirmed' else 'pending_guarantee'}",
+                f"Adults: {adults}" if adults is not None else None,
+                f"Children: {children}" if children is not None else None,
+                f"Guest Phone: {guest_phone}" if guest_phone else None,
+                f"Purpose: {purpose_of_visit}" if purpose_of_visit else None,
+                f"Guest Email: {guest_email}" if guest_email else None,
+                f"Payment Method: {payment_method}" if payment_method else None,
+                f"Payment Status: {payment_status}",
+                notes.strip() if notes else None,
+            ]
+            registration_notes = " | ".join(
+                part for part in registration_parts if part
+            )
 
             booking_id = _insert_booking_core(
                 conn,
@@ -359,13 +402,14 @@ def insert_booking_from_bot(
                 check_out_date=check_out,
                 nights=nights,
                 guest_name=guest_name,
-                guest_email=None,
+                guest_email=guest_email,
                 total_amount_etb=float(total_amount_etb),
                 booking_status=booking_status,
                 payment_status=payment_status,
                 source=source,
                 room_type=room_type,
                 payment_method=payment_method,
+                notes=registration_notes,
             )
             return booking_id
     finally:

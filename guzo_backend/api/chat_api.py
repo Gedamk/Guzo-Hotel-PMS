@@ -11,7 +11,7 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 class ChatMessageRequest(BaseModel):
     message: str
-    property_code: Optional[str] = None
+    property_code: str
     guest_name: Optional[str] = None
     channel: Optional[str] = "web"
 

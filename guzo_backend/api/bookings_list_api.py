@@ -8,10 +8,13 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from guzo_backend.core.postgres_bookings import get_connection
+from guzo_backend.dependencies import get_db
+from guzo_backend.services.pms_security_service import require_property_access
 
 router = APIRouter(prefix="/frontdesk", tags=["frontdesk-bookings"])
 
@@ -42,6 +45,9 @@ def list_frontdesk_bookings(
     date_str: Optional[str] = Query(
         None, alias="date", description="Business date in YYYY-MM-DD"
     ),
+    property_code: str = Query(..., alias="property", min_length=1),
+    db: Session = Depends(get_db),
+    x_pms_user_email: str | None = Header(None),
 ):
     """
     Return bookings around the given business date, across all properties.
@@ -54,6 +60,8 @@ def list_frontdesk_bookings(
 
     if scope != "today":
         raise HTTPException(status_code=400, detail="Only scope='today' is supported")
+    property_code = property_code.strip().upper()
+    require_property_access(db, property_code=property_code, user_email=x_pms_user_email)
 
     # Parse date (default = today)
     if date_str:
@@ -101,6 +109,8 @@ def list_frontdesk_bookings(
                 LEFT JOIN room_assignments ra
                     ON ra.booking_id = b.id
                 WHERE
+                    h.property_code = %(property_code)s
+                    AND
                     (
                         -- stays overlapping the business date
                         b.check_in_date <= %(biz)s
@@ -118,6 +128,7 @@ def list_frontdesk_bookings(
                 """,
                 {
                     "biz": business_date,
+                    "property_code": property_code,
                     "biz_plus_7": business_date.replace(day=business_date.day)  # just to satisfy mapping, we will override below
                 },
             )
@@ -156,6 +167,8 @@ def list_frontdesk_bookings(
                 LEFT JOIN room_assignments ra
                     ON ra.booking_id = b.id
                 WHERE
+                    h.property_code = %(property_code)s
+                    AND
                     (
                         b.check_in_date <= %(biz)s
                         AND b.check_out_date > %(biz)s
@@ -172,6 +185,7 @@ def list_frontdesk_bookings(
                 {
                     "biz": biz,
                     "biz_plus_7": biz_plus_7,
+                    "property_code": property_code,
                 },
             )
 

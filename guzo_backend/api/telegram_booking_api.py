@@ -9,6 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from guzo_backend.dependencies import get_db
+from guzo_backend.services.pms_security_service import record_pms_audit_log
 
 router = APIRouter(
     prefix="/integrations/telegram",
@@ -24,6 +25,28 @@ def normalize_property_code(raw: str) -> str:
     if not raw:
         return raw
     return raw.strip().upper()
+
+
+def _get_hotel_id(db: Session, property_code: str) -> int:
+    row = db.execute(
+        text(
+            """
+            SELECT id
+            FROM hotels
+            WHERE property_code = :property_code
+            LIMIT 1
+            """
+        ),
+        {"property_code": property_code},
+    ).first()
+
+    if not row:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"No hotel found for property_code={property_code}",
+        )
+
+    return int(row[0])
 
 
 class TelegramBookingCreate(BaseModel):
@@ -79,6 +102,7 @@ def create_booking_from_telegram(
     # Generate a simple confirmation ID if you don't send one from Telegram
     # Example: GZ-TG-20251202-142355
     confirmation_id = f"GZ-TG-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}"
+    hotel_id = _get_hotel_id(db, property_code)
 
     # Basic default status/channel for Telegram bookings
     booking_status = "confirmed"
@@ -89,6 +113,7 @@ def create_booking_from_telegram(
             """
             INSERT INTO bookings (
                 confirmation_id,
+                hotel_id,
                 guest_name,
                 check_in_date,
                 check_out_date,
@@ -102,6 +127,7 @@ def create_booking_from_telegram(
             )
             VALUES (
                 :confirmation_id,
+                :hotel_id,
                 :guest_name,
                 :check_in_date,
                 :check_out_date,
@@ -121,6 +147,7 @@ def create_booking_from_telegram(
             insert_sql,
             {
                 "confirmation_id": confirmation_id,
+                "hotel_id": hotel_id,
                 "guest_name": payload.guest_name.strip(),
                 "check_in_date": payload.check_in_date,
                 "check_out_date": payload.check_out_date,
@@ -135,6 +162,25 @@ def create_booking_from_telegram(
             },
         )
         new_id_row = result.fetchone()
+        booking_id = int(new_id_row[0]) if new_id_row else None
+        record_pms_audit_log(
+            db,
+            property_code=property_code,
+            user_email="telegram.bot@guzo.local",
+            module="reservations",
+            action="telegram_booking_created",
+            record_type="booking",
+            record_id=booking_id,
+            new_value={
+                "confirmation_id": confirmation_id,
+                "guest_name": payload.guest_name.strip(),
+                "check_in_date": payload.check_in_date.isoformat(),
+                "check_out_date": payload.check_out_date.isoformat(),
+                "room_type": payload.room_type,
+                "total_amount_etb": payload.total_amount_etb,
+                "channel": channel,
+            },
+        )
         db.commit()
 
     except Exception as exc:  # noqa: BLE001
@@ -146,6 +192,6 @@ def create_booking_from_telegram(
 
     return {
         "ok": True,
-        "booking_id": int(new_id_row[0]) if new_id_row else None,
+        "booking_id": booking_id,
         "confirmation_id": confirmation_id,
     }

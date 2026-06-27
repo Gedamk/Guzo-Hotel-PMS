@@ -7,11 +7,14 @@ import io
 import csv
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Response
+from fastapi import APIRouter, Depends, Header, HTTPException, Query, Response
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from sqlalchemy.orm import Session
 
 from guzo_backend.db.postgres_bookings import get_connection  # you already have this
 from guzo_backend.core.auth import verify_admin_token  # small helper you'll add
+from guzo_backend.dependencies import get_db
+from guzo_backend.services.pms_security_service import require_property_access
 
 router = APIRouter(prefix="/reports", tags=["reports-periodic"])
 
@@ -47,7 +50,7 @@ def _parse_year_month(year: int, month: int) -> tuple[dt.date, dt.date]:
   return start, end
 
 
-def _build_periodic_csv(start: dt.date, end: dt.date) -> bytes:
+def _build_periodic_csv(start: dt.date, end: dt.date, property_code: str) -> bytes:
   """
   Aggregate bookings per hotel & output CSV bytes.
   """
@@ -65,10 +68,11 @@ def _build_periodic_csv(start: dt.date, end: dt.date) -> bytes:
       JOIN hotels h ON h.id = b.hotel_id
       WHERE b.check_in_date <= %s
         AND b.check_out_date >= %s
+        AND b.property_code = %s
       GROUP BY h.id, h.hotel_name, b.property_code
       ORDER BY h.hotel_name, b.property_code;
     """
-    cur.execute(sql, (end, start))
+    cur.execute(sql, (end, start, property_code))
     rows = cur.fetchall()
 
   buf = io.StringIO()
@@ -109,12 +113,17 @@ def _build_periodic_csv(start: dt.date, end: dt.date) -> bytes:
 def weekly_excel_report(
   year: int,
   week: int,
+  property_code: str = Query(..., min_length=1),
   creds: HTTPAuthorizationCredentials = Depends(security),
+  db: Session = Depends(get_db),
+  x_pms_user_email: str | None = Header(None),
 ):
   verify_admin_token(creds.credentials)  # simple token check
+  property_code = property_code.strip().upper()
+  require_property_access(db, property_code=property_code, user_email=x_pms_user_email)
 
   start, end = _parse_year_week(year, week)
-  content = _build_periodic_csv(start, end)
+  content = _build_periodic_csv(start, end, property_code)
   filename = f"guzo_weekly_report_{year}-W{week:02d}.csv"
 
   return Response(
@@ -128,12 +137,17 @@ def weekly_excel_report(
 def monthly_excel_report(
   year: int,
   month: int,
+  property_code: str = Query(..., min_length=1),
   creds: HTTPAuthorizationCredentials = Depends(security),
+  db: Session = Depends(get_db),
+  x_pms_user_email: str | None = Header(None),
 ):
   verify_admin_token(creds.credentials)
+  property_code = property_code.strip().upper()
+  require_property_access(db, property_code=property_code, user_email=x_pms_user_email)
 
   start, end = _parse_year_month(year, month)
-  content = _build_periodic_csv(start, end)
+  content = _build_periodic_csv(start, end, property_code)
   filename = f"guzo_monthly_report_{year}-{month:02d}.csv"
 
   return Response(

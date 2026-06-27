@@ -15,7 +15,7 @@ import os
 from typing import Generator
 
 from sqlalchemy import create_engine
-from sqlalchemy.engine import URL
+from sqlalchemy.engine import URL, make_url
 from sqlalchemy.orm import sessionmaker
 
 # -------------------------------------------------------------------
@@ -26,6 +26,8 @@ from sqlalchemy.orm import sessionmaker
 #   psql "postgresql://guzo_user@localhost:5432/guzo_db"
 #   Password for user guzo_user:  <--- THAT password goes below
 #
+TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
+
 DB_USER = os.getenv("GUZO_DB_USER") or os.getenv("POSTGRES_USER", "guzo_user")
 DB_NAME = os.getenv("GUZO_DB_NAME") or os.getenv("POSTGRES_DB", "guzo_db")
 DB_HOST = os.getenv("GUZO_DB_HOST") or os.getenv("POSTGRES_HOST", "localhost")
@@ -40,13 +42,17 @@ DB_PASSWORD = os.getenv("GUZO_DB_PASSWORD") or os.getenv("POSTGRES_PASSWORD", ""
 # -------------------------------------------------------------------
 # Build SQLAlchemy URL
 # -------------------------------------------------------------------
-SQLALCHEMY_DATABASE_URL = URL.create(
-    "postgresql+psycopg2",
-    username=DB_USER,
-    password=DB_PASSWORD,
-    host=DB_HOST,
-    port=DB_PORT,
-    database=DB_NAME,
+SQLALCHEMY_DATABASE_URL = (
+    make_url(TEST_DATABASE_URL)
+    if TEST_DATABASE_URL
+    else URL.create(
+        "postgresql+psycopg2",
+        username=DB_USER,
+        password=DB_PASSWORD,
+        host=DB_HOST,
+        port=DB_PORT,
+        database=DB_NAME,
+    )
 )
 
 # Engine with basic health-checking

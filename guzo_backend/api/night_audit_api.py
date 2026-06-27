@@ -17,7 +17,13 @@ from guzo_backend.services.business_date_lock_service import (
     lock_business_date,
     reopen_business_date,
 )
-from guzo_backend.services.pms_security_service import record_pms_audit_log, require_pms_permission
+from guzo_backend.services.finance_transaction_service import post_finance_transaction
+from guzo_backend.services.payment_lifecycle_service import forfeit_deposit
+from guzo_backend.services.pms_security_service import (
+    record_pms_audit_log,
+    require_pms_permission,
+    require_property_access,
+)
 
 router = APIRouter(prefix="/night-audit", tags=["night-audit"])
 
@@ -59,7 +65,8 @@ def _table_exists(db: Session, table_name: str) -> bool:
                 SELECT EXISTS (
                   SELECT 1
                   FROM information_schema.tables
-                  WHERE table_name = :table_name
+                  WHERE table_schema = current_schema()
+                    AND table_name = :table_name
                 )
                 """
             ),
@@ -74,7 +81,8 @@ def _table_columns(db: Session, table_name: str) -> set[str]:
             """
             SELECT column_name
             FROM information_schema.columns
-            WHERE table_name = :table_name
+            WHERE table_schema = current_schema()
+              AND table_name = :table_name
             """
         ),
         {"table_name": table_name},
@@ -282,6 +290,24 @@ def _post_folio_charge_once(
             "amount": float(existing["amount"] or 0),
         }
 
+    ledger = post_finance_transaction(
+        db,
+        property_code=property_code,
+        business_date=business_date,
+        folio_id=folio_id,
+        booking_id=booking_id,
+        transaction_type="charge",
+        amount=amount,
+        currency=currency,
+        direction="debit",
+        reference=description,
+        source_document_type="night_audit_posting",
+        source_document_id=f"{booking_id}:{posting_type}:{business_date.isoformat()}",
+        created_by="night_audit",
+        idempotency_key=f"night-audit:{property_code}:{business_date.isoformat()}:{booking_id}:{posting_type}",
+        metadata={"posting_type": posting_type, "category": category},
+    )
+
     txn = db.execute(
         text(
             """
@@ -364,6 +390,7 @@ def _post_folio_charge_once(
         "duplicate": False,
         "posting_type": posting_type,
         "folio_transaction_id": int(txn[0]),
+        "ledger_transaction_id": int(ledger["id"]),
         "amount": float(amount),
     }
 
@@ -563,6 +590,32 @@ def _process_no_show_candidates(db: Session, property_code: str, business_date: 
             ),
             {"booking_id": booking_id, "property_code": property_code},
         )
+        deposit_forfeiture = None
+        if _table_exists(db, "deposit_accounts"):
+            deposit_account = db.execute(
+                text(
+                    """
+                    SELECT id FROM deposit_accounts
+                    WHERE property_code = :property_code
+                      AND booking_id = :booking_id
+                      AND refundable = FALSE
+                      AND paid_amount > transferred_amount + refunded_amount + forfeited_amount
+                    LIMIT 1
+                    """
+                ),
+                {"property_code": property_code, "booking_id": booking_id},
+            ).first()
+            if deposit_account:
+                deposit_forfeiture = forfeit_deposit(
+                    db,
+                    property_code=property_code,
+                    account_id=int(deposit_account.id),
+                    business_date=business_date,
+                    amount=None,
+                    reason="Non-refundable deposit forfeited after night-audit no-show processing.",
+                    actor="night_audit",
+                    idempotency_key=f"no-show-forfeit:{property_code}:{business_date.isoformat()}:{booking_id}",
+                )
         results.append(
             {
                 "booking_id": booking_id,
@@ -570,6 +623,7 @@ def _process_no_show_candidates(db: Session, property_code: str, business_date: 
                 "no_show_charge": float(no_show_charge),
                 "posted": posted["posted"],
                 "duplicate": posted["duplicate"],
+                "deposit_forfeiture": deposit_forfeiture,
             }
         )
     return {
@@ -630,7 +684,12 @@ def _archive_night_audit_report(db: Session, property_code: str, business_date: 
 
 
 def _night_audit_report_package(db: Session, property_code: str, business_date: date) -> dict:
-    finance_report = get_finance_control_report(property_code=property_code, business_date=business_date, db=db)
+    finance_report = get_finance_control_report(
+        property_code=property_code,
+        business_date=business_date,
+        db=db,
+        x_pms_user_email=None,
+    )
     occupancy = db.execute(
         text(
             """
@@ -962,6 +1021,7 @@ def _finance_exceptions(db: Session, property_code: str, business_date: date) ->
             property_code=property_code,
             business_date=business_date,
             db=db,
+            x_pms_user_email=None,
         )
     except Exception as exc:
         db.rollback()
@@ -1578,7 +1638,10 @@ def get_night_audit_status(
     property_code: str = Query(..., description="Hotel property code, e.g. DRE001"),
     business_date: Optional[date] = Query(None, description="Business date to audit"),
     db: Session = Depends(get_db),
+    x_pms_user_email: str | None = Header(None),
 ):
+    property_code = _normalize_property_code(property_code)
+    require_property_access(db, property_code=property_code, user_email=x_pms_user_email)
     audit_date = business_date or date.today()
     next_business_date = _next_day(audit_date)
     lock_row = None
@@ -1618,7 +1681,10 @@ def get_night_audit_readiness(
     property_code: str = Query(..., description="Hotel property code, e.g. DRE001"),
     business_date: date = Query(..., description="Business date to audit"),
     db: Session = Depends(get_db),
+    x_pms_user_email: str | None = Header(None),
 ):
+    property_code = _normalize_property_code(property_code)
+    require_property_access(db, property_code=property_code, user_email=x_pms_user_email)
     validation = _night_audit_exception_payload(db, property_code, business_date)
     department_counts = validation["department_counts"]
     checks = [
@@ -1677,7 +1743,10 @@ def get_night_audit_exceptions(
     property_code: str = Query(..., description="Hotel property code, e.g. DRE001"),
     business_date: date = Query(..., description="Business date to audit"),
     db: Session = Depends(get_db),
+    x_pms_user_email: str | None = Header(None),
 ):
+    property_code = _normalize_property_code(property_code)
+    require_property_access(db, property_code=property_code, user_email=x_pms_user_email)
     return _night_audit_exception_payload(db, property_code, business_date)
 
 

@@ -87,13 +87,13 @@ def _get_total_rooms(property_code: Optional[str]) -> Optional[int]:
 # -----------------------------------------------------------
 def get_daily_manager_report(
     report_date: Any,
-    property_code: Optional[str] = None,
+    property_code: str,
 ) -> Dict[str, Any]:
     """
-    Build a Daily Manager / GM report for a given date and (optional) hotel.
+    Build a Daily Manager / GM report for a given date and hotel.
 
     - report_date: date, datetime, or 'YYYY-MM-DD' string
-    - property_code: like 'DRE001', 'N&N002', or None for "all properties"
+    - property_code: required hotel code such as 'DRE001'
 
     Returns a dict:
 
@@ -129,24 +129,21 @@ def get_daily_manager_report(
       (this is "arrival-based" revenue; good as a first version)
     """
     target_date = _parse_date(report_date)
+    property_code = str(property_code or "").strip().upper()
+    if not property_code or property_code in {"ALL", "*"}:
+        raise ValueError("property_code is required for daily manager reports")
 
-    params: Dict[str, Any] = {"report_date": target_date}
-    hotel_filter_sql = ""
+    params: Dict[str, Any] = {"report_date": target_date, "property_code": property_code}
+    hotel_filter_sql = """
+        AND hotel_id = (
+            SELECT id FROM hotels WHERE property_code = %(property_code)s
+        )
+    """
     hotel_scope_info: Dict[str, Any] = {
-        "scope": "all",
-        "property_code": None,
-        "name": "All Properties",
+        "scope": "single",
+        "property_code": property_code,
+        "name": property_code,
     }
-
-    if property_code:
-        hotel_filter_sql = """
-            AND hotel_id = (
-                SELECT id FROM hotels WHERE property_code = %(property_code)s
-            )
-        """
-        params["property_code"] = property_code
-        hotel_scope_info["scope"] = "single"
-        hotel_scope_info["property_code"] = property_code
 
     conn = get_connection()
     try:
@@ -155,20 +152,19 @@ def get_daily_manager_report(
                 # ----------------------------------------
                 # Resolve hotel name (if single property)
                 # ----------------------------------------
-                if property_code:
-                    cur.execute(
-                        """
-                        SELECT name
-                        FROM hotels
-                        WHERE property_code = %(property_code)s
-                        """,
-                        params,
-                    )
-                    row = cur.fetchone()
-                    if row:
-                        hotel_scope_info["name"] = row[0]
-                    else:
-                        hotel_scope_info["name"] = f"Unknown ({property_code})"
+                cur.execute(
+                    """
+                    SELECT name
+                    FROM hotels
+                    WHERE property_code = %(property_code)s
+                    """,
+                    params,
+                )
+                row = cur.fetchone()
+                if row:
+                    hotel_scope_info["name"] = row[0]
+                else:
+                    hotel_scope_info["name"] = f"Unknown ({property_code})"
 
                 # ----------------------------------------
                 # Count arrivals, departures, in-house

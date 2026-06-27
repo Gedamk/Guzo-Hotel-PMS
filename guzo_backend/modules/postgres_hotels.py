@@ -19,14 +19,14 @@ def get_pg_connection():
     """Create a PostgreSQL connection using env variables."""
     load_dotenv()
 
-    host = os.getenv("DB_HOST", "localhost")
-    port = os.getenv("DB_PORT", "5432")
-    name = os.getenv("DB_NAME", "guzo_db")
-    user = os.getenv("DB_USER", "guzo_user")
-    password = os.getenv("DB_PASSWORD")
+    host = os.getenv("DB_HOST") or os.getenv("GUZO_DB_HOST", "localhost")
+    port = os.getenv("DB_PORT") or os.getenv("GUZO_DB_PORT", "5432")
+    name = os.getenv("DB_NAME") or os.getenv("GUZO_DB_NAME", "guzo_db")
+    user = os.getenv("DB_USER") or os.getenv("GUZO_DB_USER", "guzo_user")
+    password = os.getenv("DB_PASSWORD") or os.getenv("GUZO_DB_PASSWORD")
 
     if not password:
-        raise RuntimeError("DB_PASSWORD is not set in .env")
+        raise RuntimeError("DB_PASSWORD or GUZO_DB_PASSWORD is not set in .env")
 
     logger.info(
         "Connecting to PostgreSQL %s as %s@%s:%s",

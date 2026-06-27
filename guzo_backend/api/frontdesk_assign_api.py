@@ -2,12 +2,13 @@
 
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from ..dependencies import get_db
+from ..services.pms_security_service import record_pms_audit_log, require_pms_permission
 
 router = APIRouter(prefix="/frontdesk", tags=["frontdesk-assign"])
 
@@ -19,22 +20,33 @@ class AssignRoomPayload(BaseModel):
 
 
 @router.post("/assign-room", status_code=status.HTTP_200_OK)
-def assign_room(payload: AssignRoomPayload, db: Session = Depends(get_db)):
+def assign_room(
+    payload: AssignRoomPayload,
+    db: Session = Depends(get_db),
+    x_pms_user_email: str | None = Header(None),
+):
     """
     Assign a physical room number to an existing booking.
 
     We keep it simple:
     - update `bookings.room_number`
-    - set status to 'in_house'
+    - keep booking status unchanged until the check-in endpoint runs
     """
+
+    property_code = payload.property_code.strip().upper() if payload.property_code else None
+    actor = require_pms_permission(
+        db,
+        permission_key="frontdesk.room_move",
+        property_code=property_code,
+        user_email=x_pms_user_email,
+    )
 
     try:
         update_sql = text(
             """
             UPDATE bookings
             SET
-                room_number = :room_number,
-                status      = 'in_house'
+                room_number = :room_number
             WHERE id = :booking_id
             """
         )
@@ -45,6 +57,16 @@ def assign_room(payload: AssignRoomPayload, db: Session = Depends(get_db)):
                 "room_number": payload.room_number,
                 "booking_id": payload.booking_id,
             },
+        )
+        record_pms_audit_log(
+            db,
+            property_code=property_code,
+            user_email=actor["email"],
+            module="frontdesk",
+            action="room_assigned",
+            record_type="booking",
+            record_id=payload.booking_id,
+            new_value={"room_number": payload.room_number},
         )
         db.commit()
 

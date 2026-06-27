@@ -23,7 +23,7 @@ def main() -> None:
         ("DRE001", "201", "vacant_clean"),
         ("DRE001", "202", "vacant_dirty"),
         ("DRE001", "203", "out_of_order"),
-        ("DRE001", "204", "in_service"),
+        ("DRE001", "204", "service_in_progress"),
 
         # N&N Luxury Hotel (N&N002)
         ("N&N002", "301", "vacant_clean"),

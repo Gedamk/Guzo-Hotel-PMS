@@ -11,10 +11,13 @@ from __future__ import annotations
 from datetime import date
 from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from pydantic import BaseModel
+from sqlalchemy.orm import Session
 
 from guzo_backend.core.postgres_bookings import get_connection
+from guzo_backend.dependencies import get_db
+from guzo_backend.services.pms_security_service import require_pms_permission, require_property_access
 
 router = APIRouter(prefix="/rooms", tags=["rooms-status"])
 
@@ -44,6 +47,8 @@ def list_room_status(
     business_date: Optional[str] = Query(
         None, description="Business date YYYY-MM-DD, defaults to today"
     ),
+    db: Session = Depends(get_db),
+    x_pms_user_email: str | None = Header(None),
 ):
     """
     Return all rooms for the property, with:
@@ -51,6 +56,8 @@ def list_room_status(
     - today's in-house booking (if any) via room_assignments + bookings.
     """
 
+    property_code = property_code.strip().upper()
+    require_property_access(db, property_code=property_code, user_email=x_pms_user_email)
     if business_date is None:
         biz = date.today()
     else:
@@ -132,7 +139,11 @@ def list_room_status(
 
 
 @router.post("/status/update")
-def update_room_status(payload: RoomStatusUpdate):
+def update_room_status(
+    payload: RoomStatusUpdate,
+    db: Session = Depends(get_db),
+    x_pms_user_email: str | None = Header(None),
+):
     """
     Update the housekeeping status of a room.
 
@@ -142,6 +153,13 @@ def update_room_status(payload: RoomStatusUpdate):
     - 'ooo'    -> out of order
     """
 
+    property_code = payload.property_code.strip().upper()
+    require_pms_permission(
+        db,
+        permission_key="housekeeping.room_status_override",
+        property_code=property_code,
+        user_email=x_pms_user_email,
+    )
     status_norm = payload.status.strip().lower()
     if status_norm not in ("clean", "dirty", "ooo"):
         raise HTTPException(
@@ -163,7 +181,7 @@ def update_room_status(payload: RoomStatusUpdate):
                 WHERE property_code = %s
                   AND room_number = %s
                 """,
-                (status_norm, payload.property_code, payload.room_number),
+                (status_norm, property_code, payload.room_number),
             )
             if cur.rowcount == 0:
                 raise HTTPException(
