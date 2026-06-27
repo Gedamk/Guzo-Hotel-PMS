@@ -25,6 +25,8 @@ Do not commit real credentials, `.env` files, service-account JSON files, local 
 4. Add it to the backend Render Web Service as `DATABASE_URL`.
 5. Do not paste database credentials into GitHub, docs, screenshots, issue comments, or committed files.
 
+The repo also includes a safe `render.yaml` blueprint. It can create the demo PostgreSQL database and backend Web Service without storing secret values in Git. Any `sync: false` value must still be entered directly in Render.
+
 ## Render Backend Web Service
 
 Create a Render Web Service from the GitHub repo.
@@ -54,9 +56,11 @@ Required for the Render backend:
 | Variable | Required | Notes |
 |---|---|---|
 | `DATABASE_URL` | Yes | Render PostgreSQL internal URL. Keep secret. |
+| `SECRET_KEY` | Yes | Strong random app secret for production/demo platform config. Keep secret. |
+| `ADMIN_TOKEN` | Yes for admin/demo automation | Strong random admin token. Keep secret. |
 | `GUZO_JWT_SECRET` | Yes | Generate a strong random value. Keep secret. |
 | `GUZO_DEFAULT_ADMIN_PASSWORD` | Yes for initial demo login | Use a temporary strong password, then change it. |
-| `ENVIRONMENT` | Recommended | Use `production` or `demo`. |
+| `ENVIRONMENT` | Recommended | Use `production`. |
 | `ADMIN_API_TOKEN` | Optional legacy endpoints | Strong random token if legacy admin endpoints are used. |
 | `GUZO_SIMPLE_ADMIN_TOKEN` | Optional legacy endpoints | Strong random token if simple-token endpoints are used. |
 | `GUZO_API_ADMIN_TOKEN` | Optional legacy endpoints | Strong random token if legacy API auth is used. |
