@@ -12,6 +12,8 @@ credentials_prod.json
 # Logs and reports
 logs/
 reports/
+!guzo_backend/reports/
+!guzo_backend/reports/**/*.py
 
 # OS files
 .DS_Store
@@ -22,6 +24,7 @@ Thumbs.db
 *.log
 *.tmp
 *.bak
+*.bak_*
 *.lock
 *.csv
 backup/
