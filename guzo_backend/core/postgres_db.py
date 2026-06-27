@@ -27,6 +27,7 @@ from sqlalchemy.orm import sessionmaker
 #   Password for user guzo_user:  <--- THAT password goes below
 #
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")
+DATABASE_URL = os.getenv("DATABASE_URL")
 
 DB_USER = os.getenv("GUZO_DB_USER") or os.getenv("POSTGRES_USER", "guzo_user")
 DB_NAME = os.getenv("GUZO_DB_NAME") or os.getenv("POSTGRES_DB", "guzo_db")
@@ -45,6 +46,8 @@ DB_PASSWORD = os.getenv("GUZO_DB_PASSWORD") or os.getenv("POSTGRES_PASSWORD", ""
 SQLALCHEMY_DATABASE_URL = (
     make_url(TEST_DATABASE_URL)
     if TEST_DATABASE_URL
+    else make_url(DATABASE_URL)
+    if DATABASE_URL
     else URL.create(
         "postgresql+psycopg2",
         username=DB_USER,
