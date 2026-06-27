@@ -10,7 +10,7 @@ services:
     runtime: python
     plan: free
     branch: main
-    buildCommand: pip install -r requirements.txt
+    buildCommand: pip install -r requirements.txt && python scripts/render_startup_check.py
     startCommand: uvicorn guzo_backend.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: DATABASE_URL
