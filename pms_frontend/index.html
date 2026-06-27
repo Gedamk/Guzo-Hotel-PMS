@@ -1,796 +1,796 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Guzo Guest Assist – PMS Frontdesk</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-
-    <style>
-      :root {
-        --bg: #0f172a;
-        --bg-card: #020617;
-        --bg-soft: #1e293b;
-        --accent: #38bdf8;
-        --accent-soft: rgba(56, 189, 248, 0.12);
-        --text: #e5e7eb;
-        --text-soft: #9ca3af;
-        --danger: #f97373;
-        --success: #4ade80;
-        --warning: #facc15;
-        --border: #1f2937;
-        --radius-lg: 16px;
-      }
-
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-          sans-serif;
-        background: radial-gradient(circle at top, #1f2937 0, #020617 55%);
-        color: var(--text);
-        min-height: 100vh;
-        padding: 24px;
-      }
-
-      .layout {
-        max-width: 1200px;
-        margin: 0 auto;
-        display: grid;
-        grid-template-columns: minmax(0, 1fr);
-        gap: 20px;
-      }
-
-      header {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        align-items: flex-start;
-        gap: 12px;
-      }
-
-      .brand {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-
-      .brand-title {
-        font-size: 1.4rem;
-        font-weight: 700;
-        letter-spacing: 0.04em;
-      }
-
-      .brand-subtitle {
-        font-size: 0.85rem;
-        color: var(--text-soft);
-      }
-
-      .pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 10px;
-        border-radius: 999px;
-        background: var(--accent-soft);
-        font-size: 0.75rem;
-        color: var(--accent);
-      }
-
-      .pill-dot {
-        width: 6px;
-        height: 6px;
-        border-radius: 999px;
-        background: #22c55e;
-      }
-
-      .controls-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        align-items: center;
-      }
-
-      .control-group {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-        font-size: 0.8rem;
-      }
-
-      .control-label {
-        color: var(--text-soft);
-      }
-
-      select,
-      input[type="date"] {
-        background: var(--bg-soft);
-        border-radius: 999px;
-        border: 1px solid var(--border);
-        padding: 6px 10px;
-        color: var(--text);
-        font-size: 0.85rem;
-        outline: none;
-      }
-
-      select:focus,
-      input[type="date"]:focus {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6);
-      }
-
-      .refresh-btn {
-        border-radius: 999px;
-        border: 1px solid var(--accent);
-        background: var(--accent-soft);
-        color: var(--accent);
-        padding: 7px 14px;
-        font-size: 0.85rem;
-        display: inline-flex;
-        gap: 6px;
-        align-items: center;
-        cursor: pointer;
-      }
-
-      .refresh-btn:hover {
-        background: rgba(56, 189, 248, 0.22);
-      }
-
-      .refresh-icon {
-        font-size: 0.9rem;
-      }
-
-      .grid-main {
-        display: grid;
-        grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr);
-        gap: 18px;
-      }
-
-      .card {
-        background: radial-gradient(circle at top left, #111827 0, #020617 60%);
-        border-radius: var(--radius-lg);
-        border: 1px solid rgba(15, 23, 42, 0.9);
-        box-shadow:
-          0 18px 40px rgba(0, 0, 0, 0.75),
-          0 0 0 1px rgba(15, 23, 42, 0.9);
-        padding: 14px 14px 16px;
-      }
-
-      .card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 8px;
-      }
-
-      .card-title {
-        font-size: 0.9rem;
-        font-weight: 600;
-      }
-
-      .card-subtitle {
-        font-size: 0.75rem;
-        color: var(--text-soft);
-      }
-
-      .tag-pill {
-        border-radius: 999px;
-        border: 1px solid rgba(148, 163, 184, 0.45);
-        padding: 3px 9px;
-        font-size: 0.7rem;
-        color: var(--text-soft);
-      }
-
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 10px;
-        margin-bottom: 8px;
-      }
-
-      .stat {
-        background: rgba(15, 23, 42, 0.7);
-        border-radius: 12px;
-        padding: 10px 10px;
-        border: 1px solid rgba(31, 41, 55, 0.8);
-      }
-
-      .stat-label {
-        font-size: 0.7rem;
-        color: var(--text-soft);
-        margin-bottom: 4px;
-      }
-
-      .stat-value {
-        font-size: 1rem;
-        font-weight: 600;
-      }
-
-      .stat-pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        margin-top: 4px;
-        font-size: 0.7rem;
-      }
-
-      .pill-green {
-        color: var(--success);
-      }
-
-      .pill-amber {
-        color: var(--warning);
-      }
-
-      .pill-red {
-        color: var(--danger);
-      }
-
-      .pill-blue {
-        color: var(--accent);
-      }
-
-      .room-meta {
-        display: flex;
-        justify-content: space-between;
-        gap: 8px;
-        margin-top: 6px;
-        font-size: 0.75rem;
-        color: var(--text-soft);
-      }
-
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        font-size: 0.8rem;
-        margin-top: 6px;
-      }
-
-      thead th {
-        text-align: left;
-        font-weight: 500;
-        padding: 6px 8px;
-        color: var(--text-soft);
-        border-bottom: 1px solid rgba(31, 41, 55, 0.9);
-      }
-
-      tbody tr:nth-child(even) {
-        background: rgba(15, 23, 42, 0.8);
-      }
-
-      tbody tr:nth-child(odd) {
-        background: rgba(15, 23, 42, 0.6);
-      }
-
-      tbody td {
-        padding: 6px 8px;
-        border-bottom: 1px solid rgba(15, 23, 42, 0.85);
-      }
-
-      .td-chip {
-        display: inline-flex;
-        padding: 2px 6px;
-        border-radius: 999px;
-        font-size: 0.7rem;
-        border: 1px solid rgba(148, 163, 184, 0.4);
-        background: rgba(15, 23, 42, 0.9);
-      }
-
-      .status-pill {
-        border-radius: 999px;
-        padding: 2px 7px;
-        font-size: 0.7rem;
-      }
-
-      .status-confirmed {
-        background: rgba(22, 163, 74, 0.13);
-        color: #4ade80;
-        border: 1px solid rgba(74, 222, 128, 0.4);
-      }
-
-      .status-in_house {
-        background: rgba(59, 130, 246, 0.14);
-        color: #60a5fa;
-        border: 1px solid rgba(96, 165, 250, 0.45);
-      }
-
-      .status-checked_out {
-        background: rgba(148, 163, 184, 0.18);
-        color: #e5e7eb;
-        border: 1px solid rgba(148, 163, 184, 0.45);
-      }
-
-      .status-cancelled,
-      .status-no_show {
-        background: rgba(248, 113, 113, 0.16);
-        color: #fecaca;
-        border: 1px solid rgba(248, 113, 113, 0.5);
-      }
-
-      .assign-btn {
-        border-radius: 999px;
-        border: 1px solid rgba(59, 130, 246, 0.8);
-        padding: 3px 8px;
-        font-size: 0.7rem;
-        background: rgba(37, 99, 235, 0.2);
-        color: #bfdbfe;
-        cursor: pointer;
-      }
-
-      .assign-btn:hover {
-        background: rgba(37, 99, 235, 0.35);
-      }
-
-      .empty-state {
-        font-size: 0.8rem;
-        color: var(--text-soft);
-        padding: 8px 0;
-      }
-
-      .log {
-        margin-top: 8px;
-        font-size: 0.7rem;
-        color: var(--text-soft);
-      }
-
-      .log span {
-        color: var(--accent);
-      }
-
-      @media (max-width: 960px) {
-        .grid-main {
-          grid-template-columns: minmax(0, 1fr);
-        }
-      }
-
-      @media (max-width: 720px) {
-        body {
-          padding: 14px;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="layout">
-      <header>
-        <div class="brand">
-          <div class="brand-title">Guzo Guest Assist · PMS Frontdesk</div>
-          <div class="brand-subtitle">
-            Unified multi-property frontdesk · built on your FastAPI + Postgres
-          </div>
-          <div class="pill">
-            <span class="pill-dot"></span>
-            Live · Connected to backend at 127.0.0.1:8000
-          </div>
-        </div>
-
-        <div class="controls-row">
-          <div class="control-group">
-            <span class="control-label">Business Date</span>
-            <input id="dateInput" type="date" />
-          </div>
-
-          <div class="control-group">
-            <span class="control-label">Property</span>
-            <select id="propertySelect">
-              <option value="ALL">All Properties</option>
-              <option value="DRE001">DRE001 – Dream Big Hotel</option>
-              <option value="N&N002">N&N002 – N&N Luxury Hotel</option>
-            </select>
-          </div>
-
-          <button id="refreshBtn" class="refresh-btn">
-            <span class="refresh-icon">⟳</span> Refresh
-          </button>
-        </div>
-      </header>
-
-      <div class="grid-main">
-        <!-- LEFT: Frontdesk bookings -->
-        <section class="card">
-          <div class="card-header">
-            <div>
-              <div class="card-title">Today’s Flow – Room Division</div>
-              <div class="card-subtitle" id="viewSummary">
-                Viewing: All Properties · Today (touches today)
-              </div>
-            </div>
-            <div class="tag-pill" id="businessDateLabel">
-              Business date: —
-            </div>
-          </div>
-
-          <div class="stats-grid">
-            <div class="stat">
-              <div class="stat-label">Arrivals Today</div>
-              <div class="stat-value" id="statArrivals">0</div>
-              <div class="stat-pill pill-green">🟢 Expected</div>
-            </div>
-
-            <div class="stat">
-              <div class="stat-label">In-House Rooms</div>
-              <div class="stat-value" id="statInHouse">0</div>
-              <div class="stat-pill pill-blue">🟡 Staying</div>
-            </div>
-
-            <div class="stat">
-              <div class="stat-label">Departures Today</div>
-              <div class="stat-value" id="statDepartures">0</div>
-              <div class="stat-pill pill-amber">🔵 Due Out</div>
-            </div>
-
-            <div class="stat">
-              <div class="stat-label">Cancelled / No-Show</div>
-              <div class="stat-value" id="statCancelled">0</div>
-              <div class="stat-pill pill-red">❌ Attention</div>
-            </div>
-          </div>
-
-          <div class="room-meta">
-            <span>Filtered property: <span id="metaProperty">All</span></span>
-            <span>Total bookings (touching date): <span id="metaTotal">0</span></span>
-          </div>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Guest</th>
-                <th>Hotel / Property</th>
-                <th>Room</th>
-                <th>Stay</th>
-                <th>Status</th>
-                <th>Channel</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="bookingsBody">
-              <tr>
-                <td colspan="7" class="empty-state">
-                  No data loaded yet – click Refresh.
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div class="log" id="bookingsLog">Waiting for first refresh…</div>
-        </section>
-
-        <!-- RIGHT: House Count + Occupancy -->
-        <section class="card">
-          <div class="card-header">
-            <div>
-              <div class="card-title">House Count &amp; Occupancy</div>
-              <div class="card-subtitle">
-                Pulled from Postgres <code>rooms</code> table
-              </div>
-            </div>
-            <div class="tag-pill">Rooms summary</div>
-          </div>
-
-          <div class="stats-grid" id="roomsStatsGrid">
-            <div class="stat">
-              <div class="stat-label">Total Rooms (All)</div>
-              <div class="stat-value" id="roomsTotalAll">0</div>
-              <div class="stat-pill pill-blue">Inventory</div>
-            </div>
-
-            <div class="stat">
-              <div class="stat-label">Out of Order (All)</div>
-              <div class="stat-value" id="roomsOutAll">0</div>
-              <div class="stat-pill pill-red">OOO / OOS</div>
-            </div>
-
-            <div class="stat">
-              <div class="stat-label">Portfolio Occupancy</div>
-              <div class="stat-value" id="roomsOccAll">0%</div>
-              <div class="stat-pill pill-green">Rooms sold</div>
-            </div>
-
-            <div class="stat">
-              <div class="stat-label">Clean / Vacant (est.)</div>
-              <div class="stat-value" id="roomsVacantAll">0</div>
-              <div class="stat-pill pill-amber">Available</div>
-            </div>
-          </div>
-
-          <table>
-            <thead>
-              <tr>
-                <th>Property</th>
-                <th>Total</th>
-                <th>Out of Order</th>
-                <th>Occupied (today)</th>
-                <th>Occupancy %</th>
-              </tr>
-            </thead>
-            <tbody id="roomsBody">
-              <tr>
-                <td colspan="5" class="empty-state">
-                  Waiting for summary from backend…
-                </td>
-              </tr>
-            </tbody>
-          </table>
-
-          <div class="log" id="roomsLog">No call yet.</div>
-        </section>
-      </div>
-    </div>
-
-    <script>
-      const API_BASE = "http://127.0.0.1:8000";
-      const AUTH_TOKEN = "<REDACTED_DEMO_BEARER_TOKEN>";
-
-      const dateInput = document.getElementById("dateInput");
-      const propertySelect = document.getElementById("propertySelect");
-      const refreshBtn = document.getElementById("refreshBtn");
-
-      const statArrivals = document.getElementById("statArrivals");
-      const statInHouse = document.getElementById("statInHouse");
-      const statDepartures = document.getElementById("statDepartures");
-      const statCancelled = document.getElementById("statCancelled");
-      const metaProperty = document.getElementById("metaProperty");
-      const metaTotal = document.getElementById("metaTotal");
-      const viewSummary = document.getElementById("viewSummary");
-      const businessDateLabel = document.getElementById("businessDateLabel");
-      const bookingsBody = document.getElementById("bookingsBody");
-      const bookingsLog = document.getElementById("bookingsLog");
-
-      const roomsTotalAll = document.getElementById("roomsTotalAll");
-      const roomsOutAll = document.getElementById("roomsOutAll");
-      const roomsOccAll = document.getElementById("roomsOccAll");
-      const roomsVacantAll = document.getElementById("roomsVacantAll");
-      const roomsBody = document.getElementById("roomsBody");
-      const roomsLog = document.getElementById("roomsLog");
-
-      function formatShort(dateStr) {
-        if (!dateStr) return "—";
-        const d = new Date(dateStr);
-        return d.toLocaleDateString(undefined, {
-          month: "short",
-          day: "numeric",
-        });
-      }
-
-      function todayISO() {
-        const d = new Date();
-        return d.toISOString().slice(0, 10);
-      }
-
-      function statusClass(status) {
-        const s = (status || "").toLowerCase();
-        if (s === "confirmed") return "status-pill status-confirmed";
-        if (s === "in_house") return "status-pill status-in_house";
-        if (s === "checked_out") return "status-pill status-checked_out";
-        if (s === "cancelled" || s === "no_show")
-          return "status-pill status-cancelled";
-        return "status-pill status-checked_out";
-      }
-
-      async function loadBookings() {
-        const date = dateInput.value || todayISO();
-        const propertyCode = propertySelect.value;
-
-        businessDateLabel.textContent = `Business date: ${date}`;
-        viewSummary.textContent = `Viewing: ${
-          propertyCode === "ALL" ? "All Properties" : propertyCode
-        } · Today (touches today)`;
-
-        bookingsLog.textContent = "Loading bookings from backend…";
-
-        try {
-          const url = `${API_BASE}/frontdesk/bookings?scope=today_touches&date=${date}`;
-          const res = await fetch(url, {
-            headers: {
-              Authorization: `Bearer ${AUTH_TOKEN}`,
-            },
-          });
-
-          if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
-          }
-
-          const data = await res.json();
-          const bookings = Array.isArray(data) ? data : [];
-
-          const filtered =
-            propertyCode === "ALL"
-              ? bookings
-              : bookings.filter((b) => b.property_code === propertyCode);
-
-          metaProperty.textContent =
-            propertyCode === "ALL" ? "All" : propertyCode;
-          metaTotal.textContent = String(filtered.length);
-
-          // Counters by status + bucket
-          let arrivals = 0;
-          let inHouse = 0;
-          let departures = 0;
-          let cancelled = 0;
-
-          const businessDate = new Date(date);
-          businessDate.setHours(0, 0, 0, 0);
-
-          filtered.forEach((b) => {
-            const ci = new Date(b.check_in);
-            ci.setHours(0, 0, 0, 0);
-            const co = new Date(b.check_out);
-            co.setHours(0, 0, 0, 0);
-            const status = (b.status || "").toLowerCase();
-
-            const touchesToday =
-              businessDate.getTime() >= ci.getTime() &&
-              businessDate.getTime() <= co.getTime();
-
-            if (!touchesToday) return;
-
-            if (businessDate.getTime() === ci.getTime()) arrivals++;
-
-            if (
-              businessDate.getTime() > ci.getTime() &&
-              businessDate.getTime() < co.getTime()
-            ) {
-              inHouse++;
-            }
-
-            if (businessDate.getTime() === co.getTime()) departures++;
-
-            if (status === "cancelled" || status === "no_show") cancelled++;
-          });
-
-          statArrivals.textContent = String(arrivals);
-          statInHouse.textContent = String(inHouse);
-          statDepartures.textContent = String(departures);
-          statCancelled.textContent = String(cancelled);
-
-          if (filtered.length === 0) {
-            bookingsBody.innerHTML =
-              '<tr><td colspan="7" class="empty-state">No bookings found for this date / filter.</td></tr>';
-          } else {
-            bookingsBody.innerHTML = filtered
-              .map((b) => {
-                const hotelName =
-                  (b as any).hotel_name || b.property_code || "—";
-                const room = b.room_number || "TBD";
-                const stay = `${formatShort(b.check_in)} – ${formatShort(
-                  b.check_out
-                )}`;
-
-                return `
-                  <tr>
-                    <td>${b.guest_name || "—"}</td>
-                    <td>
-                      <div>${hotelName}</div>
-                      <div style="font-size:0.7rem;color:#9ca3af;">
-                        ${b.property_code || ""}
-                      </div>
-                    </td>
-                    <td><span class="td-chip">${room}</span></td>
-                    <td>${stay}</td>
-                    <td>
-                      <span class="${statusClass(b.status)}">
-                        ${b.status || "—"}
-                      </span>
-                    </td>
-                    <td>${b.channel || "—"}</td>
-                    <td>
-                      <button class="assign-btn" disabled>
-                        Assign Room
-                      </button>
-                    </td>
-                  </tr>
-                `;
-              })
-              .join("");
-          }
-
-          bookingsLog.innerHTML =
-            'Loaded <span>' +
-            filtered.length +
-            "</span> bookings touching this date.";
-          return { totalInHouse: inHouse };
-        } catch (err) {
-          console.error(err);
-          bookingsBody.innerHTML =
-            '<tr><td colspan="7" class="empty-state">Error loading bookings. Check console.</td></tr>';
-          bookingsLog.textContent = "Error while calling frontdesk/bookings.";
-          return { totalInHouse: 0 };
-        }
-      }
-
-      async function loadRoomsSummary(totalInHouseRooms) {
-        roomsLog.textContent = "Loading rooms summary from backend…";
-
-        try {
-          const res = await fetch(`${API_BASE}/rooms/summary`, {
-            headers: {
-              Authorization: `Bearer ${AUTH_TOKEN}`,
-            },
-          });
-
-          if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
-          }
-
-          const summary = await res.json();
-          const entries = Object.entries(summary || {});
-
-          if (entries.length === 0) {
-            roomsBody.innerHTML =
-              '<tr><td colspan="5" class="empty-state">No rooms configured in rooms table.</td></tr>';
-            roomsTotalAll.textContent = "0";
-            roomsOutAll.textContent = "0";
-            roomsOccAll.textContent = "0%";
-            roomsVacantAll.textContent = "0";
-            roomsLog.textContent = "Rooms summary returned empty.";
-            return;
-          }
-
-          let totalRoomsAll = 0;
-          let outOfOrderAll = 0;
-
-          roomsBody.innerHTML = entries
-            .map(([propertyCode, val]) => {
-              const total = val.total_rooms || 0;
-              const ooo = val.out_of_order_rooms || 0;
-              totalRoomsAll += total;
-              outOfOrderAll += ooo;
-
-              const inHouseThisProp = totalInHouseRooms; // simple estimate
-              const occPct =
-                total > 0
-                  ? Math.round((inHouseThisProp / total) * 100)
-                  : 0;
-
-              return `
-                <tr>
-                  <td>${propertyCode}</td>
-                  <td>${total}</td>
-                  <td>${ooo}</td>
-                  <td>${inHouseThisProp}</td>
-                  <td>${occPct}%</td>
-                </tr>
-              `;
-            })
-            .join("");
-
-          const occAll =
-            totalRoomsAll > 0
-              ? Math.round((totalInHouseRooms / totalRoomsAll) * 100)
-              : 0;
-          const estVacant = Math.max(totalRoomsAll - totalInHouseRooms - outOfOrderAll, 0);
-
-          roomsTotalAll.textContent = String(totalRoomsAll);
-          roomsOutAll.textContent = String(outOfOrderAll);
-          roomsOccAll.textContent = `${occAll}%`;
-          roomsVacantAll.textContent = String(estVacant);
-          roomsLog.innerHTML =
-            'Loaded rooms summary for <span>' +
-            entries.length +
-            "</span> properties.";
-        } catch (err) {
-          console.error(err);
-          roomsBody.innerHTML =
-            '<tr><td colspan="5" class="empty-state">Error loading rooms summary. Check console.</td></tr>';
-          roomsLog.textContent = "Error while calling /rooms/summary.";
-        }
-      }
-
-      async function refreshAll() {
-        const date = dateInput.value || todayISO();
-        businessDateLabel.textContent = `Business date: ${date}`;
-        const { totalInHouse } = await loadBookings();
-        await loadRoomsSummary(totalInHouse || 0);
-      }
-
-      // Init
-      dateInput.value = todayISO();
-      refreshBtn.addEventListener("click", refreshAll);
-
-      // Auto-load once at startup
-      refreshAll();
-    </script>
-  </body>
-</html>
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Guzo Guest Assist – PMS Frontdesk</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <style>
+      :root {
+        --bg: #0f172a;
+        --bg-card: #020617;
+        --bg-soft: #1e293b;
+        --accent: #38bdf8;
+        --accent-soft: rgba(56, 189, 248, 0.12);
+        --text: #e5e7eb;
+        --text-soft: #9ca3af;
+        --danger: #f97373;
+        --success: #4ade80;
+        --warning: #facc15;
+        --border: #1f2937;
+        --radius-lg: 16px;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: radial-gradient(circle at top, #1f2937 0, #020617 55%);
+        color: var(--text);
+        min-height: 100vh;
+        padding: 24px;
+      }
+
+      .layout {
+        max-width: 1200px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 20px;
+      }
+
+      header {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .brand {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+
+      .brand-title {
+        font-size: 1.4rem;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+      }
+
+      .brand-subtitle {
+        font-size: 0.85rem;
+        color: var(--text-soft);
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        background: var(--accent-soft);
+        font-size: 0.75rem;
+        color: var(--accent);
+      }
+
+      .pill-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 999px;
+        background: #22c55e;
+      }
+
+      .controls-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .control-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 0.8rem;
+      }
+
+      .control-label {
+        color: var(--text-soft);
+      }
+
+      select,
+      input[type="date"] {
+        background: var(--bg-soft);
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        padding: 6px 10px;
+        color: var(--text);
+        font-size: 0.85rem;
+        outline: none;
+      }
+
+      select:focus,
+      input[type="date"]:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.6);
+      }
+
+      .refresh-btn {
+        border-radius: 999px;
+        border: 1px solid var(--accent);
+        background: var(--accent-soft);
+        color: var(--accent);
+        padding: 7px 14px;
+        font-size: 0.85rem;
+        display: inline-flex;
+        gap: 6px;
+        align-items: center;
+        cursor: pointer;
+      }
+
+      .refresh-btn:hover {
+        background: rgba(56, 189, 248, 0.22);
+      }
+
+      .refresh-icon {
+        font-size: 0.9rem;
+      }
+
+      .grid-main {
+        display: grid;
+        grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr);
+        gap: 18px;
+      }
+
+      .card {
+        background: radial-gradient(circle at top left, #111827 0, #020617 60%);
+        border-radius: var(--radius-lg);
+        border: 1px solid rgba(15, 23, 42, 0.9);
+        box-shadow:
+          0 18px 40px rgba(0, 0, 0, 0.75),
+          0 0 0 1px rgba(15, 23, 42, 0.9);
+        padding: 14px 14px 16px;
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .card-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+      }
+
+      .card-subtitle {
+        font-size: 0.75rem;
+        color: var(--text-soft);
+      }
+
+      .tag-pill {
+        border-radius: 999px;
+        border: 1px solid rgba(148, 163, 184, 0.45);
+        padding: 3px 9px;
+        font-size: 0.7rem;
+        color: var(--text-soft);
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+
+      .stat {
+        background: rgba(15, 23, 42, 0.7);
+        border-radius: 12px;
+        padding: 10px 10px;
+        border: 1px solid rgba(31, 41, 55, 0.8);
+      }
+
+      .stat-label {
+        font-size: 0.7rem;
+        color: var(--text-soft);
+        margin-bottom: 4px;
+      }
+
+      .stat-value {
+        font-size: 1rem;
+        font-weight: 600;
+      }
+
+      .stat-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 4px;
+        font-size: 0.7rem;
+      }
+
+      .pill-green {
+        color: var(--success);
+      }
+
+      .pill-amber {
+        color: var(--warning);
+      }
+
+      .pill-red {
+        color: var(--danger);
+      }
+
+      .pill-blue {
+        color: var(--accent);
+      }
+
+      .room-meta {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 6px;
+        font-size: 0.75rem;
+        color: var(--text-soft);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.8rem;
+        margin-top: 6px;
+      }
+
+      thead th {
+        text-align: left;
+        font-weight: 500;
+        padding: 6px 8px;
+        color: var(--text-soft);
+        border-bottom: 1px solid rgba(31, 41, 55, 0.9);
+      }
+
+      tbody tr:nth-child(even) {
+        background: rgba(15, 23, 42, 0.8);
+      }
+
+      tbody tr:nth-child(odd) {
+        background: rgba(15, 23, 42, 0.6);
+      }
+
+      tbody td {
+        padding: 6px 8px;
+        border-bottom: 1px solid rgba(15, 23, 42, 0.85);
+      }
+
+      .td-chip {
+        display: inline-flex;
+        padding: 2px 6px;
+        border-radius: 999px;
+        font-size: 0.7rem;
+        border: 1px solid rgba(148, 163, 184, 0.4);
+        background: rgba(15, 23, 42, 0.9);
+      }
+
+      .status-pill {
+        border-radius: 999px;
+        padding: 2px 7px;
+        font-size: 0.7rem;
+      }
+
+      .status-confirmed {
+        background: rgba(22, 163, 74, 0.13);
+        color: #4ade80;
+        border: 1px solid rgba(74, 222, 128, 0.4);
+      }
+
+      .status-in_house {
+        background: rgba(59, 130, 246, 0.14);
+        color: #60a5fa;
+        border: 1px solid rgba(96, 165, 250, 0.45);
+      }
+
+      .status-checked_out {
+        background: rgba(148, 163, 184, 0.18);
+        color: #e5e7eb;
+        border: 1px solid rgba(148, 163, 184, 0.45);
+      }
+
+      .status-cancelled,
+      .status-no_show {
+        background: rgba(248, 113, 113, 0.16);
+        color: #fecaca;
+        border: 1px solid rgba(248, 113, 113, 0.5);
+      }
+
+      .assign-btn {
+        border-radius: 999px;
+        border: 1px solid rgba(59, 130, 246, 0.8);
+        padding: 3px 8px;
+        font-size: 0.7rem;
+        background: rgba(37, 99, 235, 0.2);
+        color: #bfdbfe;
+        cursor: pointer;
+      }
+
+      .assign-btn:hover {
+        background: rgba(37, 99, 235, 0.35);
+      }
+
+      .empty-state {
+        font-size: 0.8rem;
+        color: var(--text-soft);
+        padding: 8px 0;
+      }
+
+      .log {
+        margin-top: 8px;
+        font-size: 0.7rem;
+        color: var(--text-soft);
+      }
+
+      .log span {
+        color: var(--accent);
+      }
+
+      @media (max-width: 960px) {
+        .grid-main {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+
+      @media (max-width: 720px) {
+        body {
+          padding: 14px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="layout">
+      <header>
+        <div class="brand">
+          <div class="brand-title">Guzo Guest Assist · PMS Frontdesk</div>
+          <div class="brand-subtitle">
+            Unified multi-property frontdesk · built on your FastAPI + Postgres
+          </div>
+          <div class="pill">
+            <span class="pill-dot"></span>
+            Live · Connected to backend at 127.0.0.1:8000
+          </div>
+        </div>
+
+        <div class="controls-row">
+          <div class="control-group">
+            <span class="control-label">Business Date</span>
+            <input id="dateInput" type="date" />
+          </div>
+
+          <div class="control-group">
+            <span class="control-label">Property</span>
+            <select id="propertySelect">
+              <option value="ALL">All Properties</option>
+              <option value="DRE001">DRE001 – Dream Big Hotel</option>
+              <option value="N&N002">N&N002 – N&N Luxury Hotel</option>
+            </select>
+          </div>
+
+          <button id="refreshBtn" class="refresh-btn">
+            <span class="refresh-icon">⟳</span> Refresh
+          </button>
+        </div>
+      </header>
+
+      <div class="grid-main">
+        <!-- LEFT: Frontdesk bookings -->
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">Today’s Flow – Room Division</div>
+              <div class="card-subtitle" id="viewSummary">
+                Viewing: All Properties · Today (touches today)
+              </div>
+            </div>
+            <div class="tag-pill" id="businessDateLabel">
+              Business date: —
+            </div>
+          </div>
+
+          <div class="stats-grid">
+            <div class="stat">
+              <div class="stat-label">Arrivals Today</div>
+              <div class="stat-value" id="statArrivals">0</div>
+              <div class="stat-pill pill-green">🟢 Expected</div>
+            </div>
+
+            <div class="stat">
+              <div class="stat-label">In-House Rooms</div>
+              <div class="stat-value" id="statInHouse">0</div>
+              <div class="stat-pill pill-blue">🟡 Staying</div>
+            </div>
+
+            <div class="stat">
+              <div class="stat-label">Departures Today</div>
+              <div class="stat-value" id="statDepartures">0</div>
+              <div class="stat-pill pill-amber">🔵 Due Out</div>
+            </div>
+
+            <div class="stat">
+              <div class="stat-label">Cancelled / No-Show</div>
+              <div class="stat-value" id="statCancelled">0</div>
+              <div class="stat-pill pill-red">❌ Attention</div>
+            </div>
+          </div>
+
+          <div class="room-meta">
+            <span>Filtered property: <span id="metaProperty">All</span></span>
+            <span>Total bookings (touching date): <span id="metaTotal">0</span></span>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Guest</th>
+                <th>Hotel / Property</th>
+                <th>Room</th>
+                <th>Stay</th>
+                <th>Status</th>
+                <th>Channel</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="bookingsBody">
+              <tr>
+                <td colspan="7" class="empty-state">
+                  No data loaded yet – click Refresh.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="log" id="bookingsLog">Waiting for first refresh…</div>
+        </section>
+
+        <!-- RIGHT: House Count + Occupancy -->
+        <section class="card">
+          <div class="card-header">
+            <div>
+              <div class="card-title">House Count &amp; Occupancy</div>
+              <div class="card-subtitle">
+                Pulled from Postgres <code>rooms</code> table
+              </div>
+            </div>
+            <div class="tag-pill">Rooms summary</div>
+          </div>
+
+          <div class="stats-grid" id="roomsStatsGrid">
+            <div class="stat">
+              <div class="stat-label">Total Rooms (All)</div>
+              <div class="stat-value" id="roomsTotalAll">0</div>
+              <div class="stat-pill pill-blue">Inventory</div>
+            </div>
+
+            <div class="stat">
+              <div class="stat-label">Out of Order (All)</div>
+              <div class="stat-value" id="roomsOutAll">0</div>
+              <div class="stat-pill pill-red">OOO / OOS</div>
+            </div>
+
+            <div class="stat">
+              <div class="stat-label">Portfolio Occupancy</div>
+              <div class="stat-value" id="roomsOccAll">0%</div>
+              <div class="stat-pill pill-green">Rooms sold</div>
+            </div>
+
+            <div class="stat">
+              <div class="stat-label">Clean / Vacant (est.)</div>
+              <div class="stat-value" id="roomsVacantAll">0</div>
+              <div class="stat-pill pill-amber">Available</div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Property</th>
+                <th>Total</th>
+                <th>Out of Order</th>
+                <th>Occupied (today)</th>
+                <th>Occupancy %</th>
+              </tr>
+            </thead>
+            <tbody id="roomsBody">
+              <tr>
+                <td colspan="5" class="empty-state">
+                  Waiting for summary from backend…
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="log" id="roomsLog">No call yet.</div>
+        </section>
+      </div>
+    </div>
+
+    <script>
+      const API_BASE = "http://127.0.0.1:8000";
+      const AUTH_TOKEN = "";
+
+      const dateInput = document.getElementById("dateInput");
+      const propertySelect = document.getElementById("propertySelect");
+      const refreshBtn = document.getElementById("refreshBtn");
+
+      const statArrivals = document.getElementById("statArrivals");
+      const statInHouse = document.getElementById("statInHouse");
+      const statDepartures = document.getElementById("statDepartures");
+      const statCancelled = document.getElementById("statCancelled");
+      const metaProperty = document.getElementById("metaProperty");
+      const metaTotal = document.getElementById("metaTotal");
+      const viewSummary = document.getElementById("viewSummary");
+      const businessDateLabel = document.getElementById("businessDateLabel");
+      const bookingsBody = document.getElementById("bookingsBody");
+      const bookingsLog = document.getElementById("bookingsLog");
+
+      const roomsTotalAll = document.getElementById("roomsTotalAll");
+      const roomsOutAll = document.getElementById("roomsOutAll");
+      const roomsOccAll = document.getElementById("roomsOccAll");
+      const roomsVacantAll = document.getElementById("roomsVacantAll");
+      const roomsBody = document.getElementById("roomsBody");
+      const roomsLog = document.getElementById("roomsLog");
+
+      function formatShort(dateStr) {
+        if (!dateStr) return "—";
+        const d = new Date(dateStr);
+        return d.toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        });
+      }
+
+      function todayISO() {
+        const d = new Date();
+        return d.toISOString().slice(0, 10);
+      }
+
+      function statusClass(status) {
+        const s = (status || "").toLowerCase();
+        if (s === "confirmed") return "status-pill status-confirmed";
+        if (s === "in_house") return "status-pill status-in_house";
+        if (s === "checked_out") return "status-pill status-checked_out";
+        if (s === "cancelled" || s === "no_show")
+          return "status-pill status-cancelled";
+        return "status-pill status-checked_out";
+      }
+
+      async function loadBookings() {
+        const date = dateInput.value || todayISO();
+        const propertyCode = propertySelect.value;
+
+        businessDateLabel.textContent = `Business date: ${date}`;
+        viewSummary.textContent = `Viewing: ${
+          propertyCode === "ALL" ? "All Properties" : propertyCode
+        } · Today (touches today)`;
+
+        bookingsLog.textContent = "Loading bookings from backend…";
+
+        try {
+          const url = `${API_BASE}/frontdesk/bookings?scope=today_touches&date=${date}`;
+          const res = await fetch(url, {
+            headers: {
+              Authorization: `Bearer ${AUTH_TOKEN}`,
+            },
+          });
+
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
+
+          const data = await res.json();
+          const bookings = Array.isArray(data) ? data : [];
+
+          const filtered =
+            propertyCode === "ALL"
+              ? bookings
+              : bookings.filter((b) => b.property_code === propertyCode);
+
+          metaProperty.textContent =
+            propertyCode === "ALL" ? "All" : propertyCode;
+          metaTotal.textContent = String(filtered.length);
+
+          // Counters by status + bucket
+          let arrivals = 0;
+          let inHouse = 0;
+          let departures = 0;
+          let cancelled = 0;
+
+          const businessDate = new Date(date);
+          businessDate.setHours(0, 0, 0, 0);
+
+          filtered.forEach((b) => {
+            const ci = new Date(b.check_in);
+            ci.setHours(0, 0, 0, 0);
+            const co = new Date(b.check_out);
+            co.setHours(0, 0, 0, 0);
+            const status = (b.status || "").toLowerCase();
+
+            const touchesToday =
+              businessDate.getTime() >= ci.getTime() &&
+              businessDate.getTime() <= co.getTime();
+
+            if (!touchesToday) return;
+
+            if (businessDate.getTime() === ci.getTime()) arrivals++;
+
+            if (
+              businessDate.getTime() > ci.getTime() &&
+              businessDate.getTime() < co.getTime()
+            ) {
+              inHouse++;
+            }
+
+            if (businessDate.getTime() === co.getTime()) departures++;
+
+            if (status === "cancelled" || status === "no_show") cancelled++;
+          });
+
+          statArrivals.textContent = String(arrivals);
+          statInHouse.textContent = String(inHouse);
+          statDepartures.textContent = String(departures);
+          statCancelled.textContent = String(cancelled);
+
+          if (filtered.length === 0) {
+            bookingsBody.innerHTML =
+              '<tr><td colspan="7" class="empty-state">No bookings found for this date / filter.</td></tr>';
+          } else {
+            bookingsBody.innerHTML = filtered
+              .map((b) => {
+                const hotelName =
+                  (b as any).hotel_name || b.property_code || "—";
+                const room = b.room_number || "TBD";
+                const stay = `${formatShort(b.check_in)} – ${formatShort(
+                  b.check_out
+                )}`;
+
+                return `
+                  <tr>
+                    <td>${b.guest_name || "—"}</td>
+                    <td>
+                      <div>${hotelName}</div>
+                      <div style="font-size:0.7rem;color:#9ca3af;">
+                        ${b.property_code || ""}
+                      </div>
+                    </td>
+                    <td><span class="td-chip">${room}</span></td>
+                    <td>${stay}</td>
+                    <td>
+                      <span class="${statusClass(b.status)}">
+                        ${b.status || "—"}
+                      </span>
+                    </td>
+                    <td>${b.channel || "—"}</td>
+                    <td>
+                      <button class="assign-btn" disabled>
+                        Assign Room
+                      </button>
+                    </td>
+                  </tr>
+                `;
+              })
+              .join("");
+          }
+
+          bookingsLog.innerHTML =
+            'Loaded <span>' +
+            filtered.length +
+            "</span> bookings touching this date.";
+          return { totalInHouse: inHouse };
+        } catch (err) {
+          console.error(err);
+          bookingsBody.innerHTML =
+            '<tr><td colspan="7" class="empty-state">Error loading bookings. Check console.</td></tr>';
+          bookingsLog.textContent = "Error while calling frontdesk/bookings.";
+          return { totalInHouse: 0 };
+        }
+      }
+
+      async function loadRoomsSummary(totalInHouseRooms) {
+        roomsLog.textContent = "Loading rooms summary from backend…";
+
+        try {
+          const res = await fetch(`${API_BASE}/rooms/summary`, {
+            headers: {
+              Authorization: `Bearer ${AUTH_TOKEN}`,
+            },
+          });
+
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
+
+          const summary = await res.json();
+          const entries = Object.entries(summary || {});
+
+          if (entries.length === 0) {
+            roomsBody.innerHTML =
+              '<tr><td colspan="5" class="empty-state">No rooms configured in rooms table.</td></tr>';
+            roomsTotalAll.textContent = "0";
+            roomsOutAll.textContent = "0";
+            roomsOccAll.textContent = "0%";
+            roomsVacantAll.textContent = "0";
+            roomsLog.textContent = "Rooms summary returned empty.";
+            return;
+          }
+
+          let totalRoomsAll = 0;
+          let outOfOrderAll = 0;
+
+          roomsBody.innerHTML = entries
+            .map(([propertyCode, val]) => {
+              const total = val.total_rooms || 0;
+              const ooo = val.out_of_order_rooms || 0;
+              totalRoomsAll += total;
+              outOfOrderAll += ooo;
+
+              const inHouseThisProp = totalInHouseRooms; // simple estimate
+              const occPct =
+                total > 0
+                  ? Math.round((inHouseThisProp / total) * 100)
+                  : 0;
+
+              return `
+                <tr>
+                  <td>${propertyCode}</td>
+                  <td>${total}</td>
+                  <td>${ooo}</td>
+                  <td>${inHouseThisProp}</td>
+                  <td>${occPct}%</td>
+                </tr>
+              `;
+            })
+            .join("");
+
+          const occAll =
+            totalRoomsAll > 0
+              ? Math.round((totalInHouseRooms / totalRoomsAll) * 100)
+              : 0;
+          const estVacant = Math.max(totalRoomsAll - totalInHouseRooms - outOfOrderAll, 0);
+
+          roomsTotalAll.textContent = String(totalRoomsAll);
+          roomsOutAll.textContent = String(outOfOrderAll);
+          roomsOccAll.textContent = `${occAll}%`;
+          roomsVacantAll.textContent = String(estVacant);
+          roomsLog.innerHTML =
+            'Loaded rooms summary for <span>' +
+            entries.length +
+            "</span> properties.";
+        } catch (err) {
+          console.error(err);
+          roomsBody.innerHTML =
+            '<tr><td colspan="5" class="empty-state">Error loading rooms summary. Check console.</td></tr>';
+          roomsLog.textContent = "Error while calling /rooms/summary.";
+        }
+      }
+
+      async function refreshAll() {
+        const date = dateInput.value || todayISO();
+        businessDateLabel.textContent = `Business date: ${date}`;
+        const { totalInHouse } = await loadBookings();
+        await loadRoomsSummary(totalInHouse || 0);
+      }
+
+      // Init
+      dateInput.value = todayISO();
+      refreshBtn.addEventListener("click", refreshAll);
+
+      // Auto-load once at startup
+      refreshAll();
+    </script>
+  </body>
+</html>

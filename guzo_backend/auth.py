@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from typing import Optional
 
 from fastapi import Header, HTTPException
@@ -11,7 +12,7 @@ from fastapi import Header, HTTPException
 # Simple shared token for admin/dashboard access
 # ---------------------------------------------------------------------------
 
-SIMPLE_ADMIN_TOKEN = "<REDACTED_DEMO_BEARER_TOKEN>"
+SIMPLE_ADMIN_TOKEN = os.getenv("GUZO_SIMPLE_ADMIN_TOKEN", "")
 
 
 def verify_simple_token(authorization: Optional[str] = Header(None)) -> str:
@@ -20,7 +21,7 @@ def verify_simple_token(authorization: Optional[str] = Header(None)) -> str:
     and any other admin/dashboard endpoints).
 
     Expected header:
-        Authorization: Bearer <REDACTED_DEMO_BEARER_TOKEN>
+        Authorization: Bearer <token>
 
     If the token is valid, returns the token string.
     If not, raises HTTPException(401).
@@ -39,7 +40,7 @@ def verify_simple_token(authorization: Optional[str] = Header(None)) -> str:
         )
 
     token = authorization[len(prefix) :].strip()
-    if token != SIMPLE_ADMIN_TOKEN:
+    if not SIMPLE_ADMIN_TOKEN or token != SIMPLE_ADMIN_TOKEN:
         raise HTTPException(
             status_code=401,
             detail="Invalid token",

@@ -77,5 +77,5 @@ def send_status():
 # Run the script
 # -------------------------------
 if __name__ == "__main__":
-    print("DEBUG: SENDGRID_API_KEY =", SENDGRID_API_KEY)
+    print("DEBUG: SENDGRID_API_KEY configured:", bool(SENDGRID_API_KEY))
     send_status()

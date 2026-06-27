@@ -9,6 +9,7 @@ This project should not commit real credentials, production secrets, API keys, d
 - Use `.env.example` only for safe sample variable names and placeholder values.
 - Do not commit real Google service account JSON files.
 - Do not commit real SendGrid, Twilio, Stripe, Chapa, Telegram, OpenAI, database, or email credentials.
+- Do not commit `GUZO_SMTP_PASSWORD`, `GUZO_SMTP_USERNAME`, `GUZO_EMAIL_FROM`, or provider-specific email credentials.
 - Do not place production secrets in README files, docs, screenshots, logs, generated reports, or test fixtures.
 
 ## Local Credential Files

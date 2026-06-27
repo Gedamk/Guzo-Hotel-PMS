@@ -16,6 +16,6 @@ def init_env():
         load_dotenv(ENV_PATH, override=True)
         print(f"✅ Environment loaded from: {ENV_PATH}")
         key = os.getenv("SENDGRID_API_KEY")
-        print("��� SENDGRID_API_KEY prefix:", (key[:10] if key else "❌ Missing"))
+        print("SENDGRID_API_KEY configured:", bool(key))
     else:
         print(f"⚠️ .env file not found at {ENV_PATH}")

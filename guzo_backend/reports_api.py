@@ -60,7 +60,7 @@ app.add_middleware(
 # SIMPLE TOKEN CHECK
 # ======================================================
 
-API_TOKEN = os.getenv("REPORTS_API_TOKEN", "<REDACTED_DEMO_BEARER_TOKEN>")
+API_TOKEN = os.getenv("REPORTS_API_TOKEN", "")
 
 
 def verify_token(authorization: Optional[str] = Header(None)) -> None:
@@ -71,13 +71,13 @@ def verify_token(authorization: Optional[str] = Header(None)) -> None:
     - If present → must be "Bearer <REPORTS_API_TOKEN>"
     """
     if authorization is None:
-        return
+        raise HTTPException(status_code=401, detail="Missing auth header")
 
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Invalid auth header")
 
     token = authorization.split(" ", 1)[1]
-    if token != API_TOKEN:
+    if not API_TOKEN or token != API_TOKEN:
         raise HTTPException(status_code=401, detail="Invalid token")
 
 

@@ -10,7 +10,7 @@ if [ -z "$YEAR" ] || [ -z "$MONTH" ]; then
 fi
 
 BASE_URL="http://127.0.0.1:8000"
-AUTH="Authorization: Bearer <REDACTED_DEMO_BEARER_TOKEN>"
+AUTH="Authorization: Bearer <ADMIN_TOKEN>"
 
 echo "=== Portfolio – all hotels for $YEAR-$MONTH ==="
 curl -s -H "$AUTH" \

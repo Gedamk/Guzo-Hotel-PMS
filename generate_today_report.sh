@@ -19,12 +19,12 @@ echo "�� Generating daily report for: $TODAY"
 # PDF
 curl -o "daily-$TODAY.pdf" \
   "http://127.0.0.1:8000/reports/daily/pdf?business_date=$TODAY" \
-  -H "Authorization: Bearer <REDACTED_DEMO_BEARER_TOKEN>"
+  -H "Authorization: Bearer <ADMIN_TOKEN>"
 
 # Excel (CSV with Excel mime-type)
 curl -o "daily-$TODAY.xlsx" \
   "http://127.0.0.1:8000/reports/daily/excel?business_date=$TODAY" \
-  -H "Authorization: Bearer <REDACTED_DEMO_BEARER_TOKEN>"
+  -H "Authorization: Bearer <ADMIN_TOKEN>"
 
 echo "✅ Done. Files saved as:"
 echo "   - daily-$TODAY.pdf"

@@ -21,7 +21,7 @@ load_dotenv(dotenv_path="C:/Users/Gedan/Desktop/Guzo/.env", override=True)
 
 HOST = os.getenv("CHAPA_WEBHOOK_HOST", "0.0.0.0")
 PORT = int(os.getenv("CHAPA_WEBHOOK_PORT", 8000))
-WEBHOOK_SECRET = os.getenv("CHAPA_WEBHOOK_SECRET", "<REDACTED_WEBHOOK_SECRET>")
+WEBHOOK_SECRET = os.getenv("CHAPA_WEBHOOK_SECRET", "")
 
 # ---------------------------------------------------------------------
 # File & Directory Setup
@@ -183,4 +183,3 @@ def run_server():
 # ---------------------------------------------------------------------
 if __name__ == "__main__":
     run_server()
-

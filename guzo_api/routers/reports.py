@@ -9,6 +9,8 @@ This router:
 - Supports alias "NN002" → "N&N002" so you can avoid %26 in URLs
 """
 
+import os
+
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
@@ -23,7 +25,7 @@ router = APIRouter(prefix="/reports", tags=["reports"])
 # Simple Bearer auth (same as before)
 # -------------------------------------------------
 bearer_scheme = HTTPBearer()
-ADMIN_SECRET = "<REDACTED_DEMO_BEARER_TOKEN>"  # later you can move this to env
+ADMIN_SECRET = os.getenv("GUZO_REPORTS_ADMIN_TOKEN", "")
 
 
 def verify_admin_token(
@@ -34,7 +36,7 @@ def verify_admin_token(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid auth scheme; expected Bearer",
         )
-    if credentials.credentials != ADMIN_SECRET:
+    if not ADMIN_SECRET or credentials.credentials != ADMIN_SECRET:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing token",

@@ -144,17 +144,14 @@ def verify_admin_token(
     """
     FastAPI dependency to protect admin endpoints.
 
-    In your frontend, you are calling APIs with:
-        Authorization: Bearer <REDACTED_DEMO_BEARER_TOKEN>
-
-    This function compares that to ADMIN_API_TOKEN env var
-    (or falls back to '<REDACTED_DEMO_BEARER_TOKEN>' if not set).
+    This function compares the request token to ADMIN_API_TOKEN.
+    If ADMIN_API_TOKEN is not configured, the endpoint fails closed.
     """
-    expected = os.getenv("ADMIN_API_TOKEN", "<REDACTED_DEMO_BEARER_TOKEN>")
+    expected = os.getenv("ADMIN_API_TOKEN", "")
 
     token = _extract_token(x_admin_token, authorization)
 
-    if not token or token != expected:
+    if not expected or not token or token != expected:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing admin token",

@@ -56,7 +56,7 @@ def get_connection():
 # Auth helper (same token as dashboard)
 # ----------------------------------------
 
-ADMIN_TOKEN = os.getenv("GUZO_ADMIN_TOKEN", "<REDACTED_DEMO_BEARER_TOKEN>")
+ADMIN_TOKEN = os.getenv("GUZO_ADMIN_TOKEN", "")
 
 
 def verify_admin_token(authorization: str = Header(...)) -> None:
@@ -72,7 +72,7 @@ def verify_admin_token(authorization: str = Header(...)) -> None:
         )
 
     token = authorization[len(prefix):].strip()
-    if token != ADMIN_TOKEN:
+    if not ADMIN_TOKEN or token != ADMIN_TOKEN:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid or missing admin token",

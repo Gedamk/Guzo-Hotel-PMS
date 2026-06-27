@@ -33,8 +33,8 @@ if not all([ACCOUNT_SID, AUTH_TOKEN, FROM_NUMBER, TO_NUMBER]):
     exit()
 
 # === Show token prefix to confirm load ===
-print(f"✅ Account SID prefix: {ACCOUNT_SID[:6]}...")
-print(f"✅ Auth Token prefix: {AUTH_TOKEN[:4]}...")
+print(f"Account SID configured: {bool(ACCOUNT_SID)}")
+print(f"Auth Token configured: {bool(AUTH_TOKEN)}")
 
 try:
     client = Client(ACCOUNT_SID, AUTH_TOKEN)

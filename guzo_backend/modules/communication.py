@@ -1,16 +1,17 @@
+import os
 import pywhatkit
 import smtplib
 from email.mime.text import MIMEText
 import requests
 
 # ----- Email Settings -----
-EMAIL_ADDRESS = "guzotravelassist@gmail.com"        # Replace with your Gmail
-EMAIL_PASSWORD = "<REDACTED_GMAIL_APP_PASSWORD>"          # Generate App Password in Google
+EMAIL_ADDRESS = os.getenv("GUZO_EMAIL_ADDRESS", "")
+EMAIL_PASSWORD = os.getenv("GUZO_EMAIL_PASSWORD", "")
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 465
 
 # ----- Telegram Bot -----
-TELEGRAM_BOT_TOKEN = "<REDACTED_BOT_TOKEN>"        # Replace with your Telegram bot token
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
 
 # ----- Functions -----
 def send_whatsapp(phone, message):
@@ -22,6 +23,8 @@ def send_whatsapp(phone, message):
 
 def send_email(to_email, subject, message):
     try:
+        if not EMAIL_ADDRESS or not EMAIL_PASSWORD:
+            raise RuntimeError("Email credentials are not configured")
         msg = MIMEText(message)
         msg['Subject'] = subject
         msg['From'] = EMAIL_ADDRESS
@@ -36,6 +39,8 @@ def send_email(to_email, subject, message):
 
 def send_telegram(username, message):
     try:
+        if not TELEGRAM_BOT_TOKEN:
+            raise RuntimeError("Telegram bot token is not configured")
         url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
         payload = {"chat_id": username, "text": message}
         requests.post(url, data=payload)

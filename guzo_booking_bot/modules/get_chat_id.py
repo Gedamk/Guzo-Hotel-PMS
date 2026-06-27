@@ -15,7 +15,7 @@ ENV_PATH = r"C:\Users\Gedan\Desktop\Guzo\.env"
 load_dotenv(dotenv_path=ENV_PATH)
 TOKEN = str(os.getenv("TELEGRAM_BOT_TOKEN", "")).strip()
 
-print(f"🔑 Token starts with: {TOKEN[:12]}... (len={len(TOKEN)})")
+print(f"Token configured: {bool(TOKEN)} (len={len(TOKEN)})")
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat_id = update.message.chat_id

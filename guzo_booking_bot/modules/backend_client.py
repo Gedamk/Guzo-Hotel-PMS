@@ -12,14 +12,14 @@ import requests
 logger = logging.getLogger("GuzoBotBackendClient")
 
 API_BASE = os.getenv("GUZO_API_BASE", "http://127.0.0.1:8000")
-API_TOKEN = os.getenv("GUZO_API_TOKEN", "<REDACTED_DEMO_BEARER_TOKEN>")
+API_TOKEN = os.getenv("GUZO_API_TOKEN", "")
 
 
 def _auth_headers() -> Dict[str, str]:
-    return {
-        "Authorization": f"Bearer {API_TOKEN}",
-        "Content-Type": "application/json",
-    }
+    headers = {"Content-Type": "application/json"}
+    if API_TOKEN:
+        headers["Authorization"] = f"Bearer {API_TOKEN}"
+    return headers
 
 
 def check_availability_for_bot(
@@ -68,6 +68,16 @@ def create_booking_for_bot(
     guest_name: str,
     channel: str = "telegram",
     total_amount_etb: Optional[float] = None,
+    room_type: Optional[str] = None,
+    guest_email: Optional[str] = None,
+    guest_count: Optional[int] = None,
+    payment_method: Optional[str] = None,
+    payment_status: Optional[str] = None,
+    guest_phone: Optional[str] = None,
+    adults: Optional[int] = None,
+    children: Optional[int] = None,
+    purpose_of_visit: Optional[str] = None,
+    notes: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Call /bot/bookings to create a booking from the bot.
@@ -94,6 +104,26 @@ def create_booking_for_bot(
 
     if total_amount_etb is not None:
         payload["total_amount_etb"] = total_amount_etb
+    if room_type:
+        payload["room_type"] = room_type
+    if guest_email:
+        payload["guest_email"] = guest_email
+    if guest_count is not None:
+        payload["guest_count"] = guest_count
+    if payment_method:
+        payload["payment_method"] = payment_method
+    if payment_status:
+        payload["payment_status"] = payment_status
+    if guest_phone:
+        payload["guest_phone"] = guest_phone
+    if adults is not None:
+        payload["adults"] = adults
+    if children is not None:
+        payload["children"] = children
+    if purpose_of_visit:
+        payload["purpose_of_visit"] = purpose_of_visit
+    if notes:
+        payload["notes"] = notes
 
     logger.info("Calling %s with json=%r", url, payload)
 

@@ -21,7 +21,7 @@ CHAPA_URL = os.getenv("CHAPA_PAYMENT_BASE_URL", "https://api.chapa.co/v1/transac
 CHAPA_KEY = os.getenv("CHAPA_SECRET_KEY")
 RETURN_URL = os.getenv("CHAPA_RETURN_URL", "https://your-domain.com/payment_return")
 WEBHOOK_URL = os.getenv("CHAPA_WEBHOOK_URL", "https://your-domain.com/chapa_webhook")
-WEBHOOK_SECRET = os.getenv("CHAPA_WEBHOOK_SECRET", "<REDACTED_WEBHOOK_SECRET>")
+WEBHOOK_SECRET = os.getenv("CHAPA_WEBHOOK_SECRET", "")
 
 # ──────────────────────────────────────────────────────────────
 def generate_chapa_link(booking_id: str, amount: float, currency: str = "ETB", guest_email: str = "") -> str:
