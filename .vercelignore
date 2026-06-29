@@ -1,37 +1,37 @@
 # Vercel deploys only the React/Vite frontend in guzo_pms_frontend.
 # The FastAPI backend is deployed separately on Render.
 
-guzo_backend/
-guzo_api/
-guzo_booking_bot/
-guzo_db/
-alembic/
-migrations/
-tests/
-tools/
-scripts/
+/guzo_backend/
+/guzo_api/
+/guzo_booking_bot/
+/guzo_db/
+/alembic/
+/migrations/
+/tests/
+/tools/
+/scripts/
 
-requirements.txt
-requirements.lock
-runtime.txt
-render.yaml
-alembic.ini
+/requirements.txt
+/requirements.lock
+/runtime.txt
+/render.yaml
+/alembic.ini
 
-*.py
-*.pyc
-__pycache__/
+/*.py
+/*.pyc
+/**/__pycache__/
 
-.env
-.env.*
-credentials/
-credentials_*.json
-service_account.json
-guzo_service.json
-_local_backup/
-backups/
-logs/
-reports_out/
-tmp_reports/
+/.env
+/.env.*
+/credentials/
+/credentials_*.json
+/service_account.json
+/guzo_service.json
+/_local_backup/
+/backups/
+/logs/
+/reports_out/
+/tmp_reports/
 
-*.pdf
-*.xlsx
+/*.pdf
+/*.xlsx
