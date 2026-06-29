@@ -1,6 +1,6 @@
 {
   "installCommand": "cd guzo_pms_frontend && npm install",
-  "buildCommand": "cd guzo_pms_frontend && npm run build",
+  "buildCommand": "cd guzo_pms_frontend && npm run build:vercel",
   "outputDirectory": "guzo_pms_frontend/dist",
   "rewrites": [
     {

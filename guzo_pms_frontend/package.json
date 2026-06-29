@@ -3,9 +3,13 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "engines": {
+    "node": ">=20.19.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:vercel": "node -v && npm -v && vite build && node -e \"const fs=require('fs'); console.log('dist exists:', fs.existsSync('dist')); console.log('dist files:', fs.existsSync('dist') ? fs.readdirSync('dist') : [])\"",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "preview": "vite preview",
